@@ -33,6 +33,7 @@ class ApiClient {
 
   late final Dio _dio;
 
+  Dio get dio => _dio;
   Dio get client => _dio;
 
   // ==========================================================

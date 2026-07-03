@@ -53,6 +53,7 @@ class ApiRoutes {
 
   static const String forgotPassword = "/forgot-password";
 
+  static const String resetPassword = changePassword;
   // ==========================================================
   // STUDENT
   // ==========================================================

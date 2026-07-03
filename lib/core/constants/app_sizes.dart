@@ -29,6 +29,19 @@ class AppSizes {
   static const double lg = 24.0;
   static const double xl = 32.0;
   static const double xxl = 48.0;
+  // ==========================================================
+// Compatibility Aliases
+// ==========================================================
+
+  static const double paddingXS = xs;
+  static const double paddingSmall = sm;
+  static const double paddingMedium = md;
+  static const double paddingLarge = lg;
+  static const double paddingXLarge = xl;
+
+  static const double marginSmall = sm;
+  static const double marginMedium = md;
+  static const double marginLarge = lg;
 
   // ==========================================================
   // Border Radius

@@ -9,13 +9,14 @@ import '../screens/student/dashboard/student_dashboard.dart';
 import '../screens/faculty/dashboard/faculty_dashboard.dart';
 import '../screens/admin/dashboard/admin_dashboard.dart';
 import 'app_routes.dart';
+import '../screens/faculty/profile/faculty_profile_screen.dart';
 
 class AppRouter {
   AppRouter._();
 
   static final GoRouter router = GoRouter(
     debugLogDiagnostics: true,
-    initialLocation: AppRoutes.splash,
+    initialLocation: '${AppRoutes.facultyProfile}?id=IG001&loginId=IG001',
 
     routes: [
 
@@ -48,7 +49,22 @@ class AppRouter {
         path: AppRoutes.facultyDashboard,
         builder: (context, state) => const FacultyDashboard(),
       ),
+      GoRoute(
+        path: AppRoutes.facultyProfile,
+        builder: (context, state) {
+          final facultyId =
+              state.uri.queryParameters['id'] ?? '';
 
+          final loginId =
+              state.uri.queryParameters['loginId'] ??
+                  facultyId;
+
+          return FacultyProfileScreen(
+            facultyId: facultyId,
+            loginFacultyId: loginId,
+          );
+        },
+      ),
       GoRoute(
         path: AppRoutes.adminDashboard,
         builder: (context, state) => const AdminDashboard(),

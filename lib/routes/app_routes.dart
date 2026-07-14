@@ -8,11 +8,13 @@ class AppRoutes {
   static const changePassword = '/change-password';
 
   // Student
-  // Student
-  // Student
   static const studentDashboard = '/student/dashboard';
   static const studentAttendance = '/student/attendance';
   static const studentMarks = '/student/marks';
+  static const studentTestSchedule = '/student/test-schedule';
+  static const studentFee = '/student/fee';
+  static const studentUsefulLinks = '/student/useful-links';
+  static const studentRequestPdf = '/student/request-pdf';
   // Faculty
   static const facultyDashboard = '/faculty/dashboard';
   static const facultyProfile = '/faculty/profile';

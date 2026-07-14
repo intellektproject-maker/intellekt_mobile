@@ -1,16 +1,14 @@
-const List<Map<String, dynamic>> mockRequestPdfData = [
-  {
-    'request_id': 1,
-    'test_name': 'Maths Unit Test',
-    'subject_name': 'Maths',
-    'test_date': '2026-06-10',
-    'request_status': 'Available',
+const Map<String, dynamic> mockRequestPdfData = {
+  'student': {
+    'name': 'Anushree . P',
+    'roll_no': 'IA021',
+    'class': '12',
+    'board': 'ISC',
+    'phone': '',
   },
-  {
-    'request_id': 2,
-    'test_name': 'Physics Monthly Test',
-    'subject_name': 'Physics',
-    'test_date': '2026-07-01',
-    'request_status': 'Pending',
-  },
-];
+  'tests': [
+    {'test_code': 'I12M40C5.4-5.6'},
+    {'test_code': 'I12P35C14'},
+    {'test_code': 'NUMERALLY TEST JUNE'},
+  ],
+};

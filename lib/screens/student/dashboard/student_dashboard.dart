@@ -33,44 +33,49 @@ class _StudentDashboardState extends State<StudentDashboard> {
       });
     }
   }
+
   void _openMarks() {
-    context.push(
-      '${AppRoutes.studentMarks}?roll=$_rollNo',
-    );
-  }
-  void _openAttendance() {
-    context.push(
-      '${AppRoutes.studentAttendance}?roll=$_rollNo',
-    );
+    context.push('${AppRoutes.studentMarks}?roll=$_rollNo');
   }
 
+  void _openAttendance() {
+    context.push('${AppRoutes.studentAttendance}?roll=$_rollNo');
+  }
+
+  void _openTestSchedule() {
+    context.push('${AppRoutes.studentTestSchedule}?roll=$_rollNo');
+  }
+
+  void _openFee() {
+    context.push('${AppRoutes.studentFee}?roll=$_rollNo');
+  }
+
+  void _openUsefulLinks() {
+    context.push(AppRoutes.studentUsefulLinks);
+  }
+  void _openRequestPdf() {
+    context.push('${AppRoutes.studentRequestPdf}?roll=$_rollNo');
+  }
   @override
   Widget build(BuildContext context) {
     final studentProvider = context.watch<StudentProvider>();
 
     return Scaffold(
       backgroundColor: const Color(0xFFECECEF),
-      body: SafeArea(
-        child: _buildBody(studentProvider),
-      ),
+      body: SafeArea(child: _buildBody(studentProvider)),
     );
   }
 
   Widget _buildBody(StudentProvider studentProvider) {
     if (studentProvider.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (studentProvider.error != null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text(
-            studentProvider.error!,
-            textAlign: TextAlign.center,
-          ),
+          child: Text(studentProvider.error!, textAlign: TextAlign.center),
         ),
       );
     }
@@ -78,16 +83,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final student = studentProvider.student;
 
     if (student == null) {
-      return const Center(
-        child: Text('Student data not found'),
-      );
+      return const Center(child: Text('Student data not found'));
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 24,
-        vertical: 30,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -103,9 +103,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
           const SizedBox(height: 35),
 
-          _StudentProfileCard(
-            student: student,
-          ),
+          _StudentProfileCard(student: student),
 
           const SizedBox(height: 28),
 
@@ -130,39 +128,42 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
           const SizedBox(height: 22),
 
-          const _DashboardCard(
+          _DashboardCard(
             icon: Icons.calendar_month_outlined,
             title: 'Test Schedule',
             value: '2',
             subtitle: 'Upcoming Tests',
             showNotification: true,
+            onTap: _openTestSchedule,
           ),
 
           const SizedBox(height: 22),
 
-          const _DashboardCard(
+          _DashboardCard(
             icon: Icons.account_balance_wallet_outlined,
             title: 'Fee',
             value: 'View',
             subtitle: 'Fee Details',
+            onTap: _openFee,
           ),
-
           const SizedBox(height: 22),
 
-          const _DashboardCard(
+          _DashboardCard(
             icon: Icons.link,
             title: 'Useful Links',
             value: 'Open',
             subtitle: 'Quick Access',
+            onTap: _openUsefulLinks,
           ),
 
           const SizedBox(height: 22),
 
-          const _DashboardCard(
+          _DashboardCard(
             icon: Icons.description_outlined,
             title: 'Request PDF',
             value: 'Open',
             subtitle: 'Request answer sheet',
+            onTap: _openRequestPdf,
           ),
 
           const SizedBox(height: 30),
@@ -175,9 +176,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
 class _StudentProfileCard extends StatelessWidget {
   final Map<String, dynamic> student;
 
-  const _StudentProfileCard({
-    required this.student,
-  });
+  const _StudentProfileCard({required this.student});
 
   @override
   Widget build(BuildContext context) {
@@ -254,9 +253,7 @@ class _StudentDetail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: showBottomSpace ? 14 : 0,
-      ),
+      padding: EdgeInsets.only(bottom: showBottomSpace ? 14 : 0),
       child: RichText(
         text: TextSpan(
           style: const TextStyle(
@@ -265,9 +262,7 @@ class _StudentDetail extends StatelessWidget {
             height: 1.4,
           ),
           children: [
-            TextSpan(
-              text: '$label: ',
-            ),
+            TextSpan(text: '$label: '),
             TextSpan(
               text: value,
               style: const TextStyle(
@@ -315,11 +310,7 @@ class _DashboardCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    icon,
-                    size: 27,
-                    color: AppColors.primary,
-                  ),
+                  Icon(icon, size: 27, color: AppColors.primary),
 
                   const SizedBox(height: 18),
 
@@ -360,10 +351,7 @@ class _DashboardCard extends StatelessWidget {
                 right: 0,
                 child: Text(
                   'Open',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF6B7280),
-                  ),
+                  style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
                 ),
               ),
 

@@ -55,6 +55,14 @@ class _LoginScreenState extends State<LoginScreen> {
       context.go(
         '${AppRoutes.studentDashboard}?roll=$id',
       );
+    } else if (role == 'faculty') {
+      context.go(
+        '${AppRoutes.facultyProfile}?id=$id&loginId=$id',
+      );
+    }else if (role == 'admin') {
+      context.go(
+        '${AppRoutes.facultyProfile}?id=$id&loginId=$id',
+      );
     }
   }
 

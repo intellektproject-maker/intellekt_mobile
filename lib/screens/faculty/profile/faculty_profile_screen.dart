@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../../../shared/layout/app_layout.dart';
 import '../../../models/faculty_model.dart';
 import '../../../models/faculty_task_model.dart';
 import 'widgets/profile_details_card.dart';
@@ -209,8 +209,12 @@ class _FacultyProfileScreenState extends State<FacultyProfileScreen> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+    return AppLayout(
+      title: profileTitle,
+      isAdmin: canAccessAllTasks,
+      facultyId: widget.loginFacultyId,
+      isHome: true,
+
       body: RefreshIndicator(
         onRefresh: _refreshPage,
         child: SingleChildScrollView(
@@ -222,19 +226,6 @@ class _FacultyProfileScreenState extends State<FacultyProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
-                    child: Text(
-                      profileTitle,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFF1D4ED8),
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
 
                   ProfileDetailsCard(faculty: faculty!),
 

@@ -27,7 +27,4 @@ class AppRoutes {
   static const facultyRequests = '/faculty/requests';
   static const facultyEnterAttendance = '/faculty/attendance/enter';
   static const facultyManageAttendance = '/faculty/attendance/manage';
-
-  // Admin
-  static const adminDashboard = '/admin/dashboard';
 }

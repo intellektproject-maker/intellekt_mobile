@@ -23,8 +23,7 @@ import '../screens/faculty/attendance/attendance_screen.dart'
 import '../screens/faculty/attendance/enter_attendance_screen.dart';
 import '../screens/faculty/attendance/manage_attendance_screen.dart';
 
-// ADMIN
-import '../screens/admin/dashboard/admin_dashboard.dart';
+
 
 import 'app_routes.dart';
 
@@ -116,7 +115,13 @@ class AppRouter {
       // ==============================
       GoRoute(
         path: AppRoutes.facultyDashboard,
-        builder: (context, state) => const FacultyDashboard(),
+        builder: (context, state) {
+          final id = state.uri.queryParameters['id'] ?? '';
+
+          return FacultyDashboard(
+            facultyId: id,
+          );
+        },
       ),
 
       // FACULTY PROFILE
@@ -167,10 +172,7 @@ class AppRouter {
       // ==============================
       // ADMIN
       // ==============================
-      GoRoute(
-        path: AppRoutes.adminDashboard,
-        builder: (context, state) => const AdminDashboard(),
-      ),
+    
     ],
 
     errorBuilder: (context, state) {

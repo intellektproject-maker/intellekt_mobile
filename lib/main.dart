@@ -11,6 +11,7 @@ import 'providers/student/fee_provider.dart';
 import 'routes/app_router.dart';
 import 'providers/student/useful_links_provider.dart';
 import 'providers/student/request_pdf_provider.dart';
+import 'providers/faculty/test_management/enter_marks_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +36,11 @@ class IntellektApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FeeProvider()),
         ChangeNotifierProvider(create: (_) => UsefulLinksProvider()),
         ChangeNotifierProvider(create: (_) => RequestPdfProvider()),
+
+        // Faculty
+        ChangeNotifierProvider(
+          create: (_) => EnterMarksProvider(),
+        ),
       ],
 
       child: MaterialApp.router(

@@ -6,25 +6,34 @@ import '../screens/auth/login_screen.dart';
 import '../screens/onboarding/welcome_screen.dart';
 import '../screens/splash/splash_screen.dart';
 
+// ==============================
 // STUDENT
+// ==============================
 import '../screens/student/dashboard/student_dashboard.dart';
 import '../screens/student/attendance/attendance_screen.dart'
-    as student_attendance;
+as student_attendance;
 import '../screens/student/marks/marks_screen.dart';
 import '../screens/student/test_schedule/test_schedule_screen.dart';
 import '../screens/student/fees/fee_screen.dart';
 import '../screens/student/useful_links/useful_links_screen.dart';
 import '../screens/student/request_pdf/request_pdf_screen.dart';
+
+// ==============================
 // FACULTY
+// ==============================
 import '../screens/faculty/dashboard/faculty_dashboard.dart';
 import '../screens/faculty/profile/faculty_profile_screen.dart';
+
+// Keep the alias here
 import '../screens/faculty/attendance/attendance_screen.dart'
-    as faculty_attendance;
+as faculty_attendance;
+
 import '../screens/faculty/attendance/enter_attendance_screen.dart';
 import '../screens/faculty/attendance/manage_attendance_screen.dart';
 
-
-
+// Import Test Management normally
+import '../screens/faculty/test_management/test_management_screen.dart';
+import '../screens/faculty/test_management/enter_marks_screen.dart';
 import 'app_routes.dart';
 
 class AppRouter {
@@ -41,7 +50,6 @@ class AppRouter {
         path: AppRoutes.splash,
         builder: (context, state) => const SplashScreen(),
       ),
-
       // WELCOME
       GoRoute(
         path: AppRoutes.welcome,
@@ -53,7 +61,10 @@ class AppRouter {
         path: AppRoutes.login,
         builder: (context, state) => const LoginScreen(),
       ),
-
+      GoRoute(
+        path: AppRoutes.facultyTest,
+        builder: (context, state) => const TestManagementScreen(),
+      ),
       // CHANGE PASSWORD
       GoRoute(
         path: AppRoutes.changePassword,
@@ -138,7 +149,10 @@ class AppRouter {
           );
         },
       ),
-
+      GoRoute(
+        path: '/faculty/enter-marks',
+        builder: (context, state) => const EnterMarksScreen(),
+      ),
       // FACULTY ATTENDANCE
       GoRoute(
         path: AppRoutes.facultyAttendance,

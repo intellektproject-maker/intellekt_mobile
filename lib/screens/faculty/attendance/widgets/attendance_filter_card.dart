@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
+
 import '../../../../core/constants/colors.dart';
 
 class AttendanceFilterCard extends StatelessWidget {
+  final List<String> classes;
+  final List<String> subjects;
+
   final String? selectedClass;
   final String? selectedSubject;
+
   final DateTime selectedDate;
 
   final ValueChanged<String?> onClassChanged;
   final ValueChanged<String?> onSubjectChanged;
+
   final VoidCallback onSelectDate;
   final VoidCallback onLoadStudents;
 
   const AttendanceFilterCard({
     super.key,
+    required this.classes,
+    required this.subjects,
     required this.selectedClass,
     required this.selectedSubject,
     required this.selectedDate,
@@ -22,28 +30,18 @@ class AttendanceFilterCard extends StatelessWidget {
     required this.onLoadStudents,
   });
 
-  static const List<String> classes = [
-    '12 A',
-    '12 B',
-    '11 A',
-    '11 B',
-    '10 A',
-  ];
-
-  static const List<String> subjects = [
-    'Mathematics',
-    'Physics',
-    'Chemistry',
-    'Biology',
-    'Computer Science',
-  ];
+  String get formattedDate {
+    return "${selectedDate.day.toString().padLeft(2, '0')}/"
+        "${selectedDate.month.toString().padLeft(2, '0')}/"
+        "${selectedDate.year}";
+  }
 
   @override
   Widget build(BuildContext context) {
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -52,9 +50,9 @@ class AttendanceFilterCard extends StatelessWidget {
           children: [
 
             const Text(
-              'Attendance Details',
+              "Attendance Details",
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: AppColors.primary,
               ),
@@ -65,14 +63,14 @@ class AttendanceFilterCard extends StatelessWidget {
             DropdownButtonFormField<String>(
               value: selectedClass,
               decoration: const InputDecoration(
-                labelText: 'Select Class',
+                labelText: "Class",
                 border: OutlineInputBorder(),
               ),
               items: classes
                   .map(
-                    (e) => DropdownMenuItem(
-                  value: e,
-                  child: Text(e),
+                    (item) => DropdownMenuItem(
+                  value: item,
+                  child: Text(item),
                 ),
               )
                   .toList(),
@@ -84,14 +82,14 @@ class AttendanceFilterCard extends StatelessWidget {
             DropdownButtonFormField<String>(
               value: selectedSubject,
               decoration: const InputDecoration(
-                labelText: 'Select Subject',
+                labelText: "Subject",
                 border: OutlineInputBorder(),
               ),
               items: subjects
                   .map(
-                    (e) => DropdownMenuItem(
-                  value: e,
-                  child: Text(e),
+                    (item) => DropdownMenuItem(
+                  value: item,
+                  child: Text(item),
                 ),
               )
                   .toList(),
@@ -102,24 +100,18 @@ class AttendanceFilterCard extends StatelessWidget {
 
             InkWell(
               onTap: onSelectDate,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               child: InputDecorator(
                 decoration: const InputDecoration(
-                  labelText: 'Attendance Date',
+                  labelText: "Attendance Date",
                   border: OutlineInputBorder(),
+                  suffixIcon: Icon(Icons.calendar_today),
                 ),
-                child: Row(
-                  children: [
-
-                    const Icon(Icons.calendar_today),
-
-                    const SizedBox(width: 12),
-
-                    Text(
-                      "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                    ),
-
-                  ],
+                child: Text(
+                  formattedDate,
+                  style: const TextStyle(
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ),
@@ -128,15 +120,18 @@ class AttendanceFilterCard extends StatelessWidget {
 
             SizedBox(
               width: double.infinity,
+              height: 50,
               child: ElevatedButton.icon(
+                onPressed: onLoadStudents,
                 icon: const Icon(Icons.people),
-                label: const Text('Load Students'),
+                label: const Text("Load Students"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                onPressed: onLoadStudents,
               ),
             ),
           ],

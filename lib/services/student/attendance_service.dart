@@ -1,18 +1,27 @@
-import '../../data/mock/mock_attendance_data.dart';
+import 'package:dio/dio.dart';
+
+import '../../core/api/api_client.dart';
+import '../../core/api/api_routes.dart';
 
 class AttendanceService {
   AttendanceService._();
 
+  static final Dio _dio = ApiClient().dio;
+
   static Future<List<Map<String, dynamic>>> getAttendance(
       String rollNo,
       ) async {
-    // Simulates API loading time.
-    await Future.delayed(
-      const Duration(milliseconds: 500),
-    );
+    try {
+      final response = await _dio.get(
+        ApiRoutes.studentAttendance(rollNo),
+      );
 
-    return mockAttendanceData
-        .map((item) => Map<String, dynamic>.from(item))
-        .toList();
+      return List<Map<String, dynamic>>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data["error"] ??
+            "Unable to load attendance.",
+      );
+    }
   }
 }

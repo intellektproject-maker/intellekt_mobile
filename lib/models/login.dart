@@ -42,7 +42,9 @@ class LoginModel {
       name: json["name"] ?? "",
       role: json["role"] ?? "",
       mustResetPassword:
-      json["must_reset_password"] ?? false,
+      json["mustResetPassword"] ??
+      json["must_reset_password"] ??
+      false,
     );
   }
 

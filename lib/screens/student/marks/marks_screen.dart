@@ -39,7 +39,7 @@ class _MarksScreenState extends State<MarksScreen> {
         mark['subject_name']
             ?.toString()
             .toLowerCase() ==
-            'mathematics',
+            'maths',
       )
           .toList();
 

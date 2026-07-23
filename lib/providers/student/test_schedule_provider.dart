@@ -41,10 +41,12 @@ class TestScheduleProvider extends ChangeNotifier {
   }
 
   Future<List<Map<String, dynamic>>> loadSlots({
+    required String rollNo,
     required String testCode,
     required DateTime writingDate,
-  }) async {
+  }) {
     return TestScheduleService.getSlots(
+      rollNo: rollNo,
       testCode: testCode,
       writingDate: writingDate,
     );

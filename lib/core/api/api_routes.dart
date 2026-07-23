@@ -43,17 +43,17 @@ class ApiRoutes {
   // AUTHENTICATION
   // ==========================================================
 
+  // AUTHENTICATION
+
   static const String login = "/login";
 
   static const String logout = "/logout";
 
   static const String refreshToken = "/refresh-token";
 
-  static const String changePassword = "/change-password";
+  static const String resetPassword = "/reset-password";
 
   static const String forgotPassword = "/forgot-password";
-
-  static const String resetPassword = changePassword;
   // ==========================================================
   // STUDENT
   // ==========================================================
@@ -72,7 +72,14 @@ class ApiRoutes {
 
   static String studentTests(String rollNo) =>
       "/test-schedule/$rollNo";
+  static String studentTestSlots(
+      String testCode,
+      String rollNo,
+      ) =>
+      "/test-slots/$testCode/$rollNo";
 
+  static const String registerTest =
+      "/register-test-slot";
   static String requestPdf(String rollNo) =>
       "/request-pdf/$rollNo";
 

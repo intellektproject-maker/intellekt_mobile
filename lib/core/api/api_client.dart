@@ -41,7 +41,7 @@ class ApiClient {
   // ==========================================================
 
   static const String baseUrl =
-      'https://intellektdashboard-production.up.railway.app';
+      'https://responsible-wonder-production.up.railway.app';
 
   // ==========================================================
   // Base Options

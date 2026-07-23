@@ -21,13 +21,13 @@ class AuthRepository {
       );
 
       return LoginModel.fromJson(response.data);
-    } on DioException catch (e) {
-      throw Exception(
-        e.response?.data["error"] ??
-            "Unable to login.",
-      );
-    }
-  }
+     } on DioException catch (e) {
+  print("STATUS: ${e.response?.statusCode}");
+  print("DATA: ${e.response?.data}");
+  print("TYPE: ${e.response?.data.runtimeType}");
+
+  throw Exception("Login failed");
+  }}
 
   Future<bool> changePassword({
     required String id,

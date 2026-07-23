@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/constants/app_sizes.dart';
 import '../../core/constants/colors.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/custom_textfield.dart';
+import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
-import '../../services/auth_services.dart';
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -32,36 +33,39 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final user = await AuthService.login(
+    final authProvider = context.read<AuthProvider>();
+
+    final success = await authProvider.login(
       id: _idController.text.trim(),
       password: _passwordController.text.trim(),
     );
 
     if (!mounted) return;
 
-    if (user == null) {
+    if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid ID or Password'),
+        SnackBar(
+          content: Text(
+            authProvider.error ?? 'Invalid ID or Password',
+          ),
         ),
       );
       return;
     }
 
-    final role = user['role'];
-    final id = user['id'];
+    final user = authProvider.user!;
 
-    if (role == 'student') {
+    if (user.role == 'student') {
       context.go(
-        '${AppRoutes.studentDashboard}?roll=$id',
+        '${AppRoutes.studentDashboard}?roll=${user.id}',
       );
-    } else if (role == 'faculty') {
+    } else if (user.role == 'faculty') {
       context.go(
-        '${AppRoutes.facultyProfile}?id=$id&loginId=$id',
+        '${AppRoutes.facultyProfile}?id=${user.id}&loginId=${user.id}',
       );
-    }else if (role == 'admin') {
+    } else if (user.role == 'admin') {
       context.go(
-        '${AppRoutes.facultyProfile}?id=$id&loginId=$id',
+        '${AppRoutes.facultyProfile}?id=${user.id}&loginId=${user.id}',
       );
     }
   }

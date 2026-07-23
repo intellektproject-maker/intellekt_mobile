@@ -1,20 +1,27 @@
-import '../../data/mock/mock_student_data.dart';
+import 'package:dio/dio.dart';
+
+import '../../core/api/api_client.dart';
+import '../../core/api/api_routes.dart';
 
 class StudentService {
   StudentService._();
 
+  static final Dio _dio = ApiClient().dio;
+
   static Future<Map<String, dynamic>> getStudent(
       String rollNo,
       ) async {
-    await Future.delayed(
-      const Duration(milliseconds: 500),
-    );
+    try {
+      final response = await _dio.get(
+        ApiRoutes.studentDetails(rollNo),
+      );
 
-    final student = MockStudentData.students.firstWhere(
-          (s) => s.rollNo == rollNo,
-      orElse: () => throw Exception("Student not found"),
-    );
-
-    return student.toJson();
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data["error"] ??
+            "Unable to load student.",
+      );
+    }
   }
 }

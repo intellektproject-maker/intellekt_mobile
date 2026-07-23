@@ -100,7 +100,11 @@ class _TestScheduleScreenState extends State<TestScheduleScreen> {
 
               final loadedSlots = await context
                   .read<TestScheduleProvider>()
-                  .loadSlots(testCode: test.testCode ?? '', writingDate: date);
+                  .loadSlots(
+                rollNo: widget.rollNo,
+                testCode: test.testCode ?? '',
+                writingDate: date,
+              );
 
               if (!dialogContext.mounted) {
                 return;

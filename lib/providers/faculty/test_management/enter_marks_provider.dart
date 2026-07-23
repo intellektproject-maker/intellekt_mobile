@@ -9,6 +9,7 @@ class EnterMarksProvider extends ChangeNotifier {
 
   bool isLoading = false;
   bool isSaving = false;
+  bool studentsLoaded = false;
 
   List<MarkEntry> students = [];
   List<TestCode> testCodes = [];
@@ -23,8 +24,8 @@ class EnterMarksProvider extends ChangeNotifier {
   String searchQuery = "";
   String totalMarks = "";
 
+  /// Initial page load
   Future<void> initialize() async {
-    await loadStudents();
     await loadTestCodes(
       className: selectedClass,
       board: selectedBoard,
@@ -32,16 +33,22 @@ class EnterMarksProvider extends ChangeNotifier {
     );
   }
 
+  /// Load students only when the button is pressed
   Future<void> loadStudents() async {
+    if (selectedTestCode == null) return;
+
     isLoading = true;
     notifyListeners();
 
     students = await _service.getStudents();
 
+    studentsLoaded = true;
+
     isLoading = false;
     notifyListeners();
   }
 
+  /// Load test codes according to filters
   Future<void> loadTestCodes({
     required String className,
     required String board,
@@ -58,9 +65,15 @@ class EnterMarksProvider extends ChangeNotifier {
     );
 
     _filterTestCodes();
+
+    selectedTestCode = null;
+    studentsLoaded = false;
+    students.clear();
+
     notifyListeners();
   }
 
+  /// Search test code
   void updateSearch(String value) {
     searchQuery = value;
     _filterTestCodes();
@@ -80,22 +93,32 @@ class EnterMarksProvider extends ChangeNotifier {
     }).toList();
   }
 
+  /// Select a test code
   void selectTestCode(TestCode code) {
     selectedTestCode = code;
+
+    studentsLoaded = false;
+    students.clear();
+
     notifyListeners();
   }
 
+  /// Total marks
   void updateTotalMarks(String value) {
     totalMarks = value;
     notifyListeners();
   }
 
+  /// Update marks
   void updateMarks(int index, int marks) {
     students[index].marks = marks;
     notifyListeners();
   }
 
+  /// Save marks
   Future<void> saveMarks() async {
+    if (!studentsLoaded) return;
+
     isSaving = true;
     notifyListeners();
 
@@ -105,10 +128,17 @@ class EnterMarksProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Reset everything
   void clearSelection() {
     selectedTestCode = null;
+    studentsLoaded = false;
+    students.clear();
+
     totalMarks = "";
     searchQuery = "";
+
+    _filterTestCodes();
+
     notifyListeners();
   }
 }

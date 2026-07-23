@@ -19,11 +19,15 @@ class EnterMarksService {
   }) async {
     await Future.delayed(const Duration(milliseconds: 400));
 
-    return mockTestCodes.where((e) {
+    final result = mockTestCodes.where((e) {
       return e.className == className &&
           e.board == board &&
           e.subject == subject;
     }).toList();
+
+    print("Found ${result.length} test codes");
+
+    return result;
   }
 
   /// Save marks

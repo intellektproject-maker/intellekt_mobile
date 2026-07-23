@@ -44,7 +44,7 @@ super.dispose();
 @override
 Widget build(BuildContext context) {
 final provider = context.watch<EnterMarksProvider>();
-
+debugPrint("Filtered: ${provider.filteredTestCodes.length}");
 return Scaffold(
 appBar: AppBar(
 title: const Text("Enter Marks"),
@@ -223,7 +223,7 @@ onChanged: provider.updateTotalMarks,
 
   const SizedBox(height: 24),
 
-  if (provider.selectedTestCode != null)
+  if (provider.studentsLoaded)
     Card(
       elevation: 2,
       shape: RoundedRectangleBorder(

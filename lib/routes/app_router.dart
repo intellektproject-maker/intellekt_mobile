@@ -23,7 +23,7 @@ import '../screens/student/request_pdf/request_pdf_screen.dart';
 // ==============================
 import '../screens/faculty/dashboard/faculty_dashboard.dart';
 import '../screens/faculty/profile/faculty_profile_screen.dart';
-
+import '../screens/faculty/test_management/manage_marks_screen.dart';
 // Keep the alias here
 import '../screens/faculty/attendance/attendance_screen.dart'
 as faculty_attendance;
@@ -152,6 +152,10 @@ class AppRouter {
       GoRoute(
         path: '/faculty/enter-marks',
         builder: (context, state) => const EnterMarksScreen(),
+      ),
+      GoRoute(
+        path: '/faculty/manage-marks',
+        builder: (context, state) => const ManageMarksScreen(),
       ),
       // FACULTY ATTENDANCE
       GoRoute(

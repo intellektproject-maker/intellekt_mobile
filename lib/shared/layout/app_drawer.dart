@@ -161,10 +161,15 @@ class _AppDrawerState extends State<AppDrawer> {
               (child) => ListTile(
             leading: Icon(child.icon),
             title: Text(child.title),
-            onTap: () {
-              Navigator.pop(context);
-              context.push(child.route);
-            },
+                onTap: () {
+                  Navigator.pop(context);
+
+                  Future.microtask(() {
+                    if (mounted) {
+                      context.go(child.route);
+                    }
+                  });
+                },
           ),
         )
             .toList(),
@@ -177,7 +182,11 @@ class _AppDrawerState extends State<AppDrawer> {
       onTap: () {
         Navigator.pop(context);
 
-        context.push(item.route);
+        Future.microtask(() {
+          if (mounted) {
+            context.go(item.route);
+          }
+        });
       },
     );
   }

@@ -1,12 +1,17 @@
-import '../../data/mock/mock_fee_data.dart';
+import '../../core/api/api_client.dart';
+import '../../core/api/api_routes.dart';
 import '../../models/fee.dart';
 
 class FeeService {
   FeeService._();
 
   static Future<List<Fee>> getFees(String rollNo) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    final response = await ApiClient().dio.get(
+      ApiRoutes.studentFees(rollNo),
+    );
 
-    return mockFeeData.map(Fee.fromJson).toList();
+    return (response.data as List)
+        .map((json) => Fee.fromJson(json))
+        .toList();
   }
 }

@@ -129,6 +129,19 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFECECEF),
+
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1D4ED8),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'INTELLEKT',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+
       body: SafeArea(
         child: _buildBody(attendanceProvider),
       ),
@@ -360,13 +373,15 @@ class _AttendanceSummaryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Attendance Summary',
+            'Attendance',
             style: TextStyle(
-              color: Color(0xFF1769E0),
-              fontSize: 19,
-              fontWeight: FontWeight.bold,
+              color: Color(0xFF0B3A82),
+              fontSize: 36,
+              fontWeight: FontWeight.w800,
             ),
           ),
+
+          const SizedBox(height: 24),
 
           const SizedBox(height: 25),
 

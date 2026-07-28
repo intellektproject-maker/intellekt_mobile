@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/api/api_routes.dart';
-import '../../data/mock/mock_test_slots_data.dart';
 import '../../models/test.dart';
 
 class TestScheduleService {

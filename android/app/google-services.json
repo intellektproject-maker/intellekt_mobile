@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "727007474549",
+    "project_id": "student-mobile-app-f6d0b",
+    "storage_bucket": "student-mobile-app-f6d0b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:727007474549:android:f602abfac8fdd4c15a993c",
+        "android_client_info": {
+          "package_name": "com.example.intellekt_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZvBpsSHC6hFRbnwpEd1co5qjWmIwMpQ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

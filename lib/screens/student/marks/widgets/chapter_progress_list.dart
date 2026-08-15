@@ -18,6 +18,15 @@ class ChapterProgressList extends StatefulWidget {
 class _ChapterProgressListState extends State<ChapterProgressList> {
   String? expandedChapter;
 
+  String _chapterName(String chapter) {
+    return AppSyllabus.chapters(
+          subjectName: 'Mathematics',
+          className: '12',
+          board: 'STATE_BOARD',
+        )[chapter] ??
+        chapter;
+  }
+
   @override
   Widget build(BuildContext context) {
     /// Group tests by chapter
@@ -81,8 +90,7 @@ class _ChapterProgressListState extends State<ChapterProgressList> {
               chapterCode: chapter,
 
               chapterName:
-              MathsChapters.stateBoard[chapter] ??
-                  chapter,
+              _chapterName(chapter),
 
               understanding: understanding,
 
@@ -105,8 +113,7 @@ class _ChapterProgressListState extends State<ChapterProgressList> {
                 chapterCode: chapter,
 
                 chapterName:
-                MathsChapters.stateBoard[chapter] ??
-                    chapter,
+                _chapterName(chapter),
 
                 chapterTests: tests,
               ),

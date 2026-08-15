@@ -40,6 +40,11 @@ Future<void> main() async {
   final authProvider = AuthProvider();
   final router = AppRouter.createRouter(authProvider);
 
+  PushNotificationService.instance.attachNavigation(
+    router: router,
+    authProvider: authProvider,
+  );
+
   runApp(
     IntellektApp(
       authProvider: authProvider,

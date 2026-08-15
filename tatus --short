@@ -1,0 +1,132 @@
+[35mserver/node_modules/@google-cloud/firestore/build/src/index.d.ts[m[36m:[m[32m401[m[36m:[m     * `settings.credentials` and provide the `client_email` and `[1;31mprivate_key[m` of
+[35mserver/node_modules/@google-cloud/firestore/build/src/index.d.ts[m[36m:[m[32m403[m[36m:[m     * @param {{client_email:string=, [1;31mprivate_key[m:string=}=} settings.credentials
+[35mserver/node_modules/@google-cloud/firestore/build/src/index.d.ts[m[36m:[m[32m404[m[36m:[m     * The `client_email` and `[1;31mprivate_key[m` properties of the service account
+[35mserver/node_modules/@google-cloud/firestore/build/src/index.js[m[36m:[m[32m378[m[36m:[m     * `settings.credentials` and provide the `client_email` and `[1;31mprivate_key[m` of
+[35mserver/node_modules/@google-cloud/firestore/build/src/index.js[m[36m:[m[32m380[m[36m:[m     * @param {{client_email:string=, [1;31mprivate_key[m:string=}=} settings.credentials
+[35mserver/node_modules/@google-cloud/firestore/build/src/index.js[m[36m:[m[32m381[m[36m:[m     * The `client_email` and `[1;31mprivate_key[m` properties of the service account
+[35mserver/node_modules/@google-cloud/firestore/build/src/index.js[m[36m:[m[32m630[m[36m:[m                temp.credentials = { [1;31mprivate_key[m: '***', client_email: '***' };
+[35mserver/node_modules/@google-cloud/firestore/build/src/v1/firestore_admin_client.d.ts[m[36m:[m[32m70[m[36m:[m     * @param {string} [options.credentials.[1;31mprivate_key[m]
+[35mserver/node_modules/@google-cloud/firestore/build/src/v1/firestore_admin_client.js[m[36m:[m[32m71[m[36m:[m     * @param {string} [options.credentials.[1;31mprivate_key[m]
+[35mserver/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.d.ts[m[36m:[m[32m47[m[36m:[m     * @param {string} [options.credentials.[1;31mprivate_key[m]
+[35mserver/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js[m[36m:[m[32m53[m[36m:[m     * @param {string} [options.credentials.[1;31mprivate_key[m]
+[35mserver/node_modules/@google-cloud/firestore/build/src/v1beta1/firestore_client.d.ts[m[36m:[m[32m46[m[36m:[m     * @param {string} [options.credentials.[1;31mprivate_key[m]
+[35mserver/node_modules/@google-cloud/firestore/build/src/v1beta1/firestore_client.js[m[36m:[m[32m54[m[36m:[m     * @param {string} [options.credentials.[1;31mprivate_key[m]
+[35mserver/node_modules/@google-cloud/firestore/types/firestore.d.ts[m[36m:[m[32m414[m[36m:[m     * `[1;31mprivate_key[m` of your service account.
+[35mserver/node_modules/@google-cloud/firestore/types/firestore.d.ts[m[36m:[m[32m419[m[36m:[m     * The 'client_email' and '[1;31mprivate_key[m' properties of the service account
+[35mserver/node_modules/@google-cloud/firestore/types/firestore.d.ts[m[36m:[m[32m425[m[36m:[m    credentials?: {client_email?: string; [1;31mprivate_key[m?: string};
+[35mserver/node_modules/@google-cloud/firestore/types/v1/firestore_admin_client.d.ts[m[36m:[m[32m95[m[36m:[m   * @param {string} [options.credentials.[1;31mprivate_key[m]
+[35mserver/node_modules/@google-cloud/firestore/types/v1/firestore_client.d.ts[m[36m:[m[32m70[m[36m:[m   * @param {string} [options.credentials.[1;31mprivate_key[m]
+[35mserver/node_modules/@google-cloud/firestore/types/v1beta1/firestore_client.d.ts[m[36m:[m[32m68[m[36m:[m   * @param {string} [options.credentials.[1;31mprivate_key[m]
+[35mserver/node_modules/@google-cloud/storage/build/cjs/src/storage.d.ts[m[36m:[m[32m466[m[36m:[m     * @property {string} [credentials.[1;31mprivate_key[m]
+[35mserver/node_modules/@google-cloud/storage/build/cjs/src/storage.d.ts[m[36m:[m[32m530[m[36m:[m     *     [1;31mprivate_key_id[m: 'xxxx',
+[35mserver/node_modules/@google-cloud/storage/build/cjs/src/storage.d.ts[m[36m:[m[32m531[m[36m:[m     *     [1;31mprivate_key[m:'-----[1;31mBEGIN PRIVATE KEY[m-----xxxxxxx\n-----END PRIVATE KEY-----\n',
+[35mserver/node_modules/@google-cloud/storage/build/cjs/src/storage.js[m[36m:[m[32m356[m[36m:[m     * @property {string} [credentials.[1;31mprivate_key[m]
+[35mserver/node_modules/@google-cloud/storage/build/cjs/src/storage.js[m[36m:[m[32m420[m[36m:[m     *     [1;31mprivate_key_id[m: 'xxxx',
+[35mserver/node_modules/@google-cloud/storage/build/cjs/src/storage.js[m[36m:[m[32m421[m[36m:[m     *     [1;31mprivate_key[m:'-----[1;31mBEGIN PRIVATE KEY[m-----xxxxxxx\n-----END PRIVATE KEY-----\n',
+[35mserver/node_modules/@google-cloud/storage/build/esm/src/storage.d.ts[m[36m:[m[32m466[m[36m:[m     * @property {string} [credentials.[1;31mprivate_key[m]
+[35mserver/node_modules/@google-cloud/storage/build/esm/src/storage.d.ts[m[36m:[m[32m530[m[36m:[m     *     [1;31mprivate_key_id[m: 'xxxx',
+[35mserver/node_modules/@google-cloud/storage/build/esm/src/storage.d.ts[m[36m:[m[32m531[m[36m:[m     *     [1;31mprivate_key[m:'-----[1;31mBEGIN PRIVATE KEY[m-----xxxxxxx\n-----END PRIVATE KEY-----\n',
+[35mserver/node_modules/@google-cloud/storage/build/esm/src/storage.js[m[36m:[m[32m352[m[36m:[m     * @property {string} [credentials.[1;31mprivate_key[m]
+[35mserver/node_modules/@google-cloud/storage/build/esm/src/storage.js[m[36m:[m[32m416[m[36m:[m     *     [1;31mprivate_key_id[m: 'xxxx',
+[35mserver/node_modules/@google-cloud/storage/build/esm/src/storage.js[m[36m:[m[32m417[m[36m:[m     *     [1;31mprivate_key[m:'-----[1;31mBEGIN PRIVATE KEY[m-----xxxxxxx\n-----END PRIVATE KEY-----\n',
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/CHANGELOG.md[m[36m:[m[32m1341[m[36m:[m- Set [1;31mprivate_key_id[m in JWT access token header like other google auth libraries. (#450)
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/README.md[m[36m:[m[32m299[m[36m:[m    key: keys.[1;31mprivate_key[m,
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/README.md[m[36m:[m[32m321[m[36m:[m  "[1;31mprivate_key_id[m": "your-private-key-id",
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/README.md[m[36m:[m[32m322[m[36m:[m  "[1;31mprivate_key[m": "your-private-key",
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/build/src/auth/credentials.d.ts[m[36m:[m[32m56[m[36m:[m    [1;31mprivate_key[m?: string;
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/build/src/auth/credentials.d.ts[m[36m:[m[32m57[m[36m:[m    [1;31mprivate_key_id[m?: string;
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/build/src/auth/credentials.d.ts[m[36m:[m[32m73[m[36m:[m    [1;31mprivate_key[m?: string;
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/build/src/auth/googleauth.d.ts[m[36m:[m[32m52[m[36m:[m     * Object containing client_email and [1;31mprivate_key[m properties, or the
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/build/src/auth/googleauth.d.ts[m[36m:[m[32m299[m[36m:[m     * client_email and [1;31mprivate_key[m (if exists).
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/build/src/auth/googleauth.js[m[36m:[m[32m673[m[36m:[m                [1;31mprivate_key[m: this.jsonContent.[1;31mprivate_key[m,
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/build/src/auth/jwtaccess.js[m[36m:[m[32m152[m[36m:[m        if (!json.[1;31mprivate_key[m) {
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/build/src/auth/jwtaccess.js[m[36m:[m[32m153[m[36m:[m            throw new Error('The incoming JSON object does not contain a [1;31mprivate_key[m field');
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/build/src/auth/jwtaccess.js[m[36m:[m[32m157[m[36m:[m        this.key = json.[1;31mprivate_key[m;
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/build/src/auth/jwtaccess.js[m[36m:[m[32m158[m[36m:[m        this.keyId = json.[1;31mprivate_key_id[m;
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m217[m[36m:[m        if (!json.[1;31mprivate_key[m) {
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m218[m[36m:[m            throw new Error('The incoming JSON object does not contain a [1;31mprivate_key[m field');
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m222[m[36m:[m        this.key = json.[1;31mprivate_key[m;
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m223[m[36m:[m        this.keyId = json.[1;31mprivate_key_id[m;
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m274[m[36m:[m            return { [1;31mprivate_key[m: this.key, client_email: this.email };
+[35mserver/node_modules/@google-cloud/storage/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m279[m[36m:[m            return { [1;31mprivate_key[m: creds.privateKey, client_email: creds.clientEmail };
+[35mserver/node_modules/@grpc/grpc-js/build/src/server-credentials.d.ts[m[36m:[m[32m6[m[36m:[m    [1;31mprivate_key[m: Buffer;
+[35mserver/node_modules/@grpc/grpc-js/build/src/server-credentials.js[m[36m:[m[32m78[m[36m:[m            if (!Buffer.isBuffer(pair.[1;31mprivate_key[m)) {
+[35mserver/node_modules/@grpc/grpc-js/build/src/server-credentials.js[m[36m:[m[32m79[m[36m:[m                throw new TypeError(`keyCertPair[${i}].[1;31mprivate_key[m must be a Buffer`);
+[35mserver/node_modules/@grpc/grpc-js/build/src/server-credentials.js[m[36m:[m[32m85[m[36m:[m            key.push(pair.[1;31mprivate_key[m);
+[35mserver/node_modules/@grpc/grpc-js/src/server-credentials.ts[m[36m:[m[32m25[m[36m:[m  [1;31mprivate_key[m: Buffer;
+[35mserver/node_modules/@grpc/grpc-js/src/server-credentials.ts[m[36m:[m[32m100[m[36m:[m      if (!Buffer.isBuffer(pair.[1;31mprivate_key[m)) {
+[35mserver/node_modules/@grpc/grpc-js/src/server-credentials.ts[m[36m:[m[32m101[m[36m:[m        throw new TypeError(`keyCertPair[${i}].[1;31mprivate_key[m must be a Buffer`);
+[35mserver/node_modules/@grpc/grpc-js/src/server-credentials.ts[m[36m:[m[32m109[m[36m:[m      key.push(pair.[1;31mprivate_key[m);
+[35mserver/node_modules/firebase-admin/lib/app/credential-factory.d.ts[m[36m:[m[32m75[m[36m:[m *     privateKey: "-----[1;31mBEGIN PRIVATE KEY[m-----<KEY>-----END PRIVATE KEY-----\n"
+[35mserver/node_modules/firebase-admin/lib/app/credential-factory.js[m[36m:[m[32m88[m[36m:[m *     privateKey: "-----[1;31mBEGIN PRIVATE KEY[m-----<KEY>-----END PRIVATE KEY-----\n"
+[35mserver/node_modules/firebase-admin/lib/app/credential-internal.js[m[36m:[m[32m162[m[36m:[m        copyAttr(this, json, 'privateKey', '[1;31mprivate_key[m');
+[35mserver/node_modules/firebase-admin/lib/app/credential-internal.js[m[36m:[m[32m169[m[36m:[m            errorMessage = 'Service account object must contain a string "[1;31mprivate_key[m" property.';
+[35mserver/node_modules/firebase-admin/lib/app/credential-internal.js[m[36m:[m[32m395[m[36m:[m        copyAttr(keyFile, keyFile, '[1;31mprivate_key[m', 'privateKey');
+[35mserver/node_modules/firebase-admin/lib/credential/index.d.ts[m[36m:[m[32m83[m[36m:[m     *     privateKey: "-----[1;31mBEGIN PRIVATE KEY[m-----<KEY>-----END PRIVATE KEY-----\n"
+[35mserver/node_modules/firebase-admin/lib/credential/index.js[m[36m:[m[32m79[m[36m:[m     *     privateKey: "-----[1;31mBEGIN PRIVATE KEY[m-----<KEY>-----END PRIVATE KEY-----\n"
+[35mserver/node_modules/firebase-admin/lib/firestore/firestore-internal.js[m[36m:[m[32m93[m[36m:[m                [1;31mprivate_key[m: credential.privateKey,
+[35mserver/node_modules/firebase-admin/lib/storage/storage.js[m[36m:[m[32m73[m[36m:[m                    [1;31mprivate_key[m: credential.privateKey,
+[35mserver/node_modules/google-auth-library/README.md[m[36m:[m[32m289[m[36m:[m  key: keys.[1;31mprivate_key[m,
+[35mserver/node_modules/google-auth-library/README.md[m[36m:[m[32m308[m[36m:[m  "[1;31mprivate_key_id[m": "your-private-key-id",
+[35mserver/node_modules/google-auth-library/README.md[m[36m:[m[32m309[m[36m:[m  "[1;31mprivate_key[m": "your-private-key",
+[35mserver/node_modules/google-auth-library/README.md[m[36m:[m[32m333[m[36m:[m  key: keys.[1;31mprivate_key[m,
+[35mserver/node_modules/google-auth-library/build/src/auth/credentials.d.ts[m[36m:[m[32m56[m[36m:[m    [1;31mprivate_key[m?: string;
+[35mserver/node_modules/google-auth-library/build/src/auth/credentials.d.ts[m[36m:[m[32m57[m[36m:[m    [1;31mprivate_key_id[m?: string;
+[35mserver/node_modules/google-auth-library/build/src/auth/credentials.d.ts[m[36m:[m[32m74[m[36m:[m    [1;31mprivate_key[m?: string;
+[35mserver/node_modules/google-auth-library/build/src/auth/gdchclient.d.ts[m[36m:[m[32m18[m[36m:[m    [1;31mprivate_key_id[m: string;
+[35mserver/node_modules/google-auth-library/build/src/auth/gdchclient.d.ts[m[36m:[m[32m19[m[36m:[m    [1;31mprivate_key[m: string;
+[35mserver/node_modules/google-auth-library/build/src/auth/gdchclient.js[m[36m:[m[32m81[m[36m:[m        if (!json.[1;31mprivate_key_id[m) {
+[35mserver/node_modules/google-auth-library/build/src/auth/gdchclient.js[m[36m:[m[32m82[m[36m:[m            throw new Error('The incoming JSON object does not contain a [1;31mprivate_key_id[m field');
+[35mserver/node_modules/google-auth-library/build/src/auth/gdchclient.js[m[36m:[m[32m84[m[36m:[m        if (!json.[1;31mprivate_key[m) {
+[35mserver/node_modules/google-auth-library/build/src/auth/gdchclient.js[m[36m:[m[32m85[m[36m:[m            throw new Error('The incoming JSON object does not contain a [1;31mprivate_key[m field');
+[35mserver/node_modules/google-auth-library/build/src/auth/gdchclient.js[m[36m:[m[32m94[m[36m:[m        this.privateKeyId = json.[1;31mprivate_key_id[m;
+[35mserver/node_modules/google-auth-library/build/src/auth/gdchclient.js[m[36m:[m[32m95[m[36m:[m        this.privateKey = json.[1;31mprivate_key[m;
+[35mserver/node_modules/google-auth-library/build/src/auth/gdchclient.js[m[36m:[m[32m102[m[36m:[m            privateKeyId: json.[1;31mprivate_key_id[m,
+[35mserver/node_modules/google-auth-library/build/src/auth/gdchclient.js[m[36m:[m[32m103[m[36m:[m            privateKey: json.[1;31mprivate_key[m,
+[35mserver/node_modules/google-auth-library/build/src/auth/googleauth.d.ts[m[36m:[m[32m321[m[36m:[m     *   key: keys.[1;31mprivate_key[m,
+[35mserver/node_modules/google-auth-library/build/src/auth/googleauth.d.ts[m[36m:[m[32m375[m[36m:[m     *     key: keys.[1;31mprivate_key[m,
+[35mserver/node_modules/google-auth-library/build/src/auth/googleauth.d.ts[m[36m:[m[32m436[m[36m:[m     * client_email and [1;31mprivate_key[m (if exists).
+[35mserver/node_modules/google-auth-library/build/src/auth/googleauth.js[m[36m:[m[32m464[m[36m:[m     *   key: keys.[1;31mprivate_key[m,
+[35mserver/node_modules/google-auth-library/build/src/auth/googleauth.js[m[36m:[m[32m725[m[36m:[m                [1;31mprivate_key[m: this.jsonContent.[1;31mprivate_key[m,
+[35mserver/node_modules/google-auth-library/build/src/auth/jwtaccess.js[m[36m:[m[32m160[m[36m:[m        if (!json.[1;31mprivate_key[m) {
+[35mserver/node_modules/google-auth-library/build/src/auth/jwtaccess.js[m[36m:[m[32m161[m[36m:[m            throw new Error('The incoming JSON object does not contain a [1;31mprivate_key[m field');
+[35mserver/node_modules/google-auth-library/build/src/auth/jwtaccess.js[m[36m:[m[32m165[m[36m:[m        this.key = json.[1;31mprivate_key[m;
+[35mserver/node_modules/google-auth-library/build/src/auth/jwtaccess.js[m[36m:[m[32m166[m[36m:[m        this.keyId = json.[1;31mprivate_key_id[m;
+[35mserver/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m233[m[36m:[m        if (!json.[1;31mprivate_key[m) {
+[35mserver/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m234[m[36m:[m            throw new Error('The incoming JSON object does not contain a [1;31mprivate_key[m field');
+[35mserver/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m238[m[36m:[m        this.key = json.[1;31mprivate_key[m;
+[35mserver/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m239[m[36m:[m        this.keyId = json.[1;31mprivate_key_id[m;
+[35mserver/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m290[m[36m:[m            return { [1;31mprivate_key[m: this.key, client_email: this.email };
+[35mserver/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m295[m[36m:[m            return { [1;31mprivate_key[m: creds.privateKey, client_email: creds.clientEmail };
+[35mserver/node_modules/google-auth-library/build/src/gtoken/getCredentials.js[m[36m:[m[32m58[m[36m:[m        const privateKey = body.[1;31mprivate_key[m;
+[35mserver/node_modules/google-auth-library/build/src/gtoken/getCredentials.js[m[36m:[m[32m61[m[36m:[m            throw new errorWithCode_1.ErrorWithCode('[1;31mprivate_key[m and client_email are required.', 'MISSING_CREDENTIALS');
+[35mserver/node_modules/google-gax/build/src/grpc.js[m[36m:[m[32m357[m[36m:[m        const keyRegex = /(?<key>-----[1;31mBEGIN PRIVATE KEY[m-----.*?-----END PRIVATE KEY-----)/s;
+[35mserver/node_modules/google-gax/build/src/locationService.d.ts[m[36m:[m[32m37[m[36m:[m     * @param {string} [options.credentials.[1;31mprivate_key[m]
+[35mserver/node_modules/google-gax/build/src/locationService.js[m[36m:[m[32m43[m[36m:[m     * @param {string} [options.credentials.[1;31mprivate_key[m]
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/CHANGELOG.md[m[36m:[m[32m1341[m[36m:[m- Set [1;31mprivate_key_id[m in JWT access token header like other google auth libraries. (#450)
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/README.md[m[36m:[m[32m299[m[36m:[m    key: keys.[1;31mprivate_key[m,
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/README.md[m[36m:[m[32m321[m[36m:[m  "[1;31mprivate_key_id[m": "your-private-key-id",
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/README.md[m[36m:[m[32m322[m[36m:[m  "[1;31mprivate_key[m": "your-private-key",
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/build/src/auth/credentials.d.ts[m[36m:[m[32m56[m[36m:[m    [1;31mprivate_key[m?: string;
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/build/src/auth/credentials.d.ts[m[36m:[m[32m57[m[36m:[m    [1;31mprivate_key_id[m?: string;
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/build/src/auth/credentials.d.ts[m[36m:[m[32m73[m[36m:[m    [1;31mprivate_key[m?: string;
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/build/src/auth/googleauth.d.ts[m[36m:[m[32m52[m[36m:[m     * Object containing client_email and [1;31mprivate_key[m properties, or the
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/build/src/auth/googleauth.d.ts[m[36m:[m[32m299[m[36m:[m     * client_email and [1;31mprivate_key[m (if exists).
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/build/src/auth/googleauth.js[m[36m:[m[32m673[m[36m:[m                [1;31mprivate_key[m: this.jsonContent.[1;31mprivate_key[m,
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/build/src/auth/jwtaccess.js[m[36m:[m[32m152[m[36m:[m        if (!json.[1;31mprivate_key[m) {
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/build/src/auth/jwtaccess.js[m[36m:[m[32m153[m[36m:[m            throw new Error('The incoming JSON object does not contain a [1;31mprivate_key[m field');
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/build/src/auth/jwtaccess.js[m[36m:[m[32m157[m[36m:[m        this.key = json.[1;31mprivate_key[m;
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/build/src/auth/jwtaccess.js[m[36m:[m[32m158[m[36m:[m        this.keyId = json.[1;31mprivate_key_id[m;
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m217[m[36m:[m        if (!json.[1;31mprivate_key[m) {
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m218[m[36m:[m            throw new Error('The incoming JSON object does not contain a [1;31mprivate_key[m field');
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m222[m[36m:[m        this.key = json.[1;31mprivate_key[m;
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m223[m[36m:[m        this.keyId = json.[1;31mprivate_key_id[m;
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m274[m[36m:[m            return { [1;31mprivate_key[m: this.key, client_email: this.email };
+[35mserver/node_modules/google-gax/node_modules/google-auth-library/build/src/auth/jwtclient.js[m[36m:[m[32m279[m[36m:[m            return { [1;31mprivate_key[m: creds.privateKey, client_email: creds.clientEmail };
+[35mserver/node_modules/gtoken/build/src/index.js[m[36m:[m[32m123[m[36m:[m                const privateKey = body.[1;31mprivate_key[m;
+[35mserver/node_modules/gtoken/build/src/index.js[m[36m:[m[32m126[m[36m:[m                    throw new ErrorWithCode('[1;31mprivate_key[m and client_email are required.', 'MISSING_CREDENTIALS');
+[35mserver/node_modules/jose/dist/browser/key/import.js[m[36m:[m[32m19[m[36m:[m    if (typeof pkcs8 !== 'string' || pkcs8.indexOf('-----[1;31mBEGIN PRIVATE KEY[m-----') !== 0) {
+[35mserver/node_modules/jose/dist/node/cjs/key/import.js[m[36m:[m[32m24[m[36m:[m    if (typeof pkcs8 !== 'string' || pkcs8.indexOf('-----[1;31mBEGIN PRIVATE KEY[m-----') !== 0) {
+[35mserver/node_modules/jose/dist/node/esm/key/import.js[m[36m:[m[32m19[m[36m:[m    if (typeof pkcs8 !== 'string' || pkcs8.indexOf('-----[1;31mBEGIN PRIVATE KEY[m-----') !== 0) {
+[35mserver/node_modules/jsonwebtoken/README.md[m[36m:[m[32m37[m[36m:[mencoded private key for RSA and ECDSA. In case of a private key with passphrase an object `{ key, passphrase }` can be used (based on [crypto documentation](https://nodejs.org/api/crypto.html#crypto_sign_sign_[1;31mprivate_key[m_output_format)), in this case be sure you pass the `algorithm` option.
+[35mserver/node_modules/jws/readme.md[m[36m:[m[32m255[m[36m:[m[encrypted-key-docs]: https://nodejs.org/api/crypto.html#crypto_sign_sign_[1;31mprivate_key[m_output_format

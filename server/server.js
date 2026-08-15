@@ -3,6 +3,7 @@ const cors = require('cors');
 const pool = require('./db');
 const crypto = require("node:crypto");
 const admin = require('firebase-admin');
+const { createNotificationWorker } = require('./app-notification-worker');
 const app = express();
 
 let firebaseMessaging = null;
@@ -395,19 +396,23 @@ app.get('/attendance/:rollNo', async (req, res) => {
 /* =========================================================
 	STUDENT MARKS
 	========================================================= */
+
 app.get('/marks/:roll', async (req, res) => {
 	const { roll } = req.params;
 
 	try {
 		const result = await pool.query(
 			`
-			SELECT 
+			SELECT
 				m.test_code,
 				m.marks_obtained,
 				m.comments,
 				COALESCE(m.total_marks, t.total_marks) AS total_marks,
 				t.test_date,
 				t.subject_id,
+				TRIM(t.class) AS class,
+				TRIM(t.board) AS board,
+				t.chapter,
 				CASE
 					WHEN t.subject_id = 1 THEN 'Maths'
 					WHEN t.subject_id = 2 THEN 'Physics'
@@ -428,7 +433,7 @@ app.get('/marks/:roll', async (req, res) => {
 		res.status(500).json({ error: 'Database error' });
 	}
 });
-	
+
 
 
 /* =========================================================
@@ -440,7 +445,7 @@ app.get('/test-schedule/:roll', async (req, res) => {
 	try {
 		const result = await pool.query(
 			`
-			SELECT 
+			SELECT
 	t.test_code,
 	t.subject_id,
 	COALESCE(sub.subject_name, 'Unknown') AS subject_name,
@@ -985,7 +990,7 @@ app.get('/faculty/:id', async (req, res) => {
 	try {
 		const result = await pool.query(
 			`
-		SELECT 
+		SELECT
 			f.faculty_id,
 			f.name,
 			f.phone,
@@ -1156,7 +1161,7 @@ app.get('/marks', async (req, res) => {
 		}
 
 		let query = `
-			SELECT 
+			SELECT
 				s.roll_no,
 				s.name,
 				TRIM(s.class) AS class,
@@ -1348,7 +1353,7 @@ function splitClassBoard(classBoard) {
 app.get('/classes', async (req, res) => {
 	try {
 		const result = await pool.query(`
-				SELECT DISTINCT 
+				SELECT DISTINCT
 					TRIM(class) AS class,
 					TRIM(board) AS board
 				FROM students
@@ -1439,8 +1444,8 @@ app.get('/student-record-report/:rollNo', async (req, res) => {
 			m.marks_obtained,
 			COALESCE(m.total_marks, t.total_marks) AS total_marks,
 			t.test_date,
-			COALESCE(sub.subject_name, 
-				CASE 
+			COALESCE(sub.subject_name,
+				CASE
 					WHEN t.subject_id = 1 THEN 'Maths'
 					WHEN t.subject_id = 2 THEN 'Physics'
 					ELSE 'Archived Test'
@@ -1614,7 +1619,7 @@ app.get('/attendance/:rollNo', async (req, res) => {
 	try {
 		const result = await pool.query(
 			`
-				SELECT 
+				SELECT
 					roll_no,
 					subject_id,
 					attendance_date,
@@ -2341,7 +2346,7 @@ app.post('/post-test', async (req, res) => {
 app.get('/faculty', async (req, res) => {
 	try {
 		const result = await pool.query(`
-			SELECT 
+			SELECT
 				f.faculty_id,
 				f.name,
 				f.role_id,
@@ -2631,7 +2636,7 @@ app.delete('/faculty/:faculty_id', async (req, res) => {
 		client.release();
 	}
 });
-	
+
 app.get('/students', async (req, res) => {
   const { class: className, board, subject_id } = req.query;
 
@@ -2781,7 +2786,7 @@ app.get('/students/:value', async (req, res) => {
 		if (upperValue.startsWith('IA') || upperValue.startsWith('IG')) {
 			const studentResult = await pool.query(
 				`
-			SELECT 
+			SELECT
 			s.roll_no,
 			s.name,
 			s.class,
@@ -4454,9 +4459,15 @@ app.get('/attendance-students', async (req, res) => {
 const PORT = process.env.PORT || 5050;
 
 let server;
+let notificationWorker;
 
 async function startServer() {
 	await ensureStudentDeviceTokensTable();
+	notificationWorker = createNotificationWorker({
+		pool,
+		sendPushToStudent
+	});
+	notificationWorker.start();
 	server = app.listen(PORT, '0.0.0.0', () => {
 		console.log(`Server running on port ${PORT}`);
 	});
@@ -4469,6 +4480,7 @@ startServer().catch((error) => {
 
 async function shutdown(signal) {
 	console.log(`${signal} received; shutting down`);
+	if (notificationWorker) notificationWorker.stop();
 	if (!server) return process.exit(0);
 	server.close(async () => {
 		await pool.end();

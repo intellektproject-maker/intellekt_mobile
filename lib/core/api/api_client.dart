@@ -42,7 +42,7 @@ class ApiClient {
 
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.1.21:5050',
+    defaultValue: 'https://intellektmobile-production.up.railway.app',
   );
 
   // ==========================================================
@@ -62,10 +62,7 @@ class ApiClient {
 
     contentType: Headers.jsonContentType,
 
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    },
+    headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
   );
 
   // ==========================================================
@@ -123,13 +120,10 @@ class ApiClient {
   // ==========================================================
 
   Future<Response> get(
-      String endpoint, {
-        Map<String, dynamic>? queryParameters,
-      }) async {
-    return await _dio.get(
-      endpoint,
-      queryParameters: queryParameters,
-    );
+    String endpoint, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    return await _dio.get(endpoint, queryParameters: queryParameters);
   }
 
   // ==========================================================
@@ -137,10 +131,10 @@ class ApiClient {
   // ==========================================================
 
   Future<Response> post(
-      String endpoint, {
-        dynamic data,
-        Map<String, dynamic>? queryParameters,
-      }) async {
+    String endpoint, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+  }) async {
     return await _dio.post(
       endpoint,
       data: data,
@@ -153,10 +147,10 @@ class ApiClient {
   // ==========================================================
 
   Future<Response> put(
-      String endpoint, {
-        dynamic data,
-        Map<String, dynamic>? queryParameters,
-      }) async {
+    String endpoint, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+  }) async {
     return await _dio.put(
       endpoint,
       data: data,
@@ -168,27 +162,15 @@ class ApiClient {
   // PATCH
   // ==========================================================
 
-  Future<Response> patch(
-      String endpoint, {
-        dynamic data,
-      }) async {
-    return await _dio.patch(
-      endpoint,
-      data: data,
-    );
+  Future<Response> patch(String endpoint, {dynamic data}) async {
+    return await _dio.patch(endpoint, data: data);
   }
 
   // ==========================================================
   // DELETE
   // ==========================================================
 
-  Future<Response> delete(
-      String endpoint, {
-        dynamic data,
-      }) async {
-    return await _dio.delete(
-      endpoint,
-      data: data,
-    );
+  Future<Response> delete(String endpoint, {dynamic data}) async {
+    return await _dio.delete(endpoint, data: data);
   }
 }

@@ -63,7 +63,7 @@ class TestHistoryCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: const Color(0xFFF0F2FD),
                   borderRadius:
                   BorderRadius.circular(10),
                 ),

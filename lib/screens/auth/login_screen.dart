@@ -3,9 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_sizes.dart';
-import '../../core/constants/colors.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/custom_textfield.dart';
+import '../../core/widgets/intellekt_wordmark.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 class LoginScreen extends StatefulWidget {
@@ -91,24 +91,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const SizedBox(height: 20),
 
-                    Image.asset(
-                      'assets/logo/logo.png',
-                      height: 120,
-                      fit: BoxFit.contain,
-                    ),
+                    const SizedBox(height: 54),
 
-                    const SizedBox(height: 25),
+                    const IntellektWordmark(fontSize: 39),
 
-                    const Text(
-                      'INTELLEKT',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 14),
 
                     const Text(
                       'Student Login',
@@ -118,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 46),
 
                     CustomTextField(
                       controller: _idController,

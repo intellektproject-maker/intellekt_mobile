@@ -75,7 +75,7 @@ class _MarksScreenState extends State<MarksScreen> {
       backgroundColor: const Color(0xFFECECEF),
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1D4ED8),
+        backgroundColor: const Color(0xFF000153),
         foregroundColor: Colors.white,
         elevation: 0,
 
@@ -104,7 +104,7 @@ class _MarksScreenState extends State<MarksScreen> {
             const Text(
               'Marks',
               style: TextStyle(
-                color: Color(0xFF1746C7),
+                color: Color(0xFF000153),
                 fontSize: 36,
                 fontWeight: FontWeight.w800,
               ),
@@ -183,7 +183,7 @@ class _SubjectMarksSection extends StatelessWidget {
         Text(
           title,
           style: const TextStyle(
-            color: Color(0xFF1746C7),
+            color: Color(0xFF000153),
             fontSize: 28,
             fontWeight: FontWeight.w800,
           ),
@@ -198,7 +198,7 @@ class _SubjectMarksSection extends StatelessWidget {
             onPressed: onViewReport,
 
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1D56E7),
+              backgroundColor: const Color(0xFF000153),
               foregroundColor: Colors.white,
               elevation: 0,
 

@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/api/api_client.dart';
@@ -14,14 +17,54 @@ class PushNotificationService {
   static final PushNotificationService instance = PushNotificationService._();
 
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
   final Dio _dio = ApiClient().dio;
   String? _rollNo;
   GoRouter? _router;
   AuthProvider? _authProvider;
   String? _pendingRoute;
 
+  static const AndroidNotificationChannel _androidChannel =
+      AndroidNotificationChannel(
+        'intellekt_high_importance',
+        'Intellekt notifications',
+        description: 'Test, attendance, marks and student updates',
+        importance: Importance.max,
+      );
+
   Future<void> initialize() async {
-    await _messaging.requestPermission(alert: true, badge: true, sound: true);
+    const initializationSettings = InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      iOS: DarwinInitializationSettings(),
+    );
+
+    await _localNotifications.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: _handleLocalNotificationTap,
+    );
+
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(_androidChannel);
+
+    final permission = await _messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    debugPrint(
+      'Notification permission: ${permission.authorizationStatus.name}',
+    );
+
+    await _messaging.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
 
     _messaging.onTokenRefresh.listen((token) async {
       final rollNo = _rollNo;
@@ -29,6 +72,7 @@ class PushNotificationService {
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+    FirebaseMessaging.onMessage.listen(_showForegroundNotification);
     final initialMessage = await _messaging.getInitialMessage();
     if (initialMessage != null) _handleNotificationTap(initialMessage);
   }
@@ -82,6 +126,52 @@ class PushNotificationService {
             : defaultTargetPlatform.name,
       },
     );
+
+    debugPrint('Notification device registered for $rollNo');
+  }
+
+  Future<void> _showForegroundNotification(RemoteMessage message) async {
+    // Apple platforms use setForegroundNotificationPresentationOptions above.
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+
+    final notification = message.notification;
+    if (notification == null) return;
+
+    await _localNotifications.show(
+      message.messageId?.hashCode ??
+          DateTime.now().millisecondsSinceEpoch.remainder(2147483647),
+      notification.title ?? 'Intellekt',
+      notification.body ?? '',
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'intellekt_high_importance',
+          'Intellekt notifications',
+          channelDescription: 'Test, attendance, marks and student updates',
+          importance: Importance.max,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+        ),
+      ),
+      payload: jsonEncode(message.data),
+    );
+  }
+
+  void _handleLocalNotificationTap(NotificationResponse response) {
+    final payload = response.payload;
+    if (payload == null || payload.isEmpty) return;
+
+    try {
+      final decoded = jsonDecode(payload);
+      if (decoded is Map<String, dynamic>) {
+        final route = _routeForPayload(decoded);
+        if (route != null) {
+          _pendingRoute = route;
+          _openPendingRouteIfReady();
+        }
+      }
+    } catch (error) {
+      debugPrint('Could not open foreground notification: $error');
+    }
   }
 
   void _handleNotificationTap(RemoteMessage message) {

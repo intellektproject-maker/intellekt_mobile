@@ -81,7 +81,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   const Text(
                     'Intellekt',
                     style: TextStyle(
-                      color: Color(0xFF000351),
+                      color: Color(0xFF000153),
                       fontSize: 26,
                       fontWeight: FontWeight.w900,
                     ),
@@ -121,7 +121,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           child: Icon(
                             page.icon,
                             size: 95,
-                            color: const Color(0xFF0B1F5F),
+                            color: const Color(0xFF000153),
                           ),
                         ),
 
@@ -131,7 +131,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           page.title,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            color: Color(0xFF0B1F5F),
+                            color: Color(0xFF000153),
                             fontSize: 30,
                             fontWeight: FontWeight.w800,
                           ),
@@ -169,7 +169,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     height: 9,
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF0B1F5F)
+                          ? const Color(0xFF000153)
                           : Colors.grey.shade300,
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -188,7 +188,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 child: ElevatedButton(
                   onPressed: _nextPage,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0B1F5F),
+                    backgroundColor: const Color(0xFF000153),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),

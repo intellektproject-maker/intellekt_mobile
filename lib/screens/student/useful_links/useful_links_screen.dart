@@ -25,7 +25,7 @@ class _UsefulLinksScreenState extends State<UsefulLinksScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFECECEF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1D4ED8),
+        backgroundColor: const Color(0xFF000153),
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(
@@ -69,7 +69,7 @@ class _UsefulLinksScreenState extends State<UsefulLinksScreen> {
                 const Text(
                   'Useful Links',
                   style: TextStyle(
-                    color: Color(0xFF1746C7),
+                    color: Color(0xFF000153),
                     fontSize: 36,
                     fontWeight: FontWeight.w800,
                   ),
@@ -113,7 +113,7 @@ class _UsefulLinksScreenState extends State<UsefulLinksScreen> {
                                   child: Text(
                                     link.title,
                                     style: const TextStyle(
-                                      color: Color(0xFF2563EB),
+                                      color: Color(0xFF000153),
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                     ),

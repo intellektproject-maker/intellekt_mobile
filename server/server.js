@@ -262,6 +262,32 @@ app.post('/mobile/device-token', async (req, res) => {
 	}
 });
 
+app.delete('/mobile/device-token', async (req, res) => {
+	const { roll_no, token } = req.body || {};
+
+	if (!roll_no || !token) {
+		return res.status(400).json({
+			error: 'roll_no and token are required'
+		});
+	}
+
+	try {
+		await pool.query(
+			`DELETE FROM student_device_tokens
+			 WHERE UPPER(TRIM(student_id)) = UPPER(TRIM($1))
+			   AND device_token = $2`,
+			[String(roll_no).trim(), token]
+		);
+
+		return res.json({ success: true });
+	} catch (error) {
+		console.error('DELETE /mobile/device-token error:', error);
+		return res.status(500).json({
+			error: 'Failed to unregister notification device'
+		});
+	}
+});
+
 
 app.post('/mobile/push/send', async (req, res) => {
 	const { roll_no, title, body, module_name = 'general' } = req.body || {};

@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 /// Always import this file.
 ///
 /// Primary Brand Color:
-/// #000351
+/// #000153
 ///
 /// ===========================================================
 
@@ -20,9 +20,9 @@ class AppColors {
   // Brand Colors
   // ==========================================================
 
-  static const Color primary = Color(0xFF000351);
+  static const Color primary = Color(0xFF000153);
 
-  static const Color secondary = Color(0xFF0057FF);
+  static const Color secondary = Color(0xFF000153);
 
   static const Color accent = Color(0xFFFFC107);
 

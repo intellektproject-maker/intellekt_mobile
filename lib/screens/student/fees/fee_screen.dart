@@ -44,7 +44,7 @@ class _FeeScreenState extends State<FeeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFECECEF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1D4ED8),
+        backgroundColor: const Color(0xFF000153),
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(
@@ -92,7 +92,7 @@ class _FeeScreenState extends State<FeeScreen> {
                 const Text(
                   'Fee Details',
                   style: TextStyle(
-                    color: Color(0xFF1746C7),
+                    color: Color(0xFF000153),
                     fontSize: 36,
                     fontWeight: FontWeight.w800,
                   ),
@@ -117,7 +117,7 @@ class _FeeScreenState extends State<FeeScreen> {
                           scrollDirection: Axis.horizontal,
                           child: DataTable(
                             headingRowColor: WidgetStateProperty.all(
-                              const Color(0xFF1D4ED8),
+                              const Color(0xFF000153),
                             ),
                             border: TableBorder.all(
                               color: const Color(0xFFE5E7EB),

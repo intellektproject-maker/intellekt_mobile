@@ -65,7 +65,7 @@ class ChapterDetailsCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.blue.shade100,
+          color: const Color(0xFFE8ECFD),
         ),
       ),
 

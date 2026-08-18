@@ -17,8 +17,18 @@ class ReportScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final className = marks.isEmpty ? '12' : marks.first['class'];
-    final board = marks.isEmpty ? 'STATE_BOARD' : marks.first['board'];
+    Map<String, dynamic>? metadataMark;
+    for (final mark in marks) {
+      final markClass = mark['class']?.toString().trim() ?? '';
+      final markBoard = mark['board']?.toString().trim() ?? '';
+      if (markClass.isNotEmpty && markBoard.isNotEmpty) {
+        metadataMark = mark;
+        break;
+      }
+    }
+
+    final className = metadataMark?['class'] ?? '12';
+    final board = metadataMark?['board'] ?? 'STATE_BOARD';
     final syllabus = AppSyllabus.chapters(
       subjectName: subjectName,
       className: className,
@@ -28,7 +38,7 @@ class ReportScreen extends StatelessWidget {
     final grouped = <String, List<Map<String, dynamic>>>{};
     final combined = <Map<String, dynamic>>[];
     for (final mark in marks) {
-      final chapter = _chapterCode(mark);
+      final chapter = _chapterCode(mark, syllabus);
       if (chapter == 'Combined') {
         combined.add(mark);
       } else if (chapter != null) {
@@ -39,7 +49,7 @@ class ReportScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFECECEF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1D4ED8),
+        backgroundColor: const Color(0xFF000153),
         foregroundColor: Colors.white,
         title: Text(subjectName),
       ),
@@ -49,7 +59,7 @@ class ReportScreen extends StatelessWidget {
           Text(
             '$subjectName Detailed Report',
             style: const TextStyle(
-              color: Color(0xFF1746C7),
+              color: Color(0xFF000153),
               fontSize: 25,
               fontWeight: FontWeight.w800,
             ),
@@ -70,23 +80,23 @@ class ReportScreen extends StatelessWidget {
                 const Text(
                   'Chapter Progress',
                   style: TextStyle(
-                    color: Color(0xFF1746C7),
+                    color: Color(0xFF000153),
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 10),
                 ...syllabus.entries.map((chapter) => _ProgressRow(
-                      chapterCode: chapter.key,
-                      chapterName: chapter.value,
-                      tests: grouped[chapter.key] ?? const [],
-                      onTap: () => _openDetails(
-                        context,
-                        chapter.key,
-                        chapter.value,
-                        grouped[chapter.key] ?? const [],
-                      ),
-                    )),
+                  chapterCode: chapter.key,
+                  chapterName: chapter.value,
+                  tests: grouped[chapter.key] ?? const [],
+                  onTap: () => _openDetails(
+                    context,
+                    chapter.key,
+                    chapter.value,
+                    grouped[chapter.key] ?? const [],
+                  ),
+                )),
                 if (combined.isNotEmpty) ...[
                   const Divider(height: 30),
                   const Text(
@@ -114,11 +124,11 @@ class ReportScreen extends StatelessWidget {
   }
 
   void _openDetails(
-    BuildContext context,
-    String code,
-    String name,
-    List<Map<String, dynamic>> tests,
-  ) {
+      BuildContext context,
+      String code,
+      String name,
+      List<Map<String, dynamic>> tests,
+      ) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -126,25 +136,55 @@ class ReportScreen extends StatelessWidget {
           chapterCode: code,
           chapterName: name,
           tests: tests,
+          showChart: code != 'Combined',
         ),
       ),
     );
   }
 }
 
-String? _chapterCode(Map<String, dynamic> mark) {
-  final stored = (mark['chapter'] ?? '').toString().trim().toUpperCase();
-  if (stored == 'COMBINED' || stored.contains(',') || stored.contains('-')) {
+String _normalizeChapter(dynamic value) {
+  return (value ?? '')
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'\s+'), ' ');
+}
+
+String? _chapterCode(
+    Map<String, dynamic> mark,
+    Map<String, String> syllabus,
+    ) {
+  final stored = _normalizeChapter(mark['chapter']);
+
+  if (stored.isEmpty) return null;
+
+  // Keep combined assessments separate.
+  if (stored == 'combined') {
     return 'Combined';
   }
-  final storedMatch = RegExp(r'^C(\d+)(?:\.\d+)?$').firstMatch(stored);
-  if (storedMatch != null) return 'C${int.parse(storedMatch.group(1)!)}';
 
-  final code = (mark['test_code'] ?? '').toString().trim().toUpperCase();
-  if (code.contains('COMBINED')) return 'Combined';
-  final match = RegExp(r'C(\d+)(?:\.\d+)?$').firstMatch(code);
-  if (match != null) return 'C${int.parse(match.group(1)!)}';
-  if (RegExp(r'C\d+[,-]').hasMatch(code)) return 'Combined';
+  // Supports database values: 4, C4, Chapter 4, 5.6, etc.
+  final numberMatch = RegExp(r'\d+').firstMatch(stored);
+
+  if (numberMatch != null) {
+    final chapterNumber = int.parse(numberMatch.group(0)!);
+
+    // Supports either C4 or 4 as the AppSyllabus key.
+    final cKey = 'C$chapterNumber';
+    final numericKey = chapterNumber.toString();
+
+    if (syllabus.containsKey(cKey)) return cKey;
+    if (syllabus.containsKey(numericKey)) return numericKey;
+  }
+
+  // Supports a chapter name stored in DB, e.g. "Construction".
+  for (final entry in syllabus.entries) {
+    if (_normalizeChapter(entry.value) == stored) {
+      return entry.key;
+    }
+  }
+
   return null;
 }
 
@@ -158,15 +198,22 @@ double? _total(Map<String, dynamic> test) =>
     double.tryParse(test['total_marks']?.toString() ?? '');
 
 double _understanding(List<Map<String, dynamic>> tests) {
-  final values = <double>[];
+  double totalObtained = 0;
+  double totalPossible = 0;
+
   for (final test in tests) {
     final obtained = _obtained(test);
     final total = _total(test);
+
     if (obtained != null && total != null && total > 0) {
-      values.add((obtained / total) * 100);
+      totalObtained += obtained;
+      totalPossible += total;
     }
   }
-  return values.isEmpty ? 0 : values.reduce((a, b) => a + b) / values.length;
+
+  if (totalPossible == 0) return 0;
+
+  return (totalObtained / totalPossible) * 100;
 }
 
 class _ProgressRow extends StatelessWidget {
@@ -188,8 +235,8 @@ class _ProgressRow extends StatelessWidget {
     final color = percent < 40
         ? Colors.red
         : percent < 70
-            ? Colors.orange
-            : Colors.green;
+        ? Colors.orange
+        : Colors.green;
     return Card(
       elevation: 0,
       margin: const EdgeInsets.symmetric(vertical: 7),
@@ -208,7 +255,7 @@ class _ProgressRow extends StatelessWidget {
               Text(
                 '$chapterCode - $chapterName',
                 style: const TextStyle(
-                  color: Color(0xFF0B45F5),
+                  color: Color(0xFF000153),
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                 ),
@@ -246,11 +293,13 @@ class _ChapterDetailsScreen extends StatefulWidget {
   final String chapterCode;
   final String chapterName;
   final List<Map<String, dynamic>> tests;
+  final bool showChart;
 
   const _ChapterDetailsScreen({
     required this.chapterCode,
     required this.chapterName,
     required this.tests,
+    required this.showChart,
   });
 
   @override
@@ -264,12 +313,12 @@ class _ChapterDetailsScreenState extends State<_ChapterDetailsScreen> {
   Widget build(BuildContext context) {
     final tests = [...widget.tests]
       ..sort((a, b) => (a['test_date'] ?? '').toString().compareTo(
-            (b['test_date'] ?? '').toString(),
-          ));
+        (b['test_date'] ?? '').toString(),
+      ));
     return Scaffold(
       backgroundColor: const Color(0xFFF4F5F7),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1D4ED8),
+        backgroundColor: const Color(0xFF000153),
         foregroundColor: Colors.white,
         title: Text(widget.chapterCode),
       ),
@@ -279,7 +328,7 @@ class _ChapterDetailsScreenState extends State<_ChapterDetailsScreen> {
           Text(
             '${widget.chapterCode} - ${widget.chapterName}',
             style: const TextStyle(
-              color: Color(0xFF1746C7),
+              color: Color(0xFF000153),
               fontSize: 22,
               fontWeight: FontWeight.w800,
             ),
@@ -295,27 +344,31 @@ class _ChapterDetailsScreenState extends State<_ChapterDetailsScreen> {
             selectedIndex: selectedIndex,
             onSelected: (index) => setState(() => selectedIndex = index),
           ),
-          const SizedBox(height: 24),
-          const Text(
-            'Chapter Graph',
-            style: TextStyle(
-              color: Color(0xFF1746C7),
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+          if (widget.showChart) ...[
+            const SizedBox(height: 24),
+            const Text(
+              'Chapter Histogram',
+              style: TextStyle(
+                color: Color(0xFF000153),
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          if (tests.where((test) => _obtained(test) != null).isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(30),
-              child: Center(child: Text('No graph data available for this chapter.')),
-            )
-          else
-            _MarksGraph(
-              tests: tests,
-              selectedIndex: selectedIndex,
-              onSelected: (index) => setState(() => selectedIndex = index),
-            ),
+            const SizedBox(height: 10),
+            if (tests.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(30),
+                child: Center(
+                  child: Text('No graph data available for this chapter.'),
+                ),
+              )
+            else
+              _MarksBarChart(
+                tests: tests,
+                selectedIndex: selectedIndex,
+                onSelected: (index) => setState(() => selectedIndex = index),
+              ),
+          ],
         ],
       ),
     );
@@ -345,36 +398,65 @@ class _TestTable extends StatelessWidget {
     }
     return Card(
       clipBehavior: Clip.antiAlias,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          headingRowColor: WidgetStateProperty.all(const Color(0xFFE1E4E9)),
-          border: TableBorder.all(color: Colors.black54),
-          columns: const [
-            DataColumn(label: Text('Test Code')),
-            DataColumn(label: Text('Test Date')),
-            DataColumn(label: Text('Marks Obtained')),
-            DataColumn(label: Text('Total Marks')),
-            DataColumn(label: Text('Comments')),
-          ],
-          rows: tests.asMap().entries.map((entry) {
-            final test = entry.value;
-            final selected = selectedIndex == entry.key;
-            return DataRow(
-              selected: selected,
-              onSelectChanged: (_) => onSelected(entry.key),
-              cells: [
-                DataCell(Text(test['test_code']?.toString() ?? '-')),
-                DataCell(Text(_date(test['test_date']))),
-                DataCell(Text(_displayMark(test['marks_obtained']))),
-                DataCell(Text(test['total_marks']?.toString() ?? '-')),
-                DataCell(Text(test['comments']?.toString() ?? '-')),
-              ],
-            );
-          }).toList(),
+      child: DataTable(
+        showCheckboxColumn: false,
+        headingRowColor: WidgetStateProperty.all(const Color(0xFFE1E4E9)),
+        border: TableBorder.all(color: Colors.black54),
+        columnSpacing: 12,
+        horizontalMargin: 8,
+        headingRowHeight: 46,
+        dataRowMinHeight: 48,
+        dataRowMaxHeight: 58,
+        headingTextStyle: const TextStyle(
+          color: Colors.black,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
         ),
+        dataTextStyle: const TextStyle(
+          color: Colors.black87,
+          fontSize: 12,
+        ),
+        columns: const [
+          DataColumn(label: Text('Test Code')),
+          DataColumn(label: Text('Date')),
+          DataColumn(label: Text('Marks')),
+        ],
+        rows: tests.asMap().entries.map((entry) {
+          final test = entry.value;
+          final selected = selectedIndex == entry.key;
+          return DataRow(
+            selected: selected,
+            onSelectChanged: (_) => onSelected(entry.key),
+            cells: [
+              DataCell(
+                SizedBox(
+                  width: 128,
+                  child: Text(
+                    test['test_code']?.toString() ?? '-',
+                    softWrap: true,
+                  ),
+                ),
+              ),
+              DataCell(Text(_date(test['test_date']))),
+              DataCell(
+                Text(
+                  _marksDisplay(test),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          );
+        }).toList(),
       ),
     );
+  }
+
+  String _marksDisplay(Map<String, dynamic> test) {
+    final obtained = _displayMark(test['marks_obtained']);
+    if (obtained == 'Absent') return obtained;
+
+    final total = test['total_marks']?.toString() ?? '-';
+    return '$obtained / $total';
   }
 
   String _date(dynamic value) {
@@ -386,108 +468,164 @@ class _TestTable extends StatelessWidget {
       value?.toString().toUpperCase() == 'A' ? 'Absent' : value?.toString() ?? '-';
 }
 
-class _MarksGraph extends StatelessWidget {
+class _MarksBarChart extends StatelessWidget {
   final List<Map<String, dynamic>> tests;
   final int? selectedIndex;
   final ValueChanged<int> onSelected;
 
-  const _MarksGraph({
+  const _MarksBarChart({
     required this.tests,
     required this.selectedIndex,
     required this.onSelected,
   });
 
+  double _percentage(Map<String, dynamic> test) {
+    final obtained = _obtained(test);
+    final total = _total(test);
+
+    if (obtained == null || total == null || total <= 0) {
+      return 0;
+    }
+
+    return ((obtained / total) * 100).clamp(0, 100).toDouble();
+  }
+
+  Color _barColor(double percentage, bool selected) {
+    if (selected) return const Color(0xFF000153);
+    if (percentage < 40) return Colors.red;
+    if (percentage < 70) return Colors.orange;
+    return Colors.green;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final values = tests.map((test) => _obtained(test) ?? 0).toList();
-    final largest = tests.fold<double>(0, (current, test) {
-      return math.max(current, math.max(_obtained(test) ?? 0, _total(test) ?? 0));
-    });
-    final maxY = math.max(10.0, (largest / 10).ceil() * 10.0).toDouble();
     final width = math
-        .max(MediaQuery.sizeOf(context).width - 64, tests.length * 90.0)
+        .max(
+      MediaQuery.sizeOf(context).width - 64,
+      tests.length * 90.0,
+    )
         .toDouble();
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 18, 8, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Marks', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: width,
-                height: 280,
-                child: LineChart(
-                  LineChartData(
-                    minX: 0,
-                    maxX: math.max(1, tests.length - 1).toDouble(),
-                    minY: 0,
-                    maxY: maxY,
-                    lineTouchData: LineTouchData(
-                      touchCallback: (event, response) {
-                        final spots = response?.lineBarSpots;
-                        if (event is FlTapUpEvent && spots != null && spots.isNotEmpty) {
-                          onSelected(spots.first.x.round());
+        padding: const EdgeInsets.fromLTRB(12, 18, 12, 12),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: width,
+            height: 310,
+            child: BarChart(
+              BarChartData(
+                minY: 0,
+                maxY: 100,
+                alignment: BarChartAlignment.spaceAround,
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchCallback: (event, response) {
+                    final group = response?.spot?.touchedBarGroupIndex;
+
+                    if (event is FlTapUpEvent && group != null) {
+                      onSelected(group);
+                    }
+                  },
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipItem: (
+                        group,
+                        groupIndex,
+                        rod,
+                        rodIndex,
+                        ) {
+                      final test = tests[groupIndex];
+                      final percentage = _percentage(test);
+
+                      return BarTooltipItem(
+                        '${test['test_code'] ?? '-'}\n'
+                            '${percentage.round()}%',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                gridData: FlGridData(
+                  show: true,
+                  horizontalInterval: 25,
+                  drawVerticalLine: false,
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: const Border(
+                    left: BorderSide(color: Colors.black54),
+                    bottom: BorderSide(color: Colors.black54),
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  leftTitles: const AxisTitles(
+                    axisNameWidget: Text('Percentage'),
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 42,
+                      interval: 25,
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    axisNameWidget: const Text('Test Code'),
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 55,
+                      getTitlesWidget: (value, meta) {
+                        final index = value.toInt();
+
+                        if (index < 0 || index >= tests.length) {
+                          return const SizedBox.shrink();
                         }
+
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: SizedBox(
+                            width: 76,
+                            child: Text(
+                              tests[index]['test_code']?.toString() ?? '-',
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          ),
+                        );
                       },
                     ),
-                    gridData: const FlGridData(show: true),
-                    borderData: FlBorderData(show: true),
-                    titlesData: FlTitlesData(
-                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      leftTitles: AxisTitles(
-                        axisNameWidget: const Text('Marks'),
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 38,
-                          interval: math.max(1, maxY / 4),
-                        ),
-                      ),
-                      bottomTitles: AxisTitles(
-                        axisNameWidget: const Text('Tests'),
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 32,
-                          interval: 1,
-                          getTitlesWidget: (value, meta) {
-                            final index = value.round();
-                            if (index < 0 || index >= tests.length) return const SizedBox.shrink();
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 7),
-                              child: Text('T${index + 1}'),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    lineBarsData: [
-                      LineChartBarData(
-                        spots: values.asMap().entries
-                            .map((entry) => FlSpot(entry.key.toDouble(), entry.value))
-                            .toList(),
-                        isCurved: false,
-                        color: const Color(0xFF2D6CDF),
-                        barWidth: 2,
-                        dotData: FlDotData(
-                          show: true,
-                          getDotPainter: (spot, percent, bar, index) => FlDotCirclePainter(
-                            radius: selectedIndex == index ? 7 : 4,
-                            color: selectedIndex == index ? Colors.orange : const Color(0xFF2D6CDF),
-                            strokeColor: Colors.white,
-                            strokeWidth: selectedIndex == index ? 3 : 1,
-                          ),
+                  ),
+                ),
+                barGroups: tests.asMap().entries.map((entry) {
+                  final percentage = _percentage(entry.value);
+                  final selected = selectedIndex == entry.key;
+
+                  return BarChartGroupData(
+                    x: entry.key,
+                    barRods: [
+                      BarChartRodData(
+                        toY: percentage,
+                        width: selected ? 26 : 22,
+                        color: _barColor(percentage, selected),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(6),
                         ),
                       ),
                     ],
-                  ),
-                ),
+                    showingTooltipIndicators: selected ? [0] : [],
+                  );
+                }).toList(),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

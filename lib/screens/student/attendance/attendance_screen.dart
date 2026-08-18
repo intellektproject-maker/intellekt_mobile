@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/constants/colors.dart';
 import '../../../providers/student/attendance_provider.dart';
 
 class AttendanceScreen extends StatefulWidget {
@@ -131,7 +132,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       backgroundColor: const Color(0xFFECECEF),
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1D4ED8),
+        backgroundColor: const Color(0xFF000153),
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(
@@ -244,7 +245,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           const Text(
             'Attendance',
             style: TextStyle(
-              color: Color(0xFF0B3A82),
+              color: Color(0xFF000153),
               fontSize: 30,
               fontWeight: FontWeight.w800,
             ),
@@ -375,7 +376,7 @@ class _AttendanceSummaryCard extends StatelessWidget {
           const Text(
             'Attendance',
             style: TextStyle(
-              color: Color(0xFF0B3A82),
+              color: Color(0xFF000153),
               fontSize: 36,
               fontWeight: FontWeight.w800,
             ),
@@ -538,7 +539,7 @@ class _AttendanceListCard extends StatelessWidget {
                 child: Text(
                   title,
                   style: const TextStyle(
-                    color: Color(0xFF1769E0),
+                    color: AppColors.primary,
                     fontSize: 19,
                     fontWeight: FontWeight.bold,
                   ),

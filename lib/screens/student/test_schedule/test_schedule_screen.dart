@@ -120,7 +120,7 @@ class _TestScheduleScreenState extends State<TestScheduleScreen> {
               title: const Text(
                 'Register Test',
                 style: TextStyle(
-                  color: Color(0xFF1D4ED8),
+                  color: Color(0xFF000153),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -275,7 +275,7 @@ class _TestScheduleScreenState extends State<TestScheduleScreen> {
                           Navigator.of(dialogContext).pop();
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1D4ED8),
+                    backgroundColor: const Color(0xFF000153),
                     foregroundColor: Colors.white,
                   ),
                   child: const Text('Register'),
@@ -293,7 +293,7 @@ class _TestScheduleScreenState extends State<TestScheduleScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFECECEF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1D4ED8),
+        backgroundColor: const Color(0xFF000153),
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(
@@ -343,7 +343,7 @@ class _TestScheduleScreenState extends State<TestScheduleScreen> {
                 const Text(
                   'Test Schedule',
                   style: TextStyle(
-                    color: Color(0xFF1746C7),
+                    color: Color(0xFF000153),
                     fontSize: 36,
                     fontWeight: FontWeight.w800,
                   ),
@@ -455,7 +455,7 @@ class _TestCard extends StatelessWidget {
           Text(
             test.testCode ?? test.testName ?? 'Test',
             style: const TextStyle(
-              color: Color(0xFF1D4ED8),
+              color: Color(0xFF000153),
               fontSize: 19,
               fontWeight: FontWeight.w700,
             ),
@@ -549,7 +549,7 @@ class _TestCard extends StatelessWidget {
             ElevatedButton(
               onPressed: onRegister,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1D4ED8),
+                backgroundColor: const Color(0xFF000153),
                 foregroundColor: Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(

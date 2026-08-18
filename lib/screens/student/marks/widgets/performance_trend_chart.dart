@@ -1,6 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/colors.dart';
+
 class PerformanceTrendChart extends StatelessWidget {
   final List<Map<String, dynamic>> marks;
 
@@ -147,7 +149,7 @@ class PerformanceTrendChart extends StatelessWidget {
 
                     barWidth: 4,
 
-                    color: Colors.blue,
+                    color: AppColors.primary,
 
                     dotData: const FlDotData(
                       show: true,
@@ -156,7 +158,7 @@ class PerformanceTrendChart extends StatelessWidget {
                     belowBarData:
                     BarAreaData(
                       show: true,
-                      color: Colors.blue
+                      color: AppColors.primary
                           .withOpacity(.12),
                     ),
                   ),

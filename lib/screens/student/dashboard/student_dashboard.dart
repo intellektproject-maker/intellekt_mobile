@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/colors.dart';
+import '../../../core/widgets/intellekt_wordmark.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/student/marks_provider.dart';
 import '../../../providers/student/student_provider.dart';
@@ -75,6 +76,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFECECEF),
+      drawer: _StudentDrawer(rollNo: _rollNo),
       body: SafeArea(
         child: _buildBody(
           studentProvider,
@@ -117,14 +119,34 @@ class _StudentDashboardState extends State<StudentDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Student\nDashboard',
-            style: TextStyle(
-              color: Color(0xFF1769E0),
-              fontSize: 42,
-              height: 0.95,
-              fontWeight: FontWeight.w800,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Builder(
+                builder: (context) => IconButton(
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                  tooltip: 'Open menu',
+                  padding: const EdgeInsets.only(right: 15, top: 1),
+                  constraints: const BoxConstraints(),
+                  icon: const Icon(
+                    Icons.menu_rounded,
+                    size: 32,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              const Expanded(
+                child: Text(
+                  'Student\nDashboard',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 40,
+                    height: 0.95,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 35),
           _StudentProfileCard(student: student),
@@ -338,7 +360,7 @@ class _DashboardCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF1769E0),
+                      color: AppColors.primary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -381,6 +403,179 @@ class _DashboardCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _StudentDrawer extends StatelessWidget {
+  final String rollNo;
+
+  const _StudentDrawer({required this.rollNo});
+
+  Future<void> _signOut(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text(
+          'You will need your Student ID and password to sign in again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+    await context.read<AuthProvider>().logout();
+    if (context.mounted) context.go(AppRoutes.login);
+  }
+
+  void _go(BuildContext context, String route) {
+    Navigator.pop(context);
+    context.push(route);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.horizontal(right: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(24, 30, 18, 26),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF0F2FD),
+                borderRadius: BorderRadius.only(
+                  bottomRight: Radius.circular(30),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Expanded(child: IntellektWordmark(fontSize: 31)),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                    color: AppColors.primary,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _DrawerItem(
+              icon: Icons.dashboard_rounded,
+              label: 'Dashboard',
+              selected: true,
+              onTap: () => Navigator.pop(context),
+            ),
+            _DrawerItem(
+              icon: Icons.assignment_turned_in_outlined,
+              label: 'Attendance',
+              onTap: () => _go(
+                context,
+                '${AppRoutes.studentAttendance}?roll=$rollNo',
+              ),
+            ),
+            _DrawerItem(
+              icon: Icons.menu_book_rounded,
+              label: 'Marks',
+              onTap: () =>
+                  _go(context, '${AppRoutes.studentMarks}?roll=$rollNo'),
+            ),
+            _DrawerItem(
+              icon: Icons.calendar_month_rounded,
+              label: 'Test Schedule',
+              onTap: () => _go(
+                context,
+                '${AppRoutes.studentTestSchedule}?roll=$rollNo',
+              ),
+            ),
+            _DrawerItem(
+              icon: Icons.account_balance_wallet_outlined,
+              label: 'Fee',
+              onTap: () =>
+                  _go(context, '${AppRoutes.studentFee}?roll=$rollNo'),
+            ),
+            _DrawerItem(
+              icon: Icons.link_rounded,
+              label: 'Useful Links',
+              onTap: () => _go(context, AppRoutes.studentUsefulLinks),
+            ),
+            _DrawerItem(
+              icon: Icons.description_outlined,
+              label: 'Request PDF',
+              onTap: () => _go(
+                context,
+                '${AppRoutes.studentRequestPdf}?roll=$rollNo',
+              ),
+            ),
+            const Spacer(),
+            const Divider(height: 1, indent: 20, endIndent: 20),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
+              child: _DrawerItem(
+                icon: Icons.logout_rounded,
+                label: 'Sign Out',
+                foregroundColor: const Color(0xFFB3261E),
+                onTap: () => _signOut(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool selected;
+  final Color foregroundColor;
+
+  const _DrawerItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.selected = false,
+    this.foregroundColor = AppColors.primary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: ListTile(
+        onTap: onTap,
+        selected: selected,
+        selectedTileColor: const Color(0xFFE8ECFD),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        leading: Icon(icon, color: foregroundColor),
+        title: Text(
+          label,
+          style: TextStyle(
+            color: foregroundColor,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+          ),
+        ),
+        trailing: selected
+            ? const Icon(Icons.chevron_right_rounded, color: AppColors.primary)
+            : null,
       ),
     );
   }

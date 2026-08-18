@@ -88,7 +88,7 @@ class _RequestPdfScreenState extends State<RequestPdfScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFECECEF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1D4ED8),
+        backgroundColor: const Color(0xFF000153),
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(
@@ -138,7 +138,7 @@ class _RequestPdfScreenState extends State<RequestPdfScreen> {
               const Text(
                 'Request PDF',
                 style: TextStyle(
-                  color: Color(0xFF1746C7),
+                  color: Color(0xFF000153),
                   fontSize: 36,
                   fontWeight: FontWeight.w800,
                 ),
@@ -204,7 +204,7 @@ class _RequestPdfScreenState extends State<RequestPdfScreen> {
                             ? null
                             : _submitRequest,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1D4ED8),
+                          backgroundColor: const Color(0xFF000153),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),

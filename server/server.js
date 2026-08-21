@@ -1775,24 +1775,8 @@ if (!subject && !isSundayMode) {
 			});
 		}
 
-		for (const record of records) {
-			await client.query(
-				`
-				INSERT INTO student_notifications
-				(roll_no, module_name, message)
-				VALUES ($1, $2, $3)
-				`,
-				[record.roll_no, 'attendance', 'Attendance updated']
-			);
-		}
 
 		await client.query('COMMIT');
-		await Promise.all(records.map((record) => sendPushToStudent(
-			record.roll_no,
-			'Attendance updated',
-			'Your attendance has been updated',
-			{ module_name: 'attendance', roll_no: record.roll_no }
-		)));
 
 		res.json({
 			message: overwrite ? 'Attendance overwritten successfully' : 'Attendance saved successfully'
@@ -1870,24 +1854,8 @@ app.put('/attendance', async (req, res) => {
 			}
 		}
 
-		for (const record of records) {
-			await client.query(
-				`
-				INSERT INTO student_notifications
-				(roll_no, module_name, message)
-				VALUES ($1, $2, $3)
-				`,
-				[record.roll_no, 'attendance', 'Attendance updated']
-			);
-		}
 
 		await client.query('COMMIT');
-		await Promise.all(records.map((record) => sendPushToStudent(
-			record.roll_no,
-			'Attendance updated',
-			'Your attendance has been updated',
-			{ module_name: 'attendance', roll_no: record.roll_no }
-		)));
 		res.json({ message: 'Attendance updated successfully' });
 	} catch (err) {
 		await client.query('ROLLBACK');

@@ -111,7 +111,7 @@ function createNotificationWorker({
         const mondayDate = getMondayDate(runDate);
         const title = 'Weekly attendance reminder';
         const message =
-            "Please check your attendance for this week, including today's Sunday test.";
+            "Attendance have been updated click to view";
 
         try {
             await pool.query(

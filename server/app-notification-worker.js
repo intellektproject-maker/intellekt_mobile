@@ -20,6 +20,174 @@ function createNotificationWorker({
     let running = false;
     let stopped = true;
 
+
+    const attendanceTimeZone =
+        process.env.ATTENDANCE_NOTIFICATION_TIMEZONE || 'Asia/Kolkata';
+
+    function getZonedDateParts(date = new Date()) {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: attendanceTimeZone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            weekday: 'short',
+            hour: '2-digit',
+            minute: '2-digit',
+            hourCycle: 'h23'
+        }).formatToParts(date);
+
+        return Object.fromEntries(
+            parts
+                .filter((part) => part.type !== 'literal')
+                .map((part) => [part.type, part.value])
+        );
+    }
+
+    function getMondayDate(sundayDate) {
+        const date = new Date(`${sundayDate}T00:00:00Z`);
+        date.setUTCDate(date.getUTCDate() - 6);
+        return date.toISOString().slice(0, 10);
+    }
+
+    async function ensureWeeklyAttendanceRunsTable() {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS weekly_attendance_notification_runs (
+                run_date DATE PRIMARY KEY,
+                status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                attempts INTEGER NOT NULL DEFAULT 0,
+                last_error TEXT,
+                started_at TIMESTAMPTZ,
+                completed_at TIMESTAMPTZ,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        `);
+    }
+
+    async function claimWeeklyAttendanceRun(runDate) {
+        await ensureWeeklyAttendanceRunsTable();
+
+        await pool.query(
+            `
+            INSERT INTO weekly_attendance_notification_runs (run_date)
+            VALUES ($1)
+            ON CONFLICT (run_date) DO NOTHING
+            `,
+            [runDate]
+        );
+
+        const result = await pool.query(
+            `
+            UPDATE weekly_attendance_notification_runs
+            SET status = 'processing',
+                attempts = attempts + 1,
+                last_error = NULL,
+                started_at = NOW(),
+                updated_at = NOW()
+            WHERE run_date = $1
+              AND (
+                  status = 'pending'
+                  OR (
+                      status = 'failed'
+                      AND attempts < 5
+                      AND updated_at <= NOW() - INTERVAL '1 minute'
+                  )
+              )
+            RETURNING run_date
+            `,
+            [runDate]
+        );
+
+        return result.rowCount > 0;
+    }
+
+    async function sendWeeklyAttendanceReminder() {
+        const now = getZonedDateParts();
+        const hour = Number(now.hour);
+        if (now.weekday !== 'Sun' || hour < 17) return;
+
+        const runDate = `${now.year}-${now.month}-${now.day}`;
+        if (!(await claimWeeklyAttendanceRun(runDate))) return;
+
+        const mondayDate = getMondayDate(runDate);
+        const title = 'Weekly attendance reminder';
+        const message =
+            "Please check your attendance for this week, including today's Sunday test.";
+
+        try {
+            await pool.query(
+                `
+                INSERT INTO student_notifications
+                    (roll_no, module_name, message, is_read)
+                SELECT s.roll_no, 'attendance', $1, FALSE
+                FROM students s
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM student_notifications sn
+                    WHERE UPPER(TRIM(sn.roll_no)) = UPPER(TRIM(s.roll_no))
+                      AND sn.module_name = 'attendance'
+                      AND sn.message = $1
+                )
+                `,
+                [`${message} Week: ${mondayDate} to ${runDate}`]
+            );
+
+            const students = await pool.query(
+                `
+                SELECT DISTINCT roll_no
+                FROM students
+                ORDER BY roll_no
+                `
+            );
+
+            let successCount = 0;
+            let failureCount = 0;
+            for (const student of students.rows) {
+                const result = await sendPushToStudent(
+                    student.roll_no,
+                    title,
+                    message,
+                    {
+                        module_name: 'attendance',
+                        notification_type: 'weekly_attendance',
+                        week_start: mondayDate,
+                        week_end: runDate,
+                        roll_no: student.roll_no
+                    }
+                );
+                successCount += result.successCount || 0;
+                failureCount += result.failureCount || 0;
+            }
+
+            await pool.query(
+                `
+                UPDATE weekly_attendance_notification_runs
+                SET status = 'sent',
+                    completed_at = NOW(),
+                    updated_at = NOW()
+                WHERE run_date = $1
+                `,
+                [runDate]
+            );
+
+            console.log(
+                `Weekly attendance reminder processed: ${students.rows.length} students, ` +
+                `${successCount} delivered, ${failureCount} failed`
+            );
+        } catch (error) {
+            await pool.query(
+                `
+                UPDATE weekly_attendance_notification_runs
+                SET status = 'failed',
+                    last_error = $2,
+                    updated_at = NOW()
+                WHERE run_date = $1
+                `,
+                [runDate, String(error && error.message ? error.message : error).slice(0, 2000)]
+            );
+            throw error;
+        }
+    }
+
     async function claimEvents() {
         const client = await pool.connect();
         try {
@@ -152,6 +320,12 @@ function createNotificationWorker({
         if (running || stopped) return;
         running = true;
         try {
+            try {
+                await sendWeeklyAttendanceReminder();
+            } catch (error) {
+                console.error('Weekly attendance reminder failed:', error);
+            }
+
             const events = await claimEvents();
             for (const event of events) await processEvent(event);
         } catch (error) {

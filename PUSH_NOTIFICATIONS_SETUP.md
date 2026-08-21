@@ -65,7 +65,7 @@ Invoke-RestMethod -Method Post `
   -Body $body
 ```
 
-The server also sends push notifications automatically when marks are uploaded, attendance is updated, or a new test is scheduled.
+The server sends push notifications when marks are uploaded and when a new test is scheduled. Attendance does not generate daily alerts; one weekly reminder is sent every Sunday at 5:00 PM using `Asia/Kolkata` by default, covering the full week including the Sunday test. Override the timezone with `ATTENDANCE_NOTIFICATION_TIMEZONE` only when required.
 
 ## Expected test order
 

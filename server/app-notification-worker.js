@@ -20,7 +20,6 @@ function createNotificationWorker({
     let running = false;
     let stopped = true;
 
-
     const attendanceTimeZone =
         process.env.ATTENDANCE_NOTIFICATION_TIMEZONE || 'Asia/Kolkata';
 
@@ -111,7 +110,7 @@ function createNotificationWorker({
         const mondayDate = getMondayDate(runDate);
         const title = 'Weekly attendance reminder';
         const message =
-            "Attendance have been updated click to view";
+            'Attendance have been updated click to view';
 
         try {
             await pool.query(
@@ -195,7 +194,7 @@ function createNotificationWorker({
             const result = await client.query(
                 `
                 SELECT id, event_key, module_name, class_name, board,
-                       subject_id, title, message
+                       subject_id, title, message, roll_no
                 FROM notification_events
                 WHERE status = 'pending'
                   AND COALESCE(available_at, NOW()) <= NOW()
@@ -230,6 +229,18 @@ function createNotificationWorker({
     }
 
     async function findStudents(event) {
+        if (event.module_name === 'fees' && event.roll_no) {
+            const result = await pool.query(
+                `
+                SELECT DISTINCT s.roll_no
+                FROM students s
+                WHERE UPPER(TRIM(s.roll_no)) = UPPER(TRIM($1))
+                `,
+                [event.roll_no]
+            );
+            return result.rows;
+        }
+
         const values = [event.class_name, event.board];
         let subjectFilter = '';
 
@@ -291,6 +302,26 @@ function createNotificationWorker({
             let failureCount = 0;
 
             for (const student of students) {
+                if (event.module_name === 'fees') {
+                    await pool.query(
+                        `
+                        DELETE FROM student_notifications
+                        WHERE UPPER(TRIM(roll_no)) = UPPER(TRIM($1))
+                          AND module_name = 'fees'
+                        `,
+                        [student.roll_no]
+                    );
+
+                    await pool.query(
+                        `
+                        INSERT INTO student_notifications
+                            (roll_no, module_name, message, is_read)
+                        VALUES ($1, 'fees', $2, FALSE)
+                        `,
+                        [student.roll_no, event.message]
+                    );
+                }
+
                 const result = await sendPushToStudent(
                     student.roll_no,
                     event.title,

@@ -1,12 +1,13 @@
 /* =========================================================
    FEE UPDATE NOTIFICATIONS
    ---------------------------------------------------------
-   When a student's fee details change in the fees table,
-   enqueue one targeted notification event for that student.
+   Enqueue a targeted notification whenever a student-facing
+   fee field changes in the fees table.
 
-   Notification is intentionally NOT triggered by
-   reminder_enabled changes because that is an internal
-   faculty setting, not a change to the student's fee details.
+   reminder_enabled is included so switching the faculty
+   reminder ON/OFF also produces the normal fee-update
+   notification. last_reminder_sent_at is intentionally
+   excluded because it is maintained by the reminder worker.
 ========================================================= */
 
 ALTER TABLE notification_events
@@ -25,6 +26,7 @@ BEGIN
         OR OLD.total_fee IS DISTINCT FROM NEW.total_fee
         OR OLD.fee_paid IS DISTINCT FROM NEW.fee_paid
         OR OLD.next_due IS DISTINCT FROM NEW.next_due
+        OR OLD.reminder_enabled IS DISTINCT FROM NEW.reminder_enabled
     THEN
         INSERT INTO notification_events (
             event_key,
@@ -64,7 +66,7 @@ $$;
 DROP TRIGGER IF EXISTS trg_fee_update_notification ON fees;
 
 CREATE TRIGGER trg_fee_update_notification
-AFTER UPDATE OF roll_no, total_fee, fee_paid, next_due
+AFTER UPDATE OF roll_no, total_fee, fee_paid, next_due, reminder_enabled
 ON fees
 FOR EACH ROW
 EXECUTE FUNCTION enqueue_fee_update_notification();

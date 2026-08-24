@@ -22,10 +22,12 @@ function createNotificationWorker({
 
     const attendanceTimeZone =
         process.env.ATTENDANCE_NOTIFICATION_TIMEZONE || 'Asia/Kolkata';
+    const feeReminderTimeZone =
+        process.env.FEE_REMINDER_NOTIFICATION_TIMEZONE || 'Asia/Kolkata';
 
-    function getZonedDateParts(date = new Date()) {
+    function getZonedDateParts(date = new Date(), timeZone = attendanceTimeZone) {
         const parts = new Intl.DateTimeFormat('en-CA', {
-            timeZone: attendanceTimeZone,
+            timeZone,
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -109,8 +111,7 @@ function createNotificationWorker({
 
         const mondayDate = getMondayDate(runDate);
         const title = 'Weekly attendance reminder';
-        const message =
-            'Attendance have been updated click to view';
+        const message = 'Attendance have been updated click to view';
 
         try {
             await pool.query(
@@ -131,11 +132,7 @@ function createNotificationWorker({
             );
 
             const students = await pool.query(
-                `
-                SELECT DISTINCT roll_no
-                FROM students
-                ORDER BY roll_no
-                `
+                `SELECT DISTINCT roll_no FROM students ORDER BY roll_no`
             );
 
             let successCount = 0;
@@ -160,9 +157,7 @@ function createNotificationWorker({
             await pool.query(
                 `
                 UPDATE weekly_attendance_notification_runs
-                SET status = 'sent',
-                    completed_at = NOW(),
-                    updated_at = NOW()
+                SET status = 'sent', completed_at = NOW(), updated_at = NOW()
                 WHERE run_date = $1
                 `,
                 [runDate]
@@ -176,14 +171,97 @@ function createNotificationWorker({
             await pool.query(
                 `
                 UPDATE weekly_attendance_notification_runs
-                SET status = 'failed',
-                    last_error = $2,
-                    updated_at = NOW()
+                SET status = 'failed', last_error = $2, updated_at = NOW()
                 WHERE run_date = $1
                 `,
                 [runDate, String(error && error.message ? error.message : error).slice(0, 2000)]
             );
             throw error;
+        }
+    }
+
+    async function sendFeePaymentReminders() {
+        const candidates = await pool.query(
+            `
+            SELECT id, roll_no, total_fee, fee_paid, next_due
+            FROM fees
+            WHERE reminder_enabled = TRUE
+              AND COALESCE(total_fee, 0) > COALESCE(fee_paid, 0)
+              AND (
+                  last_reminder_sent_at IS NULL
+                  OR (last_reminder_sent_at AT TIME ZONE $1)::date <
+                     (NOW() AT TIME ZONE $1)::date
+              )
+            ORDER BY id ASC
+            LIMIT $2
+            `,
+            [feeReminderTimeZone, batchSize]
+        );
+
+        for (const fee of candidates.rows) {
+            const claim = await pool.query(
+                `
+                UPDATE fees
+                SET last_reminder_sent_at = NOW()
+                WHERE id = $1
+                  AND reminder_enabled = TRUE
+                  AND COALESCE(total_fee, 0) > COALESCE(fee_paid, 0)
+                  AND (
+                      last_reminder_sent_at IS NULL
+                      OR (last_reminder_sent_at AT TIME ZONE $2)::date <
+                         (NOW() AT TIME ZONE $2)::date
+                  )
+                RETURNING roll_no, next_due
+                `,
+                [fee.id, feeReminderTimeZone]
+            );
+
+            if (claim.rowCount === 0) continue;
+
+            const studentRollNo = claim.rows[0].roll_no;
+            const dueDate = claim.rows[0].next_due;
+            const title = 'Fees Payment Reminder';
+            const message = dueDate
+                ? `Kindly remember to pay your pending fees. Your next due date is ${dueDate}.`
+                : 'Kindly remember to pay your pending fees. Please check your Fee Details for the due date.';
+
+            try {
+                await pool.query(
+                    `
+                    INSERT INTO student_notifications
+                        (roll_no, module_name, message, is_read)
+                    VALUES ($1, 'fees', $2, FALSE)
+                    `,
+                    [studentRollNo, message]
+                );
+
+                const result = await sendPushToStudent(
+                    studentRollNo,
+                    title,
+                    message,
+                    {
+                        module_name: 'fees',
+                        notification_type: 'fee_payment_reminder',
+                        roll_no: studentRollNo
+                    }
+                );
+
+                console.log(
+                    `Fee payment reminder processed for ${studentRollNo}: ` +
+                    `${result.successCount || 0} delivered, ${result.failureCount || 0} failed`
+                );
+            } catch (error) {
+                await pool.query(
+                    `
+                    UPDATE fees
+                    SET last_reminder_sent_at = NULL
+                    WHERE id = $1
+                      AND reminder_enabled = TRUE
+                    `,
+                    [fee.id]
+                );
+                console.error(`Fee payment reminder failed for ${studentRollNo}:`, error);
+            }
         }
     }
 
@@ -355,6 +433,12 @@ function createNotificationWorker({
                 await sendWeeklyAttendanceReminder();
             } catch (error) {
                 console.error('Weekly attendance reminder failed:', error);
+            }
+
+            try {
+                await sendFeePaymentReminders();
+            } catch (error) {
+                console.error('Fee payment reminder cycle failed:', error);
             }
 
             const events = await claimEvents();

@@ -189,13 +189,12 @@ function createNotificationWorker({
               AND COALESCE(total_fee, 0) > COALESCE(fee_paid, 0)
               AND (
                   last_reminder_sent_at IS NULL
-                  OR (last_reminder_sent_at AT TIME ZONE $1)::date <
-                     (NOW() AT TIME ZONE $1)::date
+                  OR last_reminder_sent_at <= NOW() - INTERVAL '24 hours'
               )
             ORDER BY id ASC
-            LIMIT $2
+            LIMIT $1
             `,
-            [feeReminderTimeZone, batchSize]
+            [batchSize]
         );
 
         for (const fee of candidates.rows) {
@@ -208,12 +207,11 @@ function createNotificationWorker({
                   AND COALESCE(total_fee, 0) > COALESCE(fee_paid, 0)
                   AND (
                       last_reminder_sent_at IS NULL
-                      OR (last_reminder_sent_at AT TIME ZONE $2)::date <
-                         (NOW() AT TIME ZONE $2)::date
+                      OR last_reminder_sent_at <= NOW() - INTERVAL '24 hours'
                   )
                 RETURNING roll_no, next_due
                 `,
-                [fee.id, feeReminderTimeZone]
+                [fee.id]
             );
 
             if (claim.rowCount === 0) continue;

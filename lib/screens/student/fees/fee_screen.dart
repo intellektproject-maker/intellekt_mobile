@@ -214,7 +214,8 @@ class _FeeScreenState extends State<FeeScreen> {
               rows: fee.paymentHistory.map((payment) {
                 final paymentBalance =
                     payment.balance ?? (fee.totalFee - payment.totalPaid);
-                final safeBalance = paymentBalance < 0 ? 0 : paymentBalance;
+                final safeBalance =
+                    (paymentBalance < 0 ? 0 : paymentBalance).toDouble();
                 final fullyPaid = safeBalance == 0;
 
                 return DataRow(

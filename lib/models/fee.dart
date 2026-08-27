@@ -2,12 +2,14 @@ class Fee {
   final double totalFee;
   final double feePaid;
   final DateTime? nextDue;
+  final bool reminderEnabled;
   final List<FeePayment> paymentHistory;
 
   const Fee({
     required this.totalFee,
     required this.feePaid,
     this.nextDue,
+    this.reminderEnabled = false,
     this.paymentHistory = const [],
   });
 
@@ -28,6 +30,7 @@ class Fee {
       totalFee: _parseDouble(json['total_fee']),
       feePaid: _parseDouble(json['fee_paid']),
       nextDue: DateTime.tryParse(json['next_due']?.toString() ?? ''),
+      reminderEnabled: _parseBool(json['reminder_enabled']),
       paymentHistory: paymentHistoryJson is List
           ? paymentHistoryJson
               .whereType<Map>()
@@ -39,6 +42,12 @@ class Fee {
               .toList()
           : const [],
     );
+  }
+
+  static bool _parseBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    return value?.toString().trim().toLowerCase() == 'true';
   }
 
   static double _parseDouble(dynamic value) {

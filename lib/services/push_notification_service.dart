@@ -5,11 +5,14 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/api/api_client.dart';
 import '../core/api/api_routes.dart';
+import '../models/fee.dart';
 import '../providers/auth_provider.dart';
 import '../routes/app_routes.dart';
+import '../services/student/fee_service.dart';
 
 class PushNotificationService {
   PushNotificationService._();
@@ -32,6 +35,9 @@ class PushNotificationService {
         description: 'Test, attendance, marks and student updates',
         importance: Importance.max,
       );
+
+  static const String _lastFeeReminderPrefix = 'last_fee_reminder_';
+  static const Duration _feeReminderInterval = Duration(hours: 24);
 
   Future<void> initialize() async {
     const initializationSettings = InitializationSettings(
@@ -78,10 +84,6 @@ class PushNotificationService {
   }
 
   /// Connects push-notification taps to the application's authenticated router.
-  ///
-  /// A notification can launch the app before GoRouter and the saved login
-  /// session are ready. In that case the destination is retained and opened as
-  /// soon as session restoration (or a new login) completes.
   void attachNavigation({
     required GoRouter router,
     required AuthProvider authProvider,
@@ -99,8 +101,19 @@ class PushNotificationService {
 
   Future<void> registerForStudent(String rollNo) async {
     _rollNo = rollNo.toUpperCase().trim();
-    final token = await _messaging.getToken();
-    if (token != null && token.isNotEmpty) await _saveToken(_rollNo!, token);
+
+    try {
+      final token = await _messaging.getToken();
+      if (token != null && token.isNotEmpty) {
+        await _saveToken(_rollNo!, token);
+      }
+    } catch (error) {
+      debugPrint('Device notification registration failed: $error');
+    }
+
+    // Option A: the app checks the current fee reminder setting whenever the
+    // authenticated student opens/restores the app. No server worker is needed.
+    await check24HourFeeReminder(_rollNo!);
   }
 
   Future<void> unregisterCurrentStudent() async {
@@ -130,8 +143,75 @@ class PushNotificationService {
     debugPrint('Notification device registered for $rollNo');
   }
 
+  Future<void> check24HourFeeReminder(String rollNo) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = '$_lastFeeReminderPrefix$rollNo';
+      final lastShownMillis = prefs.getInt(key);
+      final now = DateTime.now();
+
+      if (lastShownMillis != null) {
+        final lastShown = DateTime.fromMillisecondsSinceEpoch(lastShownMillis);
+        if (now.difference(lastShown) < _feeReminderInterval) {
+          debugPrint('24-hour fee reminder skipped for $rollNo');
+          return;
+        }
+      }
+
+      final fees = await FeeService.getFees(rollNo);
+      if (fees.isEmpty) {
+        debugPrint('No fee record available for $rollNo');
+        return;
+      }
+
+      final reminderFee = fees.cast<Fee?>().firstWhere(
+            (fee) => fee?.reminderEnabled == true,
+        orElse: () => null,
+      );
+
+      if (reminderFee == null) {
+        debugPrint('Fee reminder is disabled for $rollNo');
+        return;
+      }
+
+      final balance = reminderFee.balance;
+      final dueDate = reminderFee.nextDue;
+      final body = dueDate == null
+          ? 'Your fee reminder is enabled. Pending balance: ₹${balance.toStringAsFixed(2)}.'
+          : 'Your fee reminder is enabled. Pending balance: ₹${balance.toStringAsFixed(2)}. Due: ${_formatDate(dueDate)}.';
+
+      await _localNotifications.show(
+        ('fee-reminder-$rollNo').hashCode,
+        'Fee Reminder',
+        body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'intellekt_high_importance',
+            'Intellekt notifications',
+            channelDescription: 'Test, attendance, marks and student updates',
+            importance: Importance.max,
+            priority: Priority.high,
+            icon: '@mipmap/ic_launcher',
+          ),
+        ),
+        payload: jsonEncode({'module_name': 'fee'}),
+      );
+
+      await prefs.setInt(key, now.millisecondsSinceEpoch);
+      debugPrint('24-hour fee reminder shown for $rollNo');
+    } catch (error) {
+      debugPrint('24-hour fee reminder check failed for $rollNo: $error');
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final local = date.toLocal();
+    return '${local.day.toString().padLeft(2, '0')}/'
+        '${local.month.toString().padLeft(2, '0')}/'
+        '${local.year}';
+  }
+
   Future<void> _showForegroundNotification(RemoteMessage message) async {
-    // Apple platforms use setForegroundNotificationPresentationOptions above.
     if (defaultTargetPlatform != TargetPlatform.android) return;
 
     final notification = message.notification;

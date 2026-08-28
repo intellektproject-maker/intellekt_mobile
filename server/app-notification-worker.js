@@ -189,7 +189,7 @@ function createNotificationWorker({
               AND COALESCE(total_fee, 0) > COALESCE(fee_paid, 0)
               AND (
                   last_reminder_sent_at IS NULL
-                  OR last_reminder_sent_at <= NOW() - INTERVAL '1 minute'
+                  OR last_reminder_sent_at <= NOW() - INTERVAL '24 hours'
               )
             ORDER BY id ASC
             LIMIT $1
@@ -207,7 +207,7 @@ function createNotificationWorker({
                   AND COALESCE(total_fee, 0) > COALESCE(fee_paid, 0)
                   AND (
                       last_reminder_sent_at IS NULL
-                      OR last_reminder_sent_at <= NOW() - INTERVAL '1 minute'
+                      OR last_reminder_sent_at <= NOW() - INTERVAL '24 hours'
                   )
                 RETURNING roll_no, next_due
                 `,

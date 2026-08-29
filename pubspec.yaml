@@ -136,10 +136,14 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+
+  flutter_launcher_icons: ^0.14.4
   flutter_lints: ^6.0.0
 
   build_runner: ^2.7.0
   json_serializable: ^6.11.0
+
+
 
 flutter:
 
@@ -154,3 +158,8 @@ flutter:
         - asset: assets/fonts/Roboto-VariableFont_wdth,wght.ttf
         - asset: assets/fonts/Roboto-Italic-VariableFont_wdth,wght.ttf
           style: italic
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/Icon_mobile.png"
+  min_sdk_android: 21

@@ -19,23 +19,17 @@ class AuthProvider extends ChangeNotifier {
   LoginModel? _user;
 
   LoginModel? get user => _user;
-
   bool get isLoggedIn => _user != null;
-
   bool get isStudent => _user?.isStudent ?? false;
-
   bool get isFaculty => _user?.isFaculty ?? false;
 
   bool _isLoading = false;
-
   bool get isLoading => _isLoading;
 
   bool _isInitialized = false;
-
   bool get isInitialized => _isInitialized;
 
   String? _error;
-
   String? get error => _error;
 
   AuthProvider() {
@@ -48,18 +42,14 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> restoreSession() async {
     try {
-      final savedSession = await _secureStorage.read(
-        key: _sessionKey,
-      );
+      final savedSession = await _secureStorage.read(key: _sessionKey);
 
       if (savedSession == null || savedSession.isEmpty) {
         _user = null;
         return;
       }
 
-      final decodedSession =
-          jsonDecode(savedSession) as Map<String, dynamic>;
-
+      final decodedSession = jsonDecode(savedSession) as Map<String, dynamic>;
       final restoredUser = LoginModel.fromJson(decodedSession);
 
       if (!restoredUser.success ||
@@ -79,16 +69,12 @@ class AuthProvider extends ChangeNotifier {
             restoredUser.id,
           );
         } catch (error) {
-          debugPrint(
-            'Could not re-register the notification token: $error',
-          );
+          debugPrint('Could not re-register the notification token: $error');
         }
       }
     } catch (error) {
       debugPrint('Could not restore login session: $error');
-
       await _secureStorage.delete(key: _sessionKey);
-
       _user = null;
     } finally {
       _isInitialized = true;
@@ -127,7 +113,6 @@ class AuthProvider extends ChangeNotifier {
       }
 
       _user = loginResult;
-
       await _saveSession(loginResult);
 
       // Only students register through the existing student notification flow.
@@ -137,23 +122,17 @@ class AuthProvider extends ChangeNotifier {
             loginResult.id,
           );
         } catch (error) {
-          debugPrint(
-            'Could not register the notification token: $error',
-          );
+          debugPrint('Could not register the notification token: $error');
         }
       }
 
       _setLoading(false);
-
       return true;
     } catch (error) {
       _user = null;
       _error = _cleanErrorMessage(error);
-
       await _secureStorage.delete(key: _sessionKey);
-
       _setLoading(false);
-
       return false;
     }
   }
@@ -178,6 +157,7 @@ class AuthProvider extends ChangeNotifier {
 
       final result = await _repository.changePassword(
         id: _user!.id,
+        role: _user!.role,
         newPassword: newPassword,
       );
 
@@ -195,13 +175,10 @@ class AuthProvider extends ChangeNotifier {
       }
 
       _setLoading(false);
-
       return result;
     } catch (error) {
       _error = _cleanErrorMessage(error);
-
       _setLoading(false);
-
       return false;
     }
   }
@@ -213,26 +190,17 @@ class AuthProvider extends ChangeNotifier {
   Future<void> logout() async {
     if (isStudent) {
       try {
-        await PushNotificationService.instance
-            .unregisterCurrentStudent();
+        await PushNotificationService.instance.unregisterCurrentStudent();
       } catch (error) {
-        debugPrint(
-          'Could not unregister the notification token: $error',
-        );
+        debugPrint('Could not unregister the notification token: $error');
       }
     }
 
     await _secureStorage.delete(key: _sessionKey);
-
     _user = null;
     _error = null;
-
     notifyListeners();
   }
-
-  // ==========================================================
-  // PRIVATE HELPERS
-  // ==========================================================
 
   Future<void> _saveSession(LoginModel user) async {
     await _secureStorage.write(
@@ -242,10 +210,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   String _cleanErrorMessage(Object error) {
-    return error
-        .toString()
-        .replaceFirst('Exception: ', '')
-        .trim();
+    return error.toString().replaceFirst('Exception: ', '').trim();
   }
 
   void _setLoading(bool value) {

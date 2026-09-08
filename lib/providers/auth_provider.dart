@@ -11,8 +11,9 @@ class AuthProvider extends ChangeNotifier {
   final AuthRepository _repository = AuthRepository();
 
   static const FlutterSecureStorage _secureStorage =
-  FlutterSecureStorage();
+      FlutterSecureStorage();
 
+  // Kept for backward compatibility with existing installed app sessions.
   static const String _sessionKey = 'student_login_session';
 
   LoginModel? _user;
@@ -20,6 +21,10 @@ class AuthProvider extends ChangeNotifier {
   LoginModel? get user => _user;
 
   bool get isLoggedIn => _user != null;
+
+  bool get isStudent => _user?.isStudent ?? false;
+
+  bool get isFaculty => _user?.isFaculty ?? false;
 
   bool _isLoading = false;
 
@@ -53,13 +58,13 @@ class AuthProvider extends ChangeNotifier {
       }
 
       final decodedSession =
-      jsonDecode(savedSession) as Map<String, dynamic>;
+          jsonDecode(savedSession) as Map<String, dynamic>;
 
       final restoredUser = LoginModel.fromJson(decodedSession);
 
       if (!restoredUser.success ||
           restoredUser.id.isEmpty ||
-          !restoredUser.isStudent) {
+          (!restoredUser.isStudent && !restoredUser.isFaculty)) {
         await _secureStorage.delete(key: _sessionKey);
         _user = null;
         return;
@@ -67,14 +72,17 @@ class AuthProvider extends ChangeNotifier {
 
       _user = restoredUser;
 
-      try {
-        await PushNotificationService.instance.registerForStudent(
-          restoredUser.id,
-        );
-      } catch (error) {
-        debugPrint(
-          'Could not re-register the notification token: $error',
-        );
+      // Push notification registration is currently student-specific.
+      if (restoredUser.isStudent) {
+        try {
+          await PushNotificationService.instance.registerForStudent(
+            restoredUser.id,
+          );
+        } catch (error) {
+          debugPrint(
+            'Could not re-register the notification token: $error',
+          );
+        }
       }
     } catch (error) {
       debugPrint('Could not restore login session: $error');
@@ -112,8 +120,8 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-      if (!loginResult.isStudent) {
-        _error = 'Only student accounts can use this application.';
+      if (!loginResult.isStudent && !loginResult.isFaculty) {
+        _error = 'This account type is not supported by this application.';
         _setLoading(false);
         return false;
       }
@@ -122,14 +130,17 @@ class AuthProvider extends ChangeNotifier {
 
       await _saveSession(loginResult);
 
-      try {
-        await PushNotificationService.instance.registerForStudent(
-          loginResult.id,
-        );
-      } catch (error) {
-        debugPrint(
-          'Could not register the notification token: $error',
-        );
+      // Only students register through the existing student notification flow.
+      if (loginResult.isStudent) {
+        try {
+          await PushNotificationService.instance.registerForStudent(
+            loginResult.id,
+          );
+        } catch (error) {
+          debugPrint(
+            'Could not register the notification token: $error',
+          );
+        }
       }
 
       _setLoading(false);
@@ -200,13 +211,15 @@ class AuthProvider extends ChangeNotifier {
   // ==========================================================
 
   Future<void> logout() async {
-    try {
-      await PushNotificationService.instance
-          .unregisterCurrentStudent();
-    } catch (error) {
-      debugPrint(
-        'Could not unregister the notification token: $error',
-      );
+    if (isStudent) {
+      try {
+        await PushNotificationService.instance
+            .unregisterCurrentStudent();
+      } catch (error) {
+        debugPrint(
+          'Could not unregister the notification token: $error',
+        );
+      }
     }
 
     await _secureStorage.delete(key: _sessionKey);

@@ -7,7 +7,7 @@
 /// User ID Rules
 /// -------------------------------------
 /// IA001+   -> Student
-/// This mobile application accepts student accounts only.
+/// IG001+   -> Faculty / Admin accounts
 ///
 /// ===========================================================
 
@@ -41,9 +41,9 @@ class LoginModel {
       name: json["name"] ?? "",
       role: json["role"] ?? "",
       mustResetPassword:
-      json["mustResetPassword"] ??
-      json["must_reset_password"] ??
-      false,
+          json["mustResetPassword"] ??
+          json["must_reset_password"] ??
+          false,
     );
   }
 
@@ -63,6 +63,8 @@ class LoginModel {
   // ==========================================================
 
   bool get isStudent =>
-      id.toUpperCase().startsWith("IA");
+      id.trim().toUpperCase().startsWith("IA");
 
+  bool get isFaculty =>
+      id.trim().toUpperCase().startsWith("IG");
 }

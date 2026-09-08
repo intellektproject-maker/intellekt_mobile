@@ -14,7 +14,7 @@ import '../screens/faculty/faculty_profile.dart';
 // ==============================
 import '../screens/student/dashboard/student_dashboard.dart';
 import '../screens/student/attendance/attendance_screen.dart'
-as student_attendance;
+    as student_attendance;
 import '../screens/student/marks/marks_screen.dart';
 import '../screens/student/test_schedule/test_schedule_screen.dart';
 import '../screens/student/fees/fee_screen.dart';
@@ -39,12 +39,10 @@ class AppRouter {
       redirect: (context, state) {
         final location = state.matchedLocation;
 
-        // Wait until the saved session has been checked.
         if (!authProvider.isInitialized) {
           if (location != AppRoutes.splash) {
             return AppRoutes.splash;
           }
-
           return null;
         }
 
@@ -52,41 +50,54 @@ class AppRouter {
 
         final isAuthenticationPage =
             location == AppRoutes.splash ||
-                location == AppRoutes.welcome ||
-                location == AppRoutes.login;
+            location == AppRoutes.welcome ||
+            location == AppRoutes.login;
 
         final isStudentPage =
             location == AppRoutes.studentDashboard ||
-                location == AppRoutes.studentAttendance ||
-                location == AppRoutes.studentMarks ||
-                location == AppRoutes.studentTestSchedule ||
-                location == AppRoutes.studentFee ||
-                location == AppRoutes.studentUsefulLinks ||
-                location == AppRoutes.studentRequestPdf;
+            location == AppRoutes.studentAttendance ||
+            location == AppRoutes.studentMarks ||
+            location == AppRoutes.studentTestSchedule ||
+            location == AppRoutes.studentFee ||
+            location == AppRoutes.studentUsefulLinks ||
+            location == AppRoutes.studentRequestPdf;
 
-        // Faculty profile currently uses the faculty query parameter
-        // and is intentionally independent from the student session flow.
-        final isFacultyProfile = location == AppRoutes.facultyProfile;
+        final isFacultyPage = location == AppRoutes.facultyProfile;
 
-        // A saved student session exists.
+        // Any authenticated account leaving the authentication screens
+        // is sent to the correct role entry point.
         if (isLoggedIn && isAuthenticationPage) {
           if (authProvider.user!.mustResetPassword) {
             return AppRoutes.changePassword;
           }
 
-          return AppRoutes.studentDashboard;
+          if (authProvider.isFaculty) {
+            return AppRoutes.facultyProfile;
+          }
+
+          if (authProvider.isStudent) {
+            return AppRoutes.studentDashboard;
+          }
         }
 
-        // A logged-out user cannot open protected student pages.
-        // Faculty profile is excluded here because its current mock/UI
-        // implementation receives faculty data through the route query.
+        // Logged-out users cannot access protected pages.
         if (!isLoggedIn &&
-            (isStudentPage || location == AppRoutes.changePassword)) {
+            (isStudentPage || isFacultyPage ||
+                location == AppRoutes.changePassword)) {
           return AppRoutes.login;
         }
 
-        if (isFacultyProfile) {
-          return null;
+        // A student cannot open a faculty page and vice versa.
+        if (isLoggedIn && isFacultyPage && !authProvider.isFaculty) {
+          return authProvider.isStudent
+              ? AppRoutes.studentDashboard
+              : AppRoutes.login;
+        }
+
+        if (isLoggedIn && isStudentPage && !authProvider.isStudent) {
+          return authProvider.isFaculty
+              ? AppRoutes.facultyProfile
+              : AppRoutes.login;
         }
 
         return null;
@@ -128,12 +139,16 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.facultyProfile,
           builder: (context, state) {
-            final facultyId = state.uri.queryParameters['id'];
+            final facultyId = authProvider.user?.id.trim().toUpperCase();
 
             final faculty = FacultyModel.dummyFacultyList.firstWhere(
-              (item) => item.facultyId.toUpperCase() ==
-                  (facultyId ?? '').trim().toUpperCase(),
-              orElse: () => FacultyModel.dummyFacultyList.first,
+              (item) => item.facultyId.trim().toUpperCase() == facultyId,
+              orElse: () => FacultyModel(
+                facultyId: authProvider.user?.id ?? '',
+                name: authProvider.user?.name ?? '',
+                email: '',
+                phone: '',
+              ),
             );
 
             return FacultyProfile(faculty: faculty);
@@ -151,7 +166,7 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.studentAttendance,
           builder: (context, state) =>
-          const student_attendance.AttendanceScreen(),
+              const student_attendance.AttendanceScreen(),
         ),
 
         GoRoute(
@@ -159,8 +174,8 @@ class AppRouter {
           builder: (context, state) {
             final roll =
                 state.uri.queryParameters['roll'] ??
-                    authProvider.user?.id ??
-                    'IA001';
+                authProvider.user?.id ??
+                'IA001';
 
             return MarksScreen(rollNo: roll);
           },
@@ -171,8 +186,8 @@ class AppRouter {
           builder: (context, state) {
             final roll =
                 state.uri.queryParameters['roll'] ??
-                    authProvider.user?.id ??
-                    'IA001';
+                authProvider.user?.id ??
+                'IA001';
 
             return TestScheduleScreen(rollNo: roll);
           },
@@ -183,8 +198,8 @@ class AppRouter {
           builder: (context, state) {
             final roll =
                 state.uri.queryParameters['roll'] ??
-                    authProvider.user?.id ??
-                    'IA001';
+                authProvider.user?.id ??
+                'IA001';
 
             return FeeScreen(rollNo: roll);
           },
@@ -200,8 +215,8 @@ class AppRouter {
           builder: (context, state) {
             final roll =
                 state.uri.queryParameters['roll'] ??
-                    authProvider.user?.id ??
-                    'IA001';
+                authProvider.user?.id ??
+                'IA001';
 
             return RequestPdfScreen(rollNo: roll);
           },

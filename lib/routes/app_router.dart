@@ -21,7 +21,6 @@ import '../screens/student/fees/fee_screen.dart';
 import '../screens/student/useful_links/useful_links_screen.dart';
 import '../screens/student/request_pdf/request_pdf_screen.dart';
 
-import '../models/faculty_model.dart';
 import 'app_routes.dart';
 
 class AppRouter {
@@ -64,8 +63,6 @@ class AppRouter {
 
         final isFacultyPage = location == AppRoutes.facultyProfile;
 
-        // Any authenticated account leaving the authentication screens
-        // is sent to the correct role entry point.
         if (isLoggedIn && isAuthenticationPage) {
           if (authProvider.user!.mustResetPassword) {
             return AppRoutes.changePassword;
@@ -80,14 +77,13 @@ class AppRouter {
           }
         }
 
-        // Logged-out users cannot access protected pages.
         if (!isLoggedIn &&
-            (isStudentPage || isFacultyPage ||
+            (isStudentPage ||
+                isFacultyPage ||
                 location == AppRoutes.changePassword)) {
           return AppRoutes.login;
         }
 
-        // A student cannot open a faculty page and vice versa.
         if (isLoggedIn && isFacultyPage && !authProvider.isFaculty) {
           return authProvider.isStudent
               ? AppRoutes.studentDashboard
@@ -139,19 +135,8 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.facultyProfile,
           builder: (context, state) {
-            final facultyId = authProvider.user?.id.trim().toUpperCase();
-
-            final faculty = FacultyModel.dummyFacultyList.firstWhere(
-              (item) => item.facultyId.trim().toUpperCase() == facultyId,
-              orElse: () => FacultyModel(
-                facultyId: authProvider.user?.id ?? '',
-                name: authProvider.user?.name ?? '',
-                email: '',
-                phone: '',
-              ),
-            );
-
-            return FacultyProfile(faculty: faculty);
+            final facultyId = authProvider.user?.id.trim().toUpperCase() ?? '';
+            return FacultyProfile(facultyId: facultyId);
           },
         ),
 
@@ -222,17 +207,6 @@ class AppRouter {
           },
         ),
       ],
-
-      errorBuilder: (context, state) {
-        return Scaffold(
-          body: Center(
-            child: Text(
-              '404\n${state.uri}',
-              textAlign: TextAlign.center,
-            ),
-          ),
-        );
-      },
     );
   }
 }

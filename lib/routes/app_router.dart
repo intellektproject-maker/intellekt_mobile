@@ -6,7 +6,7 @@ import '../screens/auth/change_password.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/onboarding/welcome_screen.dart';
 import '../screens/splash/splash_screen.dart';
-import '../screens/faculty/faculty_profile.dart';
+import '../screens/faculty/faculty_profile_shell.dart';
 
 // ==============================
 // STUDENT
@@ -30,50 +30,33 @@ class AppRouter {
       debugLogDiagnostics: true,
       initialLocation: AppRoutes.splash,
       refreshListenable: authProvider,
-
-      // ==========================================================
-      // SESSION REDIRECTION
-      // ==========================================================
       redirect: (context, state) {
         final location = state.matchedLocation;
 
         if (!authProvider.isInitialized) {
-          if (location != AppRoutes.splash) {
-            return AppRoutes.splash;
-          }
+          if (location != AppRoutes.splash) return AppRoutes.splash;
           return null;
         }
 
         final isLoggedIn = authProvider.isLoggedIn;
-
-        final isAuthenticationPage =
-            location == AppRoutes.splash ||
+        final isAuthenticationPage = location == AppRoutes.splash ||
             location == AppRoutes.welcome ||
             location == AppRoutes.login;
-
-        final isStudentPage =
-            location == AppRoutes.studentDashboard ||
+        final isStudentPage = location == AppRoutes.studentDashboard ||
             location == AppRoutes.studentAttendance ||
             location == AppRoutes.studentMarks ||
             location == AppRoutes.studentTestSchedule ||
             location == AppRoutes.studentFee ||
             location == AppRoutes.studentUsefulLinks ||
             location == AppRoutes.studentRequestPdf;
-
         final isFacultyPage = location == AppRoutes.facultyProfile;
 
         if (isLoggedIn && isAuthenticationPage) {
           if (authProvider.user!.mustResetPassword) {
             return AppRoutes.changePassword;
           }
-
-          if (authProvider.isFaculty) {
-            return AppRoutes.facultyProfile;
-          }
-
-          if (authProvider.isStudent) {
-            return AppRoutes.studentDashboard;
-          }
+          if (authProvider.isFaculty) return AppRoutes.facultyProfile;
+          if (authProvider.isStudent) return AppRoutes.studentDashboard;
         }
 
         if (!isLoggedIn &&
@@ -97,7 +80,6 @@ class AppRouter {
 
         return null;
       },
-
       routes: [
         GoRoute(
           path: AppRoutes.splash,
@@ -115,17 +97,17 @@ class AppRouter {
           path: AppRoutes.changePassword,
           builder: (context, state) => const ChangePasswordScreen(),
         ),
-
-        // Faculty profile is resolved from the authenticated session.
-        // The screen then loads the matching record from PostgreSQL.
         GoRoute(
           path: AppRoutes.facultyProfile,
           builder: (context, state) {
-            final facultyId = authProvider.user?.id.trim().toUpperCase() ?? '';
-            return FacultyProfile(facultyId: facultyId);
+            final facultyId =
+                authProvider.user?.id.trim().toUpperCase() ?? '';
+            return FacultyProfileShell(
+              facultyId: facultyId,
+              authProvider: authProvider,
+            );
           },
         ),
-
         GoRoute(
           path: AppRoutes.studentDashboard,
           builder: (context, state) => const StudentDashboard(),
@@ -138,8 +120,7 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.studentMarks,
           builder: (context, state) {
-            final roll =
-                state.uri.queryParameters['roll'] ??
+            final roll = state.uri.queryParameters['roll'] ??
                 authProvider.user?.id ??
                 'IA001';
             return MarksScreen(rollNo: roll);
@@ -148,8 +129,7 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.studentTestSchedule,
           builder: (context, state) {
-            final roll =
-                state.uri.queryParameters['roll'] ??
+            final roll = state.uri.queryParameters['roll'] ??
                 authProvider.user?.id ??
                 'IA001';
             return TestScheduleScreen(rollNo: roll);
@@ -158,8 +138,7 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.studentFee,
           builder: (context, state) {
-            final roll =
-                state.uri.queryParameters['roll'] ??
+            final roll = state.uri.queryParameters['roll'] ??
                 authProvider.user?.id ??
                 'IA001';
             return FeeScreen(rollNo: roll);
@@ -172,25 +151,18 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.studentRequestPdf,
           builder: (context, state) {
-            final roll =
-                state.uri.queryParameters['roll'] ??
+            final roll = state.uri.queryParameters['roll'] ??
                 authProvider.user?.id ??
                 'IA001';
             return RequestPdfScreen(rollNo: roll);
           },
         ),
       ],
-
-      errorBuilder: (context, state) {
-        return Scaffold(
-          body: Center(
-            child: Text(
-              '404\n${state.uri}',
-              textAlign: TextAlign.center,
-            ),
-          ),
-        );
-      },
+      errorBuilder: (context, state) => Scaffold(
+        body: Center(
+          child: Text('404\n${state.uri}', textAlign: TextAlign.center),
+        ),
+      ),
     );
   }
 }

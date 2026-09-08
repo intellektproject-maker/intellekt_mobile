@@ -8,6 +8,7 @@ import '../../core/widgets/custom_textfield.dart';
 import '../../core/widgets/intellekt_wordmark.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -55,20 +56,30 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final user = authProvider.user!;
 
-    if (user.role != 'student') {
-      authProvider.logout();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Only student accounts can use this app.')),
-      );
-      return;
-    }
-
     if (user.mustResetPassword) {
       context.go(AppRoutes.changePassword);
       return;
     }
 
-    context.go('${AppRoutes.studentDashboard}?roll=${user.id}');
+    if (user.isFaculty) {
+      context.go(AppRoutes.facultyProfile);
+      return;
+    }
+
+    if (user.isStudent) {
+      context.go('${AppRoutes.studentDashboard}?roll=${user.id}');
+      return;
+    }
+
+    await authProvider.logout();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('This account type is not supported by this app.'),
+      ),
+    );
   }
 
   @override
@@ -90,56 +101,42 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 20),
-
                     const SizedBox(height: 54),
-
                     const IntellektWordmark(fontSize: 39),
-
                     const SizedBox(height: 14),
-
                     const Text(
-                      'Student Login',
+                      'Student / Faculty Login',
                       style: TextStyle(
                         color: Colors.grey,
                         fontSize: 15,
                       ),
                     ),
-
                     const SizedBox(height: 46),
-
                     CustomTextField(
                       controller: _idController,
-                      label: 'Student ID',
-                      hint: 'Enter Student ID',
+                      label: 'User ID',
+                      hint: 'Enter Student or Faculty ID',
                       validator: (value) {
-                        if (value == null ||
-                            value.trim().isEmpty) {
-                          return 'Enter Student ID';
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Enter User ID';
                         }
-
                         return null;
                       },
                     ),
-
                     const SizedBox(height: 20),
-
                     CustomTextField(
                       controller: _passwordController,
                       label: 'Password',
                       hint: 'Enter Password',
                       obscureText: true,
                       validator: (value) {
-                        if (value == null ||
-                            value.isEmpty) {
+                        if (value == null || value.isEmpty) {
                           return 'Enter Password';
                         }
-
                         return null;
                       },
                     ),
-
                     const SizedBox(height: 30),
-
                     SizedBox(
                       width: double.infinity,
                       child: CustomButton(
@@ -147,9 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: _login,
                       ),
                     ),
-
                     const SizedBox(height: 30),
-
                     const Text(
                       'Version 1.0.0',
                       style: TextStyle(
@@ -157,9 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontSize: 13,
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     const Text(
                       '© INTELLEKT',
                       style: TextStyle(

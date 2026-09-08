@@ -7,6 +7,7 @@ import '../screens/auth/change_password.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/onboarding/welcome_screen.dart';
 import '../screens/splash/splash_screen.dart';
+import '../screens/faculty/faculty_profile.dart';
 
 // ==============================
 // STUDENT
@@ -20,6 +21,7 @@ import '../screens/student/fees/fee_screen.dart';
 import '../screens/student/useful_links/useful_links_screen.dart';
 import '../screens/student/request_pdf/request_pdf_screen.dart';
 
+import '../models/faculty_model.dart';
 import 'app_routes.dart';
 
 class AppRouter {
@@ -62,6 +64,10 @@ class AppRouter {
                 location == AppRoutes.studentUsefulLinks ||
                 location == AppRoutes.studentRequestPdf;
 
+        // Faculty profile currently uses the faculty query parameter
+        // and is intentionally independent from the student session flow.
+        final isFacultyProfile = location == AppRoutes.facultyProfile;
+
         // A saved student session exists.
         if (isLoggedIn && isAuthenticationPage) {
           if (authProvider.user!.mustResetPassword) {
@@ -71,10 +77,16 @@ class AppRouter {
           return AppRoutes.studentDashboard;
         }
 
-        // A logged-out user cannot open protected pages.
+        // A logged-out user cannot open protected student pages.
+        // Faculty profile is excluded here because its current mock/UI
+        // implementation receives faculty data through the route query.
         if (!isLoggedIn &&
             (isStudentPage || location == AppRoutes.changePassword)) {
           return AppRoutes.login;
+        }
+
+        if (isFacultyProfile) {
+          return null;
         }
 
         return null;
@@ -108,6 +120,24 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.changePassword,
           builder: (context, state) => const ChangePasswordScreen(),
+        ),
+
+        // ==============================
+        // FACULTY PROFILE
+        // ==============================
+        GoRoute(
+          path: AppRoutes.facultyProfile,
+          builder: (context, state) {
+            final facultyId = state.uri.queryParameters['id'];
+
+            final faculty = FacultyModel.dummyFacultyList.firstWhere(
+              (item) => item.facultyId.toUpperCase() ==
+                  (facultyId ?? '').trim().toUpperCase(),
+              orElse: () => FacultyModel.dummyFacultyList.first,
+            );
+
+            return FacultyProfile(faculty: faculty);
+          },
         ),
 
         // ==============================

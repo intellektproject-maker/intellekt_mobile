@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../core/api/api_client.dart';
+import '../models/faculty_model.dart';
 import '../models/faculty_task_model.dart';
 
 class FacultyTaskRepository {
@@ -17,18 +18,14 @@ class FacultyTaskRepository {
     final data = e.response?.data;
     if (data is Map) {
       final value = data['error'] ?? data['message'] ?? data['details'];
-      if (value != null && value.toString().trim().isNotEmpty) {
-        return value.toString();
-      }
+      if (value != null && value.toString().trim().isNotEmpty) return value.toString();
     }
     return fallback;
   }
 
   Future<List<FacultyTaskModel>> getMyTasks(String facultyId) async {
     try {
-      final response = await _dio.get(
-        '/faculty-tasks/${facultyId.trim().toUpperCase()}',
-      );
+      final response = await _dio.get('/faculty-tasks/${facultyId.trim().toUpperCase()}');
       return _parseList(response.data);
     } on DioException catch (e) {
       throw Exception(_errorMessage(e, 'Unable to load faculty tasks.'));
@@ -37,10 +34,7 @@ class FacultyTaskRepository {
 
   Future<List<FacultyTaskModel>> getAllTasks(String loginFacultyId) async {
     try {
-      final response = await _dio.get(
-        '/faculty-tasks-all',
-        queryParameters: {'loginFacultyId': loginFacultyId.trim().toUpperCase()},
-      );
+      final response = await _dio.get('/faculty-tasks-all', queryParameters: {'loginFacultyId': loginFacultyId.trim().toUpperCase()});
       return _parseList(response.data);
     } on DioException catch (e) {
       throw Exception(_errorMessage(e, 'Unable to load all faculty tasks.'));
@@ -49,10 +43,7 @@ class FacultyTaskRepository {
 
   Future<List<FacultyTaskModel>> getDailyTasks(String loginFacultyId) async {
     try {
-      final response = await _dio.get(
-        '/faculty-daily-tasks-all',
-        queryParameters: {'loginFacultyId': loginFacultyId.trim().toUpperCase()},
-      );
+      final response = await _dio.get('/faculty-daily-tasks-all', queryParameters: {'loginFacultyId': loginFacultyId.trim().toUpperCase()});
       return _parseList(response.data);
     } on DioException catch (e) {
       throw Exception(_errorMessage(e, 'Unable to load daily faculty tasks.'));
@@ -61,10 +52,7 @@ class FacultyTaskRepository {
 
   Future<void> updateTaskStatus(int taskId, bool completed) async {
     try {
-      await _dio.put(
-        '/faculty-tasks/$taskId',
-        data: {'is_completed': completed},
-      );
+      await _dio.put('/faculty-tasks/$taskId', data: {'is_completed': completed});
     } on DioException catch (e) {
       throw Exception(_errorMessage(e, 'Unable to update task.'));
     }
@@ -72,28 +60,15 @@ class FacultyTaskRepository {
 
   Future<void> deleteTask(int taskId, String loginFacultyId) async {
     try {
-      await _dio.delete(
-        '/faculty-tasks/$taskId',
-        queryParameters: {'loginFacultyId': loginFacultyId.trim().toUpperCase()},
-      );
+      await _dio.delete('/faculty-tasks/$taskId', queryParameters: {'loginFacultyId': loginFacultyId.trim().toUpperCase()});
     } on DioException catch (e) {
       throw Exception(_errorMessage(e, 'Unable to delete task.'));
     }
   }
 
-  Future<void> reassignTask({
-    required int taskId,
-    required String facultyId,
-    required String facultyName,
-  }) async {
+  Future<void> reassignTask({required int taskId, required String facultyId, required String facultyName}) async {
     try {
-      await _dio.put(
-        '/faculty-tasks/$taskId',
-        data: {
-          'faculty_id': facultyId.trim().toUpperCase(),
-          'faculty_name': facultyName,
-        },
-      );
+      await _dio.put('/faculty-tasks/$taskId', data: {'faculty_id': facultyId.trim().toUpperCase(), 'faculty_name': facultyName});
     } on DioException catch (e) {
       throw Exception(_errorMessage(e, 'Unable to reassign task.'));
     }
@@ -112,48 +87,73 @@ class FacultyTaskRepository {
     required String taskType,
   }) async {
     try {
-      await _dio.post(
-        '/faculty-tasks',
-        data: {
-          'loginFacultyId': loginFacultyId.trim().toUpperCase(),
-          'faculty_id': facultyId.trim().toUpperCase(),
-          'faculty_name': facultyName,
-          'class_name': className,
-          'subject_name': subjectName,
-          'total_test_note': totalTestNote,
-          'other_tasks': otherTasks,
-          'due_date': taskType == 'Daily' ? null : dueDate,
-          'priority': taskType == 'Daily' ? 'High' : priority,
-          'task_type': taskType,
-        },
-      );
+      await _dio.post('/faculty-tasks', data: {
+        'loginFacultyId': loginFacultyId.trim().toUpperCase(),
+        'faculty_id': facultyId.trim().toUpperCase(),
+        'faculty_name': facultyName,
+        'class_name': className,
+        'subject_name': subjectName,
+        'total_test_note': totalTestNote,
+        'other_tasks': otherTasks,
+        'due_date': taskType == 'Daily' ? null : dueDate,
+        'priority': taskType == 'Daily' ? 'High' : priority,
+        'task_type': taskType,
+      });
     } on DioException catch (e) {
       throw Exception(_errorMessage(e, 'Failed to assign task.'));
     }
   }
 
+  Future<List<FacultyModel>> getFacultyList() async {
+    try {
+      final response = await _dio.get('/faculty');
+      if (response.data is! List) return <FacultyModel>[];
+      return response.data.whereType<Map>().map((item) => FacultyModel.fromJson(Map<String, dynamic>.from(item))).toList();
+    } on DioException catch (e) {
+      throw Exception(_errorMessage(e, 'Unable to load faculty list.'));
+    }
+  }
+
+  Future<List<String>> getClassOptions() async {
+    try {
+      final response = await _dio.get('/classes');
+      if (response.data is! List) return ['Others'];
+      final values = <String>{};
+      for (final item in response.data.whereType<Map>()) {
+        final map = Map<String, dynamic>.from(item);
+        final board = map['board']?.toString() ?? '';
+        final cls = (map['class'] ?? map['class_name'])?.toString() ?? '';
+        if (board.isNotEmpty && cls.isNotEmpty) values.add('$board-$cls');
+      }
+      return [...values, 'Others'];
+    } on DioException {
+      return ['Others'];
+    }
+  }
+
+  Future<List<String>> getTestCodes() async {
+    try {
+      final response = await _dio.get('/tests');
+      if (response.data is! List) return <String>[];
+      return response.data.whereType<Map>().map((item) => item['test_code']?.toString() ?? '').where((value) => value.isNotEmpty).toSet().toList();
+    } on DioException {
+      return <String>[];
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getFacultyNotifications(String facultyId) async {
     try {
-      final response = await _dio.get(
-        '/faculty-notifications/${facultyId.trim().toUpperCase()}',
-      );
+      final response = await _dio.get('/faculty-notifications/${facultyId.trim().toUpperCase()}');
       if (response.data is! List) return <Map<String, dynamic>>[];
-      return response.data.whereType<Map>().map((item) {
-        return Map<String, dynamic>.from(item);
-      }).toList();
+      return response.data.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList();
     } on DioException {
       return <Map<String, dynamic>>[];
     }
   }
 
-  Future<void> markNotificationRead({
-    required String facultyId,
-    required String moduleName,
-  }) async {
+  Future<void> markNotificationRead({required String facultyId, required String moduleName}) async {
     try {
-      await _dio.put(
-        '/faculty-notifications/mark-read/${facultyId.trim().toUpperCase()}/$moduleName',
-      );
+      await _dio.put('/faculty-notifications/mark-read/${facultyId.trim().toUpperCase()}/$moduleName');
     } on DioException {
       // Notification state is non-critical.
     }

@@ -2,26 +2,22 @@
 /// INTELLEKT LOGIN MODEL
 /// ===========================================================
 ///
-/// Login Model
-///
 /// User ID Rules
 /// -------------------------------------
 /// IA001+   -> Student
 /// IG001+   -> Faculty / Admin accounts
 ///
+/// The role returned by the backend is authoritative. The ID
+/// prefix is retained only as a backward-compatible fallback for
+/// older stored sessions.
 /// ===========================================================
 
 class LoginModel {
   final bool success;
-
   final String? message;
-
   final String id;
-
   final String name;
-
   final String role;
-
   final bool mustResetPassword;
 
   LoginModel({
@@ -63,8 +59,12 @@ class LoginModel {
   // ==========================================================
 
   bool get isStudent =>
-      id.trim().toUpperCase().startsWith("IA");
+      role.trim().toLowerCase() == 'student' ||
+      (role.trim().isEmpty && id.trim().toUpperCase().startsWith('IA'));
 
   bool get isFaculty =>
-      id.trim().toUpperCase().startsWith("IG");
+      role.trim().toLowerCase() == 'faculty' ||
+      (role.trim().isEmpty && id.trim().toUpperCase().startsWith('IG'));
+
+  bool get isAdmin => role.trim().toLowerCase() == 'admin';
 }

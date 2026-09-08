@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/auth_provider.dart';
-
 import '../screens/auth/change_password.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/onboarding/welcome_screen.dart';
@@ -100,38 +99,25 @@ class AppRouter {
       },
 
       routes: [
-        // ==============================
-        // SPLASH
-        // ==============================
         GoRoute(
           path: AppRoutes.splash,
           builder: (context, state) => const SplashScreen(),
         ),
-
-        // ==============================
-        // WELCOME
-        // ==============================
         GoRoute(
           path: AppRoutes.welcome,
           builder: (context, state) => const WelcomeScreen(),
         ),
-
-        // ==============================
-        // LOGIN
-        // ==============================
         GoRoute(
           path: AppRoutes.login,
           builder: (context, state) => const LoginScreen(),
         ),
-
         GoRoute(
           path: AppRoutes.changePassword,
           builder: (context, state) => const ChangePasswordScreen(),
         ),
 
-        // ==============================
-        // FACULTY PROFILE
-        // ==============================
+        // Faculty profile is resolved from the authenticated session.
+        // The screen then loads the matching record from PostgreSQL.
         GoRoute(
           path: AppRoutes.facultyProfile,
           builder: (context, state) {
@@ -140,20 +126,15 @@ class AppRouter {
           },
         ),
 
-        // ==============================
-        // STUDENT
-        // ==============================
         GoRoute(
           path: AppRoutes.studentDashboard,
           builder: (context, state) => const StudentDashboard(),
         ),
-
         GoRoute(
           path: AppRoutes.studentAttendance,
           builder: (context, state) =>
               const student_attendance.AttendanceScreen(),
         ),
-
         GoRoute(
           path: AppRoutes.studentMarks,
           builder: (context, state) {
@@ -161,11 +142,9 @@ class AppRouter {
                 state.uri.queryParameters['roll'] ??
                 authProvider.user?.id ??
                 'IA001';
-
             return MarksScreen(rollNo: roll);
           },
         ),
-
         GoRoute(
           path: AppRoutes.studentTestSchedule,
           builder: (context, state) {
@@ -173,11 +152,9 @@ class AppRouter {
                 state.uri.queryParameters['roll'] ??
                 authProvider.user?.id ??
                 'IA001';
-
             return TestScheduleScreen(rollNo: roll);
           },
         ),
-
         GoRoute(
           path: AppRoutes.studentFee,
           builder: (context, state) {
@@ -185,16 +162,13 @@ class AppRouter {
                 state.uri.queryParameters['roll'] ??
                 authProvider.user?.id ??
                 'IA001';
-
             return FeeScreen(rollNo: roll);
           },
         ),
-
         GoRoute(
           path: AppRoutes.studentUsefulLinks,
           builder: (context, state) => const UsefulLinksScreen(),
         ),
-
         GoRoute(
           path: AppRoutes.studentRequestPdf,
           builder: (context, state) {
@@ -202,11 +176,21 @@ class AppRouter {
                 state.uri.queryParameters['roll'] ??
                 authProvider.user?.id ??
                 'IA001';
-
             return RequestPdfScreen(rollNo: roll);
           },
         ),
       ],
+
+      errorBuilder: (context, state) {
+        return Scaffold(
+          body: Center(
+            child: Text(
+              '404\n${state.uri}',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        );
+      },
     );
   }
 }

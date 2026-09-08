@@ -32,6 +32,7 @@ class AuthRepository {
 
   Future<bool> changePassword({
     required String id,
+    required String role,
     required String newPassword,
   }) async {
     try {
@@ -39,6 +40,7 @@ class AuthRepository {
         ApiRoutes.resetPassword,
         data: {
           "id": id,
+          "role": role,
           "newPassword": newPassword,
         },
       );

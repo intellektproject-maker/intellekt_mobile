@@ -20,4 +20,8 @@ class AppRoutes {
   static const studentUsefulLinks = '/student/useful-links';
   static const studentRequestPdf = '/student/request-pdf';
 
+  // ==============================
+  // FACULTY
+  // ==============================
+  static const facultyProfile = '/faculty/profile';
 }

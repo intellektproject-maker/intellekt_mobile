@@ -46,20 +46,18 @@ class FacultyProfileShell extends StatelessWidget {
       children: [
         FacultyProfile(facultyId: facultyId),
         Positioned(
-          left: 20,
-          right: 20,
-          bottom: 16,
-          child: SafeArea(
-            top: false,
-            child: FilledButton.icon(
-              onPressed: () => _logout(context),
-              icon: const Icon(Icons.logout_outlined),
-              label: const Text('Logout'),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(48),
-              ),
+          top: MediaQuery.paddingOf(context).top + 4,
+          right: 8,
+          child: IconButton.filledTonal(
+            onPressed: () => _logout(context),
+            tooltip: 'Logout',
+            icon: const Icon(Icons.logout_outlined, size: 20),
+            style: IconButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              backgroundColor: Colors.white,
+              padding: const EdgeInsets.all(9),
+              minimumSize: const Size(40, 40),
+              maximumSize: const Size(40, 40),
             ),
           ),
         ),

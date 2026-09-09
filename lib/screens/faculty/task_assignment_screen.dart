@@ -198,6 +198,13 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
   }
 
   Widget _buildForm() {
+    final matchingFaculty = _facultyList.where(
+      (faculty) => faculty.facultyId == _facultyId,
+    );
+    final selectedFaculty = matchingFaculty.isEmpty
+        ? null
+        : matchingFaculty.first;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 36),
       child: Column(
@@ -232,9 +239,7 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
           ],
           _dropdown<FacultyModel>(
             label: 'Faculty Name',
-            value: _facultyId == null
-                ? null
-                : _facultyList.where((f) => f.facultyId == _facultyId).firstOrNull,
+            value: selectedFaculty,
             items: _facultyList,
             display: (faculty) => '${faculty.name} (${faculty.facultyId})',
             onChanged: (faculty) => setState(

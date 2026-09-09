@@ -5,6 +5,7 @@ import '../../models/faculty_model.dart';
 import '../../models/faculty_task_model.dart';
 import '../../repositories/faculty_repository.dart';
 import '../../repositories/faculty_task_repository.dart';
+import 'task_assignment_screen.dart';
 
 class FacultyProfile extends StatefulWidget {
   final String facultyId;
@@ -59,21 +60,31 @@ class _FacultyProfileState extends State<FacultyProfile> {
 
     try {
       final faculty = await _facultyRepository.getFacultyProfile(_id);
-      final results = await Future.wait<dynamic>([
-        _taskRepository.getMyTasks(_id),
-        _taskRepository.getFacultyNotifications(_id),
-      ]);
+
+      List<FacultyTaskModel> myTasks = <FacultyTaskModel>[];
+      try {
+        myTasks = await _taskRepository.getMyTasks(_id);
+      } catch (e) {
+        debugPrint('Optional faculty task load failed: $e');
+      }
+
+      Set<String> notifications = <String>{};
+      try {
+        final notificationList =
+            await _taskRepository.getFacultyNotifications(_id);
+        notifications = notificationList
+            .map((item) => item['module_name']?.toString() ?? '')
+            .where((item) => item.isNotEmpty)
+            .toSet();
+      } catch (e) {
+        debugPrint('Optional faculty notification load failed: $e');
+      }
 
       if (!mounted) return;
 
-      final notifications = (results[1] as List<Map<String, dynamic>>)
-          .map((item) => item['module_name']?.toString() ?? '')
-          .where((item) => item.isNotEmpty)
-          .toSet();
-
       setState(() {
         _faculty = faculty;
-        _myTasks = results[0] as List<FacultyTaskModel>;
+        _myTasks = myTasks;
         _notifications = notifications;
         _loading = false;
       });
@@ -92,22 +103,50 @@ class _FacultyProfileState extends State<FacultyProfile> {
 
   Future<void> _loadAdminData() async {
     try {
-      final results = await Future.wait<dynamic>([
-        _taskRepository.getAllTasks(_id),
-        _taskRepository.getDailyTasks(_id),
-        _taskRepository.getFacultyList(),
-        _taskRepository.getClassOptions(),
-        _taskRepository.getTestCodes(),
-      ]);
+      List<FacultyTaskModel> allTasks = <FacultyTaskModel>[];
+      List<FacultyTaskModel> dailyTasks = <FacultyTaskModel>[];
+      List<FacultyModel> facultyList = <FacultyModel>[];
+      List<String> classOptions = <String>[];
+      List<String> testCodes = <String>[];
+
+      try {
+        allTasks = await _taskRepository.getAllTasks(_id);
+      } catch (e) {
+        debugPrint('All faculty tasks load failed: $e');
+      }
+
+      try {
+        dailyTasks = await _taskRepository.getDailyTasks(_id);
+      } catch (e) {
+        debugPrint('Daily faculty tasks load failed: $e');
+      }
+
+      try {
+        facultyList = await _taskRepository.getFacultyList();
+      } catch (e) {
+        debugPrint('Faculty list load failed: $e');
+      }
+
+      try {
+        classOptions = await _taskRepository.getClassOptions();
+      } catch (e) {
+        debugPrint('Class options load failed: $e');
+      }
+
+      try {
+        testCodes = await _taskRepository.getTestCodes();
+      } catch (e) {
+        debugPrint('Test codes load failed: $e');
+      }
 
       if (!mounted) return;
 
       setState(() {
-        _allTasks = results[0] as List<FacultyTaskModel>;
-        _dailyTasks = results[1] as List<FacultyTaskModel>;
-        _facultyList = results[2] as List<FacultyModel>;
-        _classOptions = results[3] as List<String>;
-        _testCodes = results[4] as List<String>;
+        _allTasks = allTasks;
+        _dailyTasks = dailyTasks;
+        _facultyList = facultyList;
+        _classOptions = classOptions;
+        _testCodes = testCodes;
       });
     } catch (e) {
       debugPrint('Optional admin task data failed: $e');
@@ -127,17 +166,15 @@ class _FacultyProfileState extends State<FacultyProfile> {
     if (!_isAdmin) return;
 
     try {
-      final results = await Future.wait<dynamic>([
-        _taskRepository.getAllTasks(_id),
-        _taskRepository.getDailyTasks(_id),
-      ]);
+      final allTasks = await _taskRepository.getAllTasks(_id);
+      if (mounted) setState(() => _allTasks = allTasks);
+    } catch (e) {
+      _showMessage(e.toString().replaceFirst('Exception: ', ''));
+    }
 
-      if (!mounted) return;
-
-      setState(() {
-        _allTasks = results[0] as List<FacultyTaskModel>;
-        _dailyTasks = results[1] as List<FacultyTaskModel>;
-      });
+    try {
+      final dailyTasks = await _taskRepository.getDailyTasks(_id);
+      if (mounted) setState(() => _dailyTasks = dailyTasks);
     } catch (e) {
       _showMessage(e.toString().replaceFirst('Exception: ', ''));
     }
@@ -256,208 +293,16 @@ class _FacultyProfileState extends State<FacultyProfile> {
   }
 
   Future<void> _showAssignmentForm() async {
-    String? facultyId;
-    String? className;
-    String? testCode;
-    String taskType = 'Weekly';
-    String priority = 'Medium';
-    DateTime? dueDate;
+    final assigned = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => TaskAssignmentScreen(loginFacultyId: _id),
+      ),
+    );
 
-    final totalNote = TextEditingController();
-    final otherTasks = TextEditingController();
-
-    try {
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        showDragHandle: true,
-        builder: (sheetContext) {
-          return StatefulBuilder(
-            builder: (context, setSheetState) {
-              final bottom = MediaQuery.of(context).viewInsets.bottom;
-
-              return Padding(
-                padding: EdgeInsets.fromLTRB(20, 8, 20, bottom + 20),
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Task Assignment',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      _drop<String>(
-                        label: 'Faculty Name',
-                        value: facultyId,
-                        items: _facultyList
-                            .map((faculty) => faculty.facultyId)
-                            .toList(),
-                        display: (id) {
-                          final faculty = _facultyList.firstWhere(
-                            (item) => item.facultyId == id,
-                          );
-                          return '${faculty.name} (${faculty.facultyId})';
-                        },
-                        onChanged: (value) =>
-                            setSheetState(() => facultyId = value),
-                      ),
-                      _drop<String>(
-                        label: 'Class',
-                        value: className,
-                        items: _classOptions,
-                        onChanged: (value) =>
-                            setSheetState(() => className = value),
-                      ),
-                      _drop<String>(
-                        label: 'Task Type',
-                        value: taskType,
-                        items: const ['Weekly', 'Daily'],
-                        onChanged: (value) => setSheetState(() {
-                          taskType = value ?? 'Weekly';
-                          if (taskType == 'Daily') {
-                            priority = 'High';
-                            dueDate = null;
-                          }
-                        }),
-                      ),
-                      _drop<String>(
-                        label: 'Test Code',
-                        value: testCode,
-                        items: _testCodes,
-                        onChanged: (value) =>
-                            setSheetState(() => testCode = value),
-                      ),
-                      TextField(
-                        controller: totalNote,
-                        decoration: const InputDecoration(
-                          labelText: 'Total Test Note',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      if (taskType == 'Weekly') ...[
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            dueDate == null
-                                ? 'Due Date'
-                                : 'Due Date: ${_formatDate(dueDate!)}',
-                          ),
-                          trailing:
-                              const Icon(Icons.calendar_today_outlined),
-                          onTap: () async {
-                            final now = DateTime.now();
-                            final picked = await showDatePicker(
-                              context: sheetContext,
-                              firstDate: DateTime(
-                                now.year,
-                                now.month,
-                                now.day,
-                              ),
-                              lastDate: DateTime(now.year + 5),
-                              initialDate: dueDate ?? now,
-                            );
-
-                            if (picked != null) {
-                              setSheetState(() => dueDate = picked);
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 4),
-                        _drop<String>(
-                          label: 'Priority',
-                          value: priority,
-                          items: const ['High', 'Medium', 'Low'],
-                          onChanged: (value) => setSheetState(
-                            () => priority = value ?? 'Medium',
-                          ),
-                        ),
-                      ],
-                      TextField(
-                        controller: otherTasks,
-                        maxLines: 4,
-                        decoration: const InputDecoration(
-                          labelText: 'Other Tasks',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton(
-                          onPressed: () async {
-                            if (facultyId == null ||
-                                facultyId!.isEmpty ||
-                                className == null ||
-                                className!.isEmpty) {
-                              _showMessage('Please select Faculty and Class');
-                              return;
-                            }
-
-                            if ((testCode == null || testCode!.isEmpty) &&
-                                otherTasks.text.trim().isEmpty) {
-                              _showMessage(
-                                'Select Test Code or enter Other Tasks',
-                              );
-                              return;
-                            }
-
-                            if (taskType == 'Weekly' && dueDate == null) {
-                              _showMessage('Please select Due Date');
-                              return;
-                            }
-
-                            try {
-                              final faculty = _facultyList.firstWhere(
-                                (item) => item.facultyId == facultyId,
-                              );
-
-                              await _taskRepository.assignTask(
-                                loginFacultyId: _id,
-                                facultyId: facultyId!,
-                                facultyName: faculty.name,
-                                className: className!,
-                                subjectName: testCode ?? '',
-                                totalTestNote: totalNote.text.trim(),
-                                otherTasks: otherTasks.text.trim(),
-                                dueDate: taskType == 'Daily'
-                                    ? null
-                                    : _formatDate(dueDate!),
-                                priority:
-                                    taskType == 'Daily' ? 'High' : priority,
-                                taskType: taskType,
-                              );
-
-                              if (!mounted) return;
-                              Navigator.pop(sheetContext);
-                              _showMessage('Task assigned successfully');
-                              await _refreshAdminTasks();
-                              await _refreshMyTasks();
-                            } catch (e) {
-                              _showMessage(
-                                e.toString().replaceFirst('Exception: ', ''),
-                              );
-                            }
-                          },
-                          child: const Text('Assign Task'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      );
-    } finally {
-      totalNote.dispose();
-      otherTasks.dispose();
+    if (assigned == true && mounted) {
+      _showMessage('Task assigned successfully');
+      await _refreshAdminTasks();
+      await _refreshMyTasks();
     }
   }
 

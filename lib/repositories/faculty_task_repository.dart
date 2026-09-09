@@ -9,9 +9,10 @@ class FacultyTaskRepository {
 
   List<FacultyTaskModel> _parseList(dynamic data) {
     if (data is! List) return <FacultyTaskModel>[];
-    return data.whereType<Map>().map((item) {
+
+    return data.whereType<Map>().map<FacultyTaskModel>((item) {
       return FacultyTaskModel.fromJson(Map<String, dynamic>.from(item));
-    }).toList();
+    }).toList(growable: false);
   }
 
   List<Map<String, dynamic>> _parseNotificationList(dynamic data) {
@@ -20,6 +21,25 @@ class FacultyTaskRepository {
     return data.whereType<Map>().map<Map<String, dynamic>>((item) {
       return Map<String, dynamic>.from(item);
     }).toList(growable: false);
+  }
+
+  List<FacultyModel> _parseFacultyList(dynamic data) {
+    if (data is! List) return <FacultyModel>[];
+
+    return data.whereType<Map>().map<FacultyModel>((item) {
+      return FacultyModel.fromJson(Map<String, dynamic>.from(item));
+    }).toList(growable: false);
+  }
+
+  List<String> _parseTestCodes(dynamic data) {
+    if (data is! List) return <String>[];
+
+    return data
+        .whereType<Map>()
+        .map<String>((item) => item['test_code']?.toString() ?? '')
+        .where((value) => value.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
   }
 
   String _errorMessage(DioException e, String fallback) {
@@ -150,10 +170,7 @@ class FacultyTaskRepository {
   Future<List<FacultyModel>> getFacultyList() async {
     try {
       final response = await _dio.get('/faculty');
-      if (response.data is! List) return <FacultyModel>[];
-      return response.data.whereType<Map>().map((item) {
-        return FacultyModel.fromJson(Map<String, dynamic>.from(item));
-      }).toList();
+      return _parseFacultyList(response.data);
     } on DioException catch (e) {
       throw Exception(_errorMessage(e, 'Unable to load faculty list.'));
     }
@@ -162,7 +179,8 @@ class FacultyTaskRepository {
   Future<List<String>> getClassOptions() async {
     try {
       final response = await _dio.get('/classes');
-      if (response.data is! List) return ['Others'];
+      if (response.data is! List) return <String>['Others'];
+
       final values = <String>{};
       for (final item in response.data.whereType<Map>()) {
         final map = Map<String, dynamic>.from(item);
@@ -174,20 +192,14 @@ class FacultyTaskRepository {
       }
       return [...values, 'Others'];
     } on DioException {
-      return ['Others'];
+      return <String>['Others'];
     }
   }
 
   Future<List<String>> getTestCodes() async {
     try {
       final response = await _dio.get('/tests');
-      if (response.data is! List) return <String>[];
-      return response.data
-          .whereType<Map>()
-          .map((item) => item['test_code']?.toString() ?? '')
-          .where((value) => value.isNotEmpty)
-          .toSet()
-          .toList();
+      return _parseTestCodes(response.data);
     } on DioException {
       return <String>[];
     }
@@ -200,13 +212,8 @@ class FacultyTaskRepository {
       final response = await _dio.get(
         '/faculty-notifications/${facultyId.trim().toUpperCase()}',
       );
-
-      // Always normalize Dio's dynamic JSON list before returning from this
-      // strongly typed Future. This prevents List<dynamic> ->
-      // List<Map<String, dynamic>> runtime cast failures in Future.wait().
       return _parseNotificationList(response.data);
     } on DioException {
-      // Notifications are non-critical to the faculty profile screen.
       return <Map<String, dynamic>>[];
     }
   }

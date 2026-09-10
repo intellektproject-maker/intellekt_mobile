@@ -30,10 +30,12 @@ class _FacultyNotificationsScreenState
   }
 
   Future<void> _loadNotifications() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
 
     try {
       final items = await _repository.getFacultyNotifications(widget.facultyId);
@@ -52,18 +54,27 @@ class _FacultyNotificationsScreenState
   }
 
   Future<void> _markRead(Map<String, dynamic> notification) async {
-    final module = notification['module_name']?.toString().trim() ?? '';
-    if (module.isEmpty) return;
+    if (notification['is_read'] == true) return;
 
-    await _repository.markNotificationRead(
-      facultyId: widget.facultyId,
-      moduleName: module,
-    );
+    final rawId = notification['id'];
+    final notificationId = rawId is int ? rawId : int.tryParse(rawId?.toString() ?? '');
+    if (notificationId == null) return;
 
-    if (!mounted) return;
-    setState(() {
-      notification['is_read'] = true;
-    });
+    try {
+      await _repository.markSingleNotificationRead(
+        facultyId: widget.facultyId,
+        notificationId: notificationId,
+      );
+      if (!mounted) return;
+      setState(() {
+        notification['is_read'] = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to update notification.')),
+      );
+    }
   }
 
   String _message(Map<String, dynamic> item) {
@@ -111,8 +122,7 @@ class _FacultyNotificationsScreenState
                     ? ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
                         children: [
-                          SizedBox(
-                              height: MediaQuery.sizeOf(context).height * .25),
+                          SizedBox(height: MediaQuery.sizeOf(context).height * .25),
                           const Icon(Icons.notifications_none_outlined,
                               size: 52, color: Colors.grey),
                           const SizedBox(height: 12),
@@ -173,8 +183,7 @@ class _FacultyNotificationsScreenState
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Row(
                                             children: [

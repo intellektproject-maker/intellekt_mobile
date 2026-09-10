@@ -24,4 +24,5 @@ class AppRoutes {
   // FACULTY
   // ==============================
   static const facultyProfile = '/faculty/profile';
+  static const facultyNotifications = '/faculty/notifications';
 }

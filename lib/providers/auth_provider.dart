@@ -62,7 +62,6 @@ class AuthProvider extends ChangeNotifier {
 
       _user = restoredUser;
 
-      // Push notification registration is currently student-specific.
       if (restoredUser.isStudent) {
         try {
           await PushNotificationService.instance.registerForStudent(
@@ -70,6 +69,16 @@ class AuthProvider extends ChangeNotifier {
           );
         } catch (error) {
           debugPrint('Could not re-register the notification token: $error');
+        }
+      } else if (restoredUser.isFaculty) {
+        try {
+          await PushNotificationService.instance.registerForFaculty(
+            restoredUser.id,
+          );
+        } catch (error) {
+          debugPrint(
+            'Could not re-register the faculty notification token: $error',
+          );
         }
       }
     } catch (error) {
@@ -115,7 +124,6 @@ class AuthProvider extends ChangeNotifier {
       _user = loginResult;
       await _saveSession(loginResult);
 
-      // Only students register through the existing student notification flow.
       if (loginResult.isStudent) {
         try {
           await PushNotificationService.instance.registerForStudent(
@@ -123,6 +131,16 @@ class AuthProvider extends ChangeNotifier {
           );
         } catch (error) {
           debugPrint('Could not register the notification token: $error');
+        }
+      } else if (loginResult.isFaculty) {
+        try {
+          await PushNotificationService.instance.registerForFaculty(
+            loginResult.id,
+          );
+        } catch (error) {
+          debugPrint(
+            'Could not register the faculty notification token: $error',
+          );
         }
       }
 
@@ -193,6 +211,14 @@ class AuthProvider extends ChangeNotifier {
         await PushNotificationService.instance.unregisterCurrentStudent();
       } catch (error) {
         debugPrint('Could not unregister the notification token: $error');
+      }
+    } else if (isFaculty) {
+      try {
+        await PushNotificationService.instance.unregisterCurrentFaculty();
+      } catch (error) {
+        debugPrint(
+          'Could not unregister the faculty notification token: $error',
+        );
       }
     }
 

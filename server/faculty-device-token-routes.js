@@ -42,6 +42,28 @@ if (!express.application.__facultyDeviceTokenRoutesInstalled) {
         }
       });
 
+      app.put('/faculty-notifications/read/:facultyId/:notificationId', async (req, res) => {
+        const facultyId = String(req.params.facultyId || '').toUpperCase().trim();
+        const notificationId = Number(req.params.notificationId);
+        if (!facultyId || !Number.isInteger(notificationId) || notificationId <= 0) {
+          return res.status(400).json({ error: 'Valid facultyId and notificationId are required' });
+        }
+        try {
+          const result = await pool.query(
+            `UPDATE faculty_notifications
+             SET is_read = TRUE
+             WHERE id = $1 AND UPPER(TRIM(faculty_id)) = $2
+             RETURNING id`,
+            [notificationId, facultyId]
+          );
+          if (result.rowCount === 0) return res.status(404).json({ error: 'Notification not found' });
+          return res.json({ success: true });
+        } catch (error) {
+          console.error('PUT /faculty-notifications/read error:', error);
+          return res.status(500).json({ error: 'Failed to mark notification as read' });
+        }
+      });
+
       if (!app.__facultyNotificationWorkerStarted) {
         app.__facultyNotificationWorkerStarted = true;
         try {

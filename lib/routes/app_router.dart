@@ -7,6 +7,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/onboarding/welcome_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/faculty/faculty_profile_shell.dart';
+import '../screens/faculty/faculty_notifications_screen.dart';
 
 // ==============================
 // STUDENT
@@ -49,7 +50,8 @@ class AppRouter {
             location == AppRoutes.studentFee ||
             location == AppRoutes.studentUsefulLinks ||
             location == AppRoutes.studentRequestPdf;
-        final isFacultyPage = location == AppRoutes.facultyProfile;
+        final isFacultyPage = location == AppRoutes.facultyProfile ||
+            location == AppRoutes.facultyNotifications;
 
         if (isLoggedIn && isAuthenticationPage) {
           if (authProvider.user!.mustResetPassword) {
@@ -106,6 +108,14 @@ class AppRouter {
               facultyId: facultyId,
               authProvider: authProvider,
             );
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.facultyNotifications,
+          builder: (context, state) {
+            final facultyId =
+                authProvider.user?.id.trim().toUpperCase() ?? '';
+            return FacultyNotificationsScreen(facultyId: facultyId);
           },
         ),
         GoRoute(

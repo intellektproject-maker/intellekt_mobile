@@ -24,6 +24,7 @@ class PushNotificationService {
       FlutterLocalNotificationsPlugin();
   final Dio _dio = ApiClient().dio;
   String? _rollNo;
+  String? _facultyId;
   GoRouter? _router;
   AuthProvider? _authProvider;
   String? _pendingRoute;
@@ -74,7 +75,15 @@ class PushNotificationService {
 
     _messaging.onTokenRefresh.listen((token) async {
       final rollNo = _rollNo;
-      if (rollNo != null) await _saveToken(rollNo, token);
+      if (rollNo != null) {
+        await _saveStudentToken(rollNo, token);
+        return;
+      }
+
+      final facultyId = _facultyId;
+      if (facultyId != null) {
+        await _saveFacultyToken(facultyId, token);
+      }
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
@@ -101,18 +110,17 @@ class PushNotificationService {
 
   Future<void> registerForStudent(String rollNo) async {
     _rollNo = rollNo.toUpperCase().trim();
+    _facultyId = null;
 
     try {
       final token = await _messaging.getToken();
       if (token != null && token.isNotEmpty) {
-        await _saveToken(_rollNo!, token);
+        await _saveStudentToken(_rollNo!, token);
       }
     } catch (error) {
       debugPrint('Device notification registration failed: $error');
     }
 
-    // Option A: the app checks the current fee reminder setting whenever the
-    // authenticated student opens/restores the app. No server worker is needed.
     await check24HourFeeReminder(_rollNo!);
   }
 
@@ -128,7 +136,36 @@ class PushNotificationService {
     _rollNo = null;
   }
 
-  Future<void> _saveToken(String rollNo, String token) async {
+  Future<void> registerForFaculty(String facultyId) async {
+    _facultyId = facultyId.toUpperCase().trim();
+    _rollNo = null;
+
+    try {
+      final token = await _messaging.getToken();
+      if (token != null && token.isNotEmpty) {
+        await _saveFacultyToken(_facultyId!, token);
+      }
+    } catch (error) {
+      debugPrint('Faculty device notification registration failed: $error');
+      rethrow;
+    }
+  }
+
+  Future<void> unregisterCurrentFaculty() async {
+    final facultyId = _facultyId;
+    final token = await _messaging.getToken();
+
+    if (facultyId != null && token != null && token.isNotEmpty) {
+      await _dio.delete(
+        ApiRoutes.facultyDeviceToken,
+        data: {'faculty_id': facultyId, 'token': token},
+      );
+    }
+
+    _facultyId = null;
+  }
+
+  Future<void> _saveStudentToken(String rollNo, String token) async {
     await _dio.post(
       ApiRoutes.deviceToken,
       data: {
@@ -140,7 +177,22 @@ class PushNotificationService {
       },
     );
 
-    debugPrint('Notification device registered for $rollNo');
+    debugPrint('Notification device registered for student $rollNo');
+  }
+
+  Future<void> _saveFacultyToken(String facultyId, String token) async {
+    await _dio.post(
+      ApiRoutes.facultyDeviceToken,
+      data: {
+        'faculty_id': facultyId,
+        'token': token,
+        'platform': defaultTargetPlatform == TargetPlatform.android
+            ? 'android'
+            : defaultTargetPlatform.name,
+      },
+    );
+
+    debugPrint('Notification device registered for faculty $facultyId');
   }
 
   Future<void> check24HourFeeReminder(String rollNo) async {

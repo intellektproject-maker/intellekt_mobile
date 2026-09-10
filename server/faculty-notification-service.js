@@ -7,6 +7,8 @@ const INVALID_TOKEN_CODES = new Set([
   'messaging/invalid-registration-token'
 ]);
 
+const ANDROID_NOTIFICATION_CHANNEL_ID = 'intellekt_high_importance';
+
 function getMessaging() {
   if (!admin.apps || admin.apps.length === 0) {
     return null;
@@ -48,7 +50,7 @@ async function sendToFaculty(pool, facultyIds, { title, body, data = {} }) {
       ),
       android: {
         priority: 'high',
-        notification: { channelId: 'default' }
+        notification: { channelId: ANDROID_NOTIFICATION_CHANNEL_ID }
       }
     });
 

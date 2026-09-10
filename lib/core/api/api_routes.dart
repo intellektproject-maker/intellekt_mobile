@@ -18,6 +18,7 @@ class ApiRoutes {
   static const String login = "/login";
 
   static const String deviceToken = "/mobile/device-token";
+  static const String facultyDeviceToken = "/faculty/device-token";
 
   static const String logout = "/logout";
   static const String refreshToken = "/refresh-token";

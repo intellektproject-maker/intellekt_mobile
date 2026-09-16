@@ -8,19 +8,29 @@ const app = express();
 
 let firebaseMessaging = null;
 
-if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
-	try {
-		const serviceAccount = JSON.parse(
-			Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf8')
-		);
-		admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-		firebaseMessaging = admin.messaging();
-		console.log('Firebase Cloud Messaging initialized');
-	} catch (error) {
-		console.error('Firebase initialization failed:', error.message);
-	}
+if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+  try {
+    const serviceAccount = JSON.parse(
+      process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+    );
+
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+
+    firebaseMessaging = admin.messaging();
+
+    console.log('Firebase Cloud Messaging initialized');
+  } catch (error) {
+    console.error(
+      'Firebase initialization failed:',
+      error.message
+    );
+  }
 } else {
-	console.warn('Push notifications disabled: FIREBASE_SERVICE_ACCOUNT_BASE64 is not configured');
+  console.warn(
+    'Push notifications disabled: FIREBASE_SERVICE_ACCOUNT_JSON is not configured'
+  );
 }
 
 app.use(cors());

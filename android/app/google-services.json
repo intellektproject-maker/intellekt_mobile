@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "727007474549",
-    "project_id": "student-mobile-app-f6d0b",
-    "storage_bucket": "student-mobile-app-f6d0b.firebasestorage.app"
+    "project_number": "721182596871",
+    "project_id": "intellekt-58d37",
+    "storage_bucket": "intellekt-58d37.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:727007474549:android:f602abfac8fdd4c15a993c",
+        "mobilesdk_app_id": "1:721182596871:android:b26600f939fabe9e5f2fa2",
         "android_client_info": {
           "package_name": "com.example.intellekt_mobile"
         }
@@ -15,7 +15,26 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCZvBpsSHC6hFRbnwpEd1co5qjWmIwMpQ4"
+          "current_key": "AIzaSyDKk17npW5hhPGVbivg_WF49AbJL0HkZYA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:721182596871:android:2900e4a43f4377c35f2fa2",
+        "android_client_info": {
+          "package_name": "com.intellekt.dashboard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKk17npW5hhPGVbivg_WF49AbJL0HkZYA"
         }
       ],
       "services": {

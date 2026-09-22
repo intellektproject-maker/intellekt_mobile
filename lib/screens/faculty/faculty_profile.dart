@@ -862,7 +862,7 @@ class _TaskCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 7),
                 _TaskLine('Class', task.className),
-                _TaskLine('Task Type', task.taskType),
+                _TaskLine('Task Frequency', task.taskType),
                 _TaskLine('Priority', task.priority),
                 _TaskLine(
                   'Test Code',

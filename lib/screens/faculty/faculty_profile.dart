@@ -82,6 +82,16 @@ class _FacultyProfileState extends State<FacultyProfile> {
 
       if (!mounted) return;
 
+      if (!_isAdmin) {
+        try {
+          _facultyList = await _taskRepository.getFacultyList();
+        } catch (e) {
+          debugPrint('Faculty directory load failed: $e');
+        }
+      }
+
+      if (!mounted) return;
+
       setState(() {
         _faculty = faculty;
         _myTasks = myTasks;
@@ -462,6 +472,7 @@ class _FacultyProfileState extends State<FacultyProfile> {
               const SizedBox(height: 16),
               _TaskPanel(
                 title: 'My Task Checklist',
+                facultyList: _facultyList,
                 loading: _tasksLoading,
                 tasks: _filtered(_myTasks, _myFilter),
                 filter: _myFilter,
@@ -478,6 +489,7 @@ class _FacultyProfileState extends State<FacultyProfile> {
               const SizedBox(height: 16),
               _TaskPanel(
                 title: 'All Faculty Assigned Tasks',
+                facultyList: _facultyList,
                 loading: _allLoading,
                 tasks: _filtered(_allTasks, _allFilter),
                 filter: _allFilter,
@@ -494,6 +506,7 @@ class _FacultyProfileState extends State<FacultyProfile> {
               const SizedBox(height: 16),
               _TaskPanel(
                 title: 'All Faculty Daily Task',
+                facultyList: _facultyList,
                 loading: _dailyLoading,
                 tasks: _filtered(_dailyTasks, _dailyFilter),
                 filter: _dailyFilter,
@@ -642,6 +655,7 @@ class _FacultyProfileState extends State<FacultyProfile> {
 
 class _TaskPanel extends StatelessWidget {
   final String title;
+  final List<FacultyModel> facultyList;
   final bool loading;
   final List<FacultyTaskModel> tasks;
   final String filter;
@@ -655,6 +669,7 @@ class _TaskPanel extends StatelessWidget {
 
   const _TaskPanel({
     required this.title,
+    required this.facultyList,
     required this.loading,
     required this.tasks,
     required this.filter,
@@ -678,6 +693,19 @@ class _TaskPanel extends StatelessWidget {
       return stats.where((task) => task.isOverdue).length;
     }
     return stats.where((task) => task.isDueToday).length;
+  }
+
+  String _assignedByDisplay(FacultyTaskModel task) {
+    final assignedById = task.assignedBy.trim().toUpperCase();
+
+    for (final faculty in facultyList) {
+      if (faculty.facultyId.trim().toUpperCase() == assignedById &&
+          faculty.name.trim().isNotEmpty) {
+        return '${faculty.name} (${faculty.facultyId})';
+      }
+    }
+
+    return task.assignedBy;
   }
 
   @override
@@ -762,6 +790,7 @@ class _TaskPanel extends StatelessWidget {
               onToggle: () => onToggle(task),
               onDelete: () => onDelete(task),
               onReassign: () => onReassign(task),
+              assignedByDisplay: _assignedByDisplay(task),
             ),
           ),
       ],
@@ -771,6 +800,7 @@ class _TaskPanel extends StatelessWidget {
 
 class _TaskCard extends StatelessWidget {
   final FacultyTaskModel task;
+  final String assignedByDisplay;
   final bool showCheckbox;
   final bool canManage;
   final VoidCallback onToggle;
@@ -779,6 +809,7 @@ class _TaskCard extends StatelessWidget {
 
   const _TaskCard({
     required this.task,
+    required this.assignedByDisplay,
     required this.showCheckbox,
     required this.canManage,
     required this.onToggle,
@@ -859,7 +890,7 @@ class _TaskCard extends StatelessWidget {
                 if (task.assignedBy.isNotEmpty) ...[
                   const SizedBox(height: 5),
                   Text(
-                    'Assigned by: ${task.assignedBy}',
+                    'Assigned by: $assignedByDisplay',
                     style: const TextStyle(
                       color: Colors.grey,
                       fontSize: 12,

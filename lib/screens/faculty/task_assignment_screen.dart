@@ -113,10 +113,24 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
       return;
     }
 
-    if ((_testCode == null || _testCode!.isEmpty) &&
-        _otherTasksController.text.trim().isEmpty) {
-      _showMessage('Select Test Code or enter Other Tasks');
-      return;
+    final isOthersClass =
+        _className!.trim().toLowerCase() == 'others';
+
+    if (isOthersClass) {
+      if (_otherTasksController.text.trim().isEmpty) {
+        _showMessage('Please enter Other Tasks for the Others class');
+        return;
+      }
+    } else {
+      if (_testCode == null || _testCode!.isEmpty) {
+        _showMessage('Please select Test Code');
+        return;
+      }
+
+      if (_totalNoteController.text.trim().isEmpty) {
+        _showMessage('Please enter Total Test Note');
+        return;
+      }
     }
 
     if (_taskType == 'Weekly' && _dueDate == null) {
@@ -238,7 +252,7 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
             const SizedBox(height: 16),
           ],
           _dropdown<FacultyModel>(
-            label: 'Faculty Name',
+            label: 'Faculty Name *',
             value: selectedFaculty,
             items: _facultyList,
             display: (faculty) => '${faculty.name} (${faculty.facultyId})',
@@ -247,13 +261,13 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
             ),
           ),
           _dropdown<String>(
-            label: 'Class',
+            label: 'Class *',
             value: _className,
             items: _classOptions,
             onChanged: (value) => setState(() => _className = value),
           ),
           _dropdown<String>(
-            label: 'Task Type',
+            label: 'Task Frequency *',
             value: _taskType,
             items: const ['Weekly', 'Daily'],
             onChanged: (value) => setState(() {
@@ -265,14 +279,14 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
             }),
           ),
           _dropdown<String>(
-            label: 'Test Code',
+            label: _isOthersClass ? 'Test Code' : 'Test Code *',
             value: _testCode,
             items: _testCodes,
             onChanged: (value) => setState(() => _testCode = value),
           ),
           _textField(
             controller: _totalNoteController,
-            label: 'Total Test Note',
+            label: _isOthersClass ? 'Total Test Note' : 'Total Test Note *',
           ),
           const SizedBox(height: 14),
           if (_taskType == 'Weekly') ...[
@@ -281,7 +295,7 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
               onTap: _pickDueDate,
               child: InputDecorator(
                 decoration: const InputDecoration(
-                  labelText: 'Due Date',
+                  labelText: 'Due Date *',
                   border: OutlineInputBorder(),
                   suffixIcon: Icon(Icons.calendar_today_outlined),
                 ),
@@ -292,7 +306,7 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
             ),
             const SizedBox(height: 14),
             _dropdown<String>(
-              label: 'Priority',
+              label: 'Priority *',
               value: _priority,
               items: const ['High', 'Medium', 'Low'],
               onChanged: (value) => setState(
@@ -302,7 +316,7 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
           ],
           _textField(
             controller: _otherTasksController,
-            label: 'Other Tasks',
+            label: _isOthersClass ? 'Other Tasks *' : 'Other Tasks',
             maxLines: 5,
           ),
           const SizedBox(height: 22),
@@ -330,6 +344,9 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
       ),
     );
   }
+
+  bool get _isOthersClass =>
+      _className?.trim().toLowerCase() == 'others';
 
   Widget _textField({
     required TextEditingController controller,

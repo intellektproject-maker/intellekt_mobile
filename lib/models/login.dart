@@ -18,6 +18,7 @@ class LoginModel {
   final String id;
   final String name;
   final String role;
+  final String studentType;
   final bool mustResetPassword;
 
   LoginModel({
@@ -26,6 +27,7 @@ class LoginModel {
     required this.id,
     required this.name,
     required this.role,
+    this.studentType = 'regular',
     required this.mustResetPassword,
   });
 
@@ -36,6 +38,7 @@ class LoginModel {
       id: json["id"] ?? "",
       name: json["name"] ?? "",
       role: json["role"] ?? "",
+      studentType: (json["studentType"] ?? json["student_type"] ?? "regular").toString(),
       mustResetPassword:
           json["mustResetPassword"] ??
           json["must_reset_password"] ??
@@ -50,6 +53,7 @@ class LoginModel {
       "id": id,
       "name": name,
       "role": role,
+      "student_type": studentType,
       "must_reset_password": mustResetPassword,
     };
   }
@@ -65,6 +69,11 @@ class LoginModel {
   bool get isFaculty =>
       role.trim().toLowerCase() == 'faculty' ||
       (role.trim().isEmpty && id.trim().toUpperCase().startsWith('IG'));
+
+  bool get isTestBatchStudent =>
+      isStudent && studentType.trim().toLowerCase() == 'test_batch';
+
+  bool get isRegularStudent => isStudent && !isTestBatchStudent;
 
   bool get isAdmin => role.trim().toLowerCase() == 'admin';
 }

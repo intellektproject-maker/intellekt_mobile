@@ -140,12 +140,6 @@ class PushNotificationService {
     _facultyId = facultyId.toUpperCase().trim();
     _rollNo = null;
 
-    if (_facultyId == 'IG001' || _facultyId == 'IG002') {
-      await scheduleTestBatchAdminReminders(_facultyId!);
-    } else {
-      await _cancelScheduledTestReminders();
-    }
-
     try {
       final token = await _messaging.getToken();
       if (token != null && token.isNotEmpty) {

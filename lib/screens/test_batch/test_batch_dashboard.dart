@@ -43,7 +43,7 @@ class _TestBatchDashboardState extends State<TestBatchDashboard> {
       body: RefreshIndicator(
         onRefresh: () => provider.load(_rollNo),
         child: provider.isLoading && provider.student == null
-            ? const ListView(children: [SizedBox(height: 300), Center(child: CircularProgressIndicator())])
+            ? ListView(children: [const SizedBox(height: 300), const Center(child: CircularProgressIndicator())])
             : provider.error != null && provider.student == null
                 ? ListView(padding: const EdgeInsets.all(24), children: [const SizedBox(height: 180), Text('Unable to load Test Batch data.\nPlease refresh and try again.', textAlign: TextAlign.center)])
                 : ListView(

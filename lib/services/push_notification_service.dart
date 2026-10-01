@@ -6,6 +6,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 import '../core/api/api_client.dart';
 import '../core/api/api_routes.dart';
@@ -39,8 +41,13 @@ class PushNotificationService {
 
   static const String _lastFeeReminderPrefix = 'last_fee_reminder_';
   static const Duration _feeReminderInterval = Duration(hours: 24);
+  static const int _testReminderHour = 9;
+  static const String _scheduledTestReminderIdsKey =
+      'scheduled_test_reminder_ids';
 
   Future<void> initialize() async {
+    tz.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation(DateTime.now().timeZoneName));
     const initializationSettings = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       iOS: DarwinInitializationSettings(),
@@ -122,9 +129,13 @@ class PushNotificationService {
     }
 
     await check24HourFeeReminder(_rollNo!);
+    if (_rollNo!.startsWith('IAT')) {
+      await scheduleTestBatchStudentReminders(_rollNo!);
+    }
   }
 
   Future<void> unregisterCurrentStudent() async {
+    await _cancelScheduledTestReminders();
     final rollNo = _rollNo;
     final token = await _messaging.getToken();
     if (rollNo != null && token != null) {
@@ -140,6 +151,12 @@ class PushNotificationService {
     _facultyId = facultyId.toUpperCase().trim();
     _rollNo = null;
 
+    if (_facultyId == 'IG001' || _facultyId == 'IG002') {
+      await scheduleTestBatchAdminReminders(_facultyId!);
+    } else {
+      await _cancelScheduledTestReminders();
+    }
+
     try {
       final token = await _messaging.getToken();
       if (token != null && token.isNotEmpty) {
@@ -152,6 +169,7 @@ class PushNotificationService {
   }
 
   Future<void> unregisterCurrentFaculty() async {
+    await _cancelScheduledTestReminders();
     final facultyId = _facultyId;
     final token = await _messaging.getToken();
 
@@ -193,6 +211,141 @@ class PushNotificationService {
     );
 
     debugPrint('Notification device registered for faculty $facultyId');
+  }
+
+  Future<void> scheduleTestBatchAdminReminders(String adminId) async {
+    try {
+      await _cancelScheduledTestReminders();
+
+      final response = await _dio.get(
+        '/test-batch/tests',
+        queryParameters: {'adminId': adminId.trim().toUpperCase()},
+      );
+      final data = response.data;
+      final rawTests = data is Map ? data['tests'] : data;
+      if (rawTests is! List) return;
+
+      for (final raw in rawTests.whereType<Map>()) {
+        final test = Map<String, dynamic>.from(raw);
+        final testCode = (test['test_code'] ?? '').toString().trim();
+        final testDate = _parseDate(test['writing_date'] ?? test['test_date']);
+        if (testCode.isEmpty || testDate == null) continue;
+
+        await _scheduleTestReminder(
+          idKey: 'admin:' + adminId + ':' + testCode,
+          title: 'Test Reminder',
+          body: testCode + ' is scheduled in 3 days.',
+          testDate: testDate,
+          daysBefore: 3,
+          payload: {
+            'module_name': 'test-batch-admin-test',
+            'test_code': testCode,
+          },
+        );
+      }
+    } catch (error) {
+      debugPrint('Test Batch admin reminder scheduling failed: $error');
+    }
+  }
+
+  Future<void> scheduleTestBatchStudentReminders(String rollNo) async {
+    try {
+      await _cancelScheduledTestReminders();
+
+      final response = await _dio.get(
+        '/test-batch/student-tests/' +
+            Uri.encodeComponent(rollNo.trim().toUpperCase()),
+      );
+      final data = response.data;
+      final rawTests = data is Map ? data['tests'] : data;
+      if (rawTests is! List) return;
+
+      for (final raw in rawTests.whereType<Map>()) {
+        final test = Map<String, dynamic>.from(raw);
+        final testCode = (test['test_code'] ?? '').toString().trim();
+        final isRegistered = test['is_registered'] == true;
+        final writingDate = _parseDate(test['writing_date']);
+        if (testCode.isEmpty || !isRegistered || writingDate == null) continue;
+
+        await _scheduleTestReminder(
+          idKey: 'student:' + rollNo + ':' + testCode,
+          title: 'Test Reminder',
+          body: testCode + ' is scheduled tomorrow.',
+          testDate: writingDate,
+          daysBefore: 1,
+          payload: {
+            'module_name': 'test-batch-student-test',
+            'test_code': testCode,
+          },
+        );
+      }
+    } catch (error) {
+      debugPrint('Test Batch student reminder scheduling failed: $error');
+    }
+  }
+
+  DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    final parsed = DateTime.tryParse(value.toString());
+    return parsed?.toLocal();
+  }
+
+  Future<void> _scheduleTestReminder({
+    required String idKey,
+    required String title,
+    required String body,
+    required DateTime testDate,
+    required int daysBefore,
+    required Map<String, dynamic> payload,
+  }) async {
+    final reminderDate = DateTime(
+      testDate.year,
+      testDate.month,
+      testDate.day - daysBefore,
+      _testReminderHour,
+    );
+    final scheduledAt = tz.TZDateTime.from(reminderDate, tz.local);
+
+    if (!scheduledAt.isAfter(tz.TZDateTime.now(tz.local))) return;
+
+    final id = idKey.hashCode & 0x7fffffff;
+    await _localNotifications.zonedSchedule(
+      id,
+      title,
+      body,
+      scheduledAt,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'intellekt_high_importance',
+          'Intellekt notifications',
+          channelDescription: 'Test, attendance, marks and student updates',
+          importance: Importance.max,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      payload: jsonEncode(payload),
+    );
+
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList(_scheduledTestReminderIdsKey) ?? <String>[];
+    if (!ids.contains(id.toString())) {
+      ids.add(id.toString());
+      await prefs.setStringList(_scheduledTestReminderIdsKey, ids);
+    }
+
+    debugPrint('Scheduled test reminder ' + idKey + ' for ' + scheduledAt.toString());
+  }
+
+  Future<void> _cancelScheduledTestReminders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList(_scheduledTestReminderIdsKey) ?? <String>[];
+    for (final value in ids) {
+      final id = int.tryParse(value);
+      if (id != null) await _localNotifications.cancel(id);
+    }
+    await prefs.remove(_scheduledTestReminderIdsKey);
   }
 
   Future<void> check24HourFeeReminder(String rollNo) async {
@@ -333,6 +486,10 @@ class PushNotificationService {
       case 'marks':
       case 'mark':
         return AppRoutes.studentMarks;
+      case 'test-batch-admin-test':
+        return AppRoutes.testBatchAdminTests;
+      case 'test-batch-student-test':
+        return AppRoutes.testBatchRegistration;
       case 'test':
       case 'tests':
       case 'test-schedule':

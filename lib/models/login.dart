@@ -64,6 +64,7 @@ class LoginModel {
 
   bool get isStudent =>
       role.trim().toLowerCase() == 'student' ||
+      id.trim().toUpperCase().startsWith('IAT') ||
       (role.trim().isEmpty && id.trim().toUpperCase().startsWith('IA'));
 
   bool get isFaculty =>
@@ -71,7 +72,8 @@ class LoginModel {
       (role.trim().isEmpty && id.trim().toUpperCase().startsWith('IG'));
 
   bool get isTestBatchStudent =>
-      isStudent && studentType.trim().toLowerCase() == 'test_batch';
+      id.trim().toUpperCase().startsWith('IAT') ||
+      (isStudent && studentType.trim().toLowerCase() == 'test_batch');
 
   bool get isRegularStudent => isStudent && !isTestBatchStudent;
 

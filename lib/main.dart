@@ -14,6 +14,7 @@ import 'providers/student/marks_provider.dart';
 import 'providers/student/fee_provider.dart';
 import 'providers/student/useful_links_provider.dart';
 import 'providers/student/request_pdf_provider.dart';
+import 'providers/test_batch_provider.dart';
 import 'routes/app_router.dart';
 import 'services/push_notification_service.dart';
 
@@ -90,6 +91,9 @@ class IntellektApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => RequestPdfProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => TestBatchProvider(),
         ),
       ],
       child: MaterialApp.router(

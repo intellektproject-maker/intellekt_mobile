@@ -20,6 +20,7 @@ import '../screens/student/test_schedule/test_schedule_screen.dart';
 import '../screens/student/fees/fee_screen.dart';
 import '../screens/student/useful_links/useful_links_screen.dart';
 import '../screens/student/request_pdf/request_pdf_screen.dart';
+import '../screens/test_batch/test_batch_dashboard.dart';
 
 import 'app_routes.dart';
 
@@ -43,6 +44,7 @@ class AppRouter {
         final isAuthenticationPage = location == AppRoutes.splash ||
             location == AppRoutes.welcome ||
             location == AppRoutes.login;
+        final isTestBatchPage = location == AppRoutes.testBatchDashboard;
         final isStudentPage = location == AppRoutes.studentDashboard ||
             location == AppRoutes.studentAttendance ||
             location == AppRoutes.studentMarks ||
@@ -58,14 +60,19 @@ class AppRouter {
             return AppRoutes.changePassword;
           }
           if (authProvider.isFaculty) return AppRoutes.facultyProfile;
+          if (authProvider.isTestBatchStudent) return AppRoutes.testBatchDashboard;
           if (authProvider.isStudent) return AppRoutes.studentDashboard;
         }
 
         if (!isLoggedIn &&
-            (isStudentPage ||
+            (isStudentPage || isTestBatchPage ||
                 isFacultyPage ||
                 location == AppRoutes.changePassword)) {
           return AppRoutes.login;
+        }
+
+        if (isLoggedIn && isTestBatchPage && !authProvider.isTestBatchStudent) {
+          return authProvider.isFaculty ? AppRoutes.facultyProfile : AppRoutes.studentDashboard;
         }
 
         if (isLoggedIn && isFacultyPage && !authProvider.isFaculty) {
@@ -74,7 +81,7 @@ class AppRouter {
               : AppRoutes.login;
         }
 
-        if (isLoggedIn && isStudentPage && !authProvider.isStudent) {
+        if (isLoggedIn && isStudentPage && !authProvider.isRegularStudent) {
           return authProvider.isFaculty
               ? AppRoutes.facultyProfile
               : AppRoutes.login;
@@ -117,6 +124,10 @@ class AppRouter {
                 authProvider.user?.id.trim().toUpperCase() ?? '';
             return FacultyNotificationsScreen(facultyId: facultyId);
           },
+        ),
+        GoRoute(
+          path: AppRoutes.testBatchDashboard,
+          builder: (context, state) => const TestBatchDashboard(),
         ),
         GoRoute(
           path: AppRoutes.studentDashboard,

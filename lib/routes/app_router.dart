@@ -21,6 +21,7 @@ import '../screens/student/fees/fee_screen.dart';
 import '../screens/student/useful_links/useful_links_screen.dart';
 import '../screens/student/request_pdf/request_pdf_screen.dart';
 import '../screens/test_batch/test_batch_dashboard.dart';
+import '../screens/test_batch/test_batch_registration.dart';
 
 import 'app_routes.dart';
 
@@ -44,7 +45,8 @@ class AppRouter {
         final isAuthenticationPage = location == AppRoutes.splash ||
             location == AppRoutes.welcome ||
             location == AppRoutes.login;
-        final isTestBatchPage = location == AppRoutes.testBatchDashboard;
+        final isTestBatchPage = location == AppRoutes.testBatchDashboard ||
+            location == AppRoutes.testBatchRegistration;
         final isStudentPage = location == AppRoutes.studentDashboard ||
             location == AppRoutes.studentAttendance ||
             location == AppRoutes.studentMarks ||
@@ -65,14 +67,17 @@ class AppRouter {
         }
 
         if (!isLoggedIn &&
-            (isStudentPage || isTestBatchPage ||
+            (isStudentPage ||
+                isTestBatchPage ||
                 isFacultyPage ||
                 location == AppRoutes.changePassword)) {
           return AppRoutes.login;
         }
 
         if (isLoggedIn && isTestBatchPage && !authProvider.isTestBatchStudent) {
-          return authProvider.isFaculty ? AppRoutes.facultyProfile : AppRoutes.studentDashboard;
+          return authProvider.isFaculty
+              ? AppRoutes.facultyProfile
+              : AppRoutes.studentDashboard;
         }
 
         if (isLoggedIn && isFacultyPage && !authProvider.isFaculty) {
@@ -129,6 +134,14 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.testBatchDashboard,
           builder: (context, state) => const TestBatchDashboard(),
+        ),
+        GoRoute(
+          path: AppRoutes.testBatchRegistration,
+          builder: (context, state) {
+            final rollNo =
+                authProvider.user?.id.trim().toUpperCase() ?? '';
+            return TestBatchRegistrationScreen(rollNo: rollNo);
+          },
         ),
         GoRoute(
           path: AppRoutes.studentDashboard,

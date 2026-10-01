@@ -22,6 +22,8 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _user != null;
   bool get isStudent => _user?.isStudent ?? false;
   bool get isFaculty => _user?.isFaculty ?? false;
+  bool get isTestBatchStudent => _user?.isTestBatchStudent ?? false;
+  bool get isRegularStudent => _user?.isRegularStudent ?? false;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -124,7 +126,15 @@ class AuthProvider extends ChangeNotifier {
       _user = loginResult;
       await _saveSession(loginResult);
 
-      if (loginResult.isStudent) {
+      if (loginResult.isTestBatchStudent) {
+        try {
+          await PushNotificationService.instance.registerForStudent(
+            loginResult.id,
+          );
+        } catch (error) {
+          debugPrint('Could not register the Test Batch notification token: $error');
+        }
+      } else if (loginResult.isStudent) {
         try {
           await PushNotificationService.instance.registerForStudent(
             loginResult.id,
@@ -186,6 +196,7 @@ class AuthProvider extends ChangeNotifier {
           id: _user!.id,
           name: _user!.name,
           role: _user!.role,
+          studentType: _user!.studentType,
           mustResetPassword: false,
         );
 

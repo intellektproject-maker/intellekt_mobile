@@ -13,6 +13,7 @@ class AppRoutes {
   // STUDENT
   // ==============================
   static const studentDashboard = '/student/dashboard';
+  static const testBatchDashboard = '/test-batch/dashboard';
   static const studentAttendance = '/student/attendance';
   static const studentMarks = '/student/marks';
   static const studentTestSchedule = '/student/test-schedule';

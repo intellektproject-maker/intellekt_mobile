@@ -152,7 +152,6 @@ class PushNotificationService {
   }
 
   Future<void> unregisterCurrentFaculty() async {
-    await _cancelScheduledTestReminders();
     final facultyId = _facultyId;
     final token = await _messaging.getToken();
 

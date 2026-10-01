@@ -23,8 +23,9 @@ class AppRoutes {
   static const studentRequestPdf = '/student/request-pdf';
 
   // ==============================
-  // FACULTY
+  // FACULTY / ADMIN
   // ==============================
   static const facultyProfile = '/faculty/profile';
   static const facultyNotifications = '/faculty/notifications';
+  static const testBatchAdminTests = '/faculty/test-batch/tests';
 }

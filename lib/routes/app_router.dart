@@ -8,10 +8,8 @@ import '../screens/onboarding/welcome_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/faculty/faculty_profile_shell.dart';
 import '../screens/faculty/faculty_notifications_screen.dart';
+import '../screens/faculty/test_batch_admin_tests_screen.dart';
 
-// ==============================
-// STUDENT
-// ==============================
 import '../screens/student/dashboard/student_dashboard.dart';
 import '../screens/student/attendance/attendance_screen.dart'
     as student_attendance;
@@ -55,7 +53,8 @@ class AppRouter {
             location == AppRoutes.studentUsefulLinks ||
             location == AppRoutes.studentRequestPdf;
         final isFacultyPage = location == AppRoutes.facultyProfile ||
-            location == AppRoutes.facultyNotifications;
+            location == AppRoutes.facultyNotifications ||
+            location == AppRoutes.testBatchAdminTests;
 
         if (isLoggedIn && isAuthenticationPage) {
           if (authProvider.user!.mustResetPassword) {
@@ -96,107 +95,66 @@ class AppRouter {
         return null;
       },
       routes: [
-        GoRoute(
-          path: AppRoutes.splash,
-          builder: (context, state) => const SplashScreen(),
-        ),
-        GoRoute(
-          path: AppRoutes.welcome,
-          builder: (context, state) => const WelcomeScreen(),
-        ),
-        GoRoute(
-          path: AppRoutes.login,
-          builder: (context, state) => const LoginScreen(),
-        ),
-        GoRoute(
-          path: AppRoutes.changePassword,
-          builder: (context, state) => const ChangePasswordScreen(),
-        ),
+        GoRoute(path: AppRoutes.splash, builder: (context, state) => const SplashScreen()),
+        GoRoute(path: AppRoutes.welcome, builder: (context, state) => const WelcomeScreen()),
+        GoRoute(path: AppRoutes.login, builder: (context, state) => const LoginScreen()),
+        GoRoute(path: AppRoutes.changePassword, builder: (context, state) => const ChangePasswordScreen()),
         GoRoute(
           path: AppRoutes.facultyProfile,
-          builder: (context, state) {
-            final facultyId =
-                authProvider.user?.id.trim().toUpperCase() ?? '';
-            return FacultyProfileShell(
-              facultyId: facultyId,
-              authProvider: authProvider,
-            );
-          },
+          builder: (context, state) => FacultyProfileShell(
+            facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
+            authProvider: authProvider,
+          ),
         ),
         GoRoute(
           path: AppRoutes.facultyNotifications,
-          builder: (context, state) {
-            final facultyId =
-                authProvider.user?.id.trim().toUpperCase() ?? '';
-            return FacultyNotificationsScreen(facultyId: facultyId);
-          },
+          builder: (context, state) => FacultyNotificationsScreen(
+            facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
         ),
         GoRoute(
-          path: AppRoutes.testBatchDashboard,
-          builder: (context, state) => const TestBatchDashboard(),
+          path: AppRoutes.testBatchAdminTests,
+          builder: (context, state) => TestBatchAdminTestsScreen(
+            adminId: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
         ),
+        GoRoute(path: AppRoutes.testBatchDashboard, builder: (context, state) => const TestBatchDashboard()),
         GoRoute(
           path: AppRoutes.testBatchRegistration,
-          builder: (context, state) {
-            final rollNo =
-                authProvider.user?.id.trim().toUpperCase() ?? '';
-            return TestBatchRegistrationScreen(rollNo: rollNo);
-          },
+          builder: (context, state) => TestBatchRegistrationScreen(
+            rollNo: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
         ),
-        GoRoute(
-          path: AppRoutes.studentDashboard,
-          builder: (context, state) => const StudentDashboard(),
-        ),
-        GoRoute(
-          path: AppRoutes.studentAttendance,
-          builder: (context, state) =>
-              const student_attendance.AttendanceScreen(),
-        ),
+        GoRoute(path: AppRoutes.studentDashboard, builder: (context, state) => const StudentDashboard()),
+        GoRoute(path: AppRoutes.studentAttendance, builder: (context, state) => const student_attendance.AttendanceScreen()),
         GoRoute(
           path: AppRoutes.studentMarks,
-          builder: (context, state) {
-            final roll = state.uri.queryParameters['roll'] ??
-                authProvider.user?.id ??
-                'IA001';
-            return MarksScreen(rollNo: roll);
-          },
+          builder: (context, state) => MarksScreen(
+            rollNo: state.uri.queryParameters['roll'] ?? authProvider.user?.id ?? 'IA001',
+          ),
         ),
         GoRoute(
           path: AppRoutes.studentTestSchedule,
-          builder: (context, state) {
-            final roll = state.uri.queryParameters['roll'] ??
-                authProvider.user?.id ??
-                'IA001';
-            return TestScheduleScreen(rollNo: roll);
-          },
+          builder: (context, state) => TestScheduleScreen(
+            rollNo: state.uri.queryParameters['roll'] ?? authProvider.user?.id ?? 'IA001',
+          ),
         ),
         GoRoute(
           path: AppRoutes.studentFee,
-          builder: (context, state) {
-            final roll = state.uri.queryParameters['roll'] ??
-                authProvider.user?.id ??
-                'IA001';
-            return FeeScreen(rollNo: roll);
-          },
+          builder: (context, state) => FeeScreen(
+            rollNo: state.uri.queryParameters['roll'] ?? authProvider.user?.id ?? 'IA001',
+          ),
         ),
-        GoRoute(
-          path: AppRoutes.studentUsefulLinks,
-          builder: (context, state) => const UsefulLinksScreen(),
-        ),
+        GoRoute(path: AppRoutes.studentUsefulLinks, builder: (context, state) => const UsefulLinksScreen()),
         GoRoute(
           path: AppRoutes.studentRequestPdf,
-          builder: (context, state) {
-            final roll = state.uri.queryParameters['roll'] ??
-                authProvider.user?.id ??
-                'IA001';
-            return RequestPdfScreen(rollNo: roll);
-          },
+          builder: (context, state) => RequestPdfScreen(
+            rollNo: state.uri.queryParameters['roll'] ?? authProvider.user?.id ?? 'IA001',
+          ),
         ),
       ],
       errorBuilder: (context, state) => Scaffold(
-        body: Center(
-          child: Text('404\n${state.uri}', textAlign: TextAlign.center),
-        ),
+        body: Center(child: Text('404\n' + state.uri.toString(), textAlign: TextAlign.center)),
       ),
     );
   }

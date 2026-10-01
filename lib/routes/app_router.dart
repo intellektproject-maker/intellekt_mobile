@@ -82,6 +82,7 @@ class AppRouter {
         }
 
         if (isLoggedIn && isStudentPage && !authProvider.isRegularStudent) {
+          if (authProvider.isTestBatchStudent) return AppRoutes.testBatchDashboard;
           return authProvider.isFaculty
               ? AppRoutes.facultyProfile
               : AppRoutes.login;

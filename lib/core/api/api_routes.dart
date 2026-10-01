@@ -17,7 +17,7 @@ class ApiRoutes {
   // endpoint and already supports both students and faculty.
   static const String login = "/login";
 
-  static const String deviceToken = "/mobile/device-token";
+  static const String deviceToken = "/device-token";
   static const String facultyDeviceToken = "/faculty/device-token";
 
   static const String logout = "/logout";

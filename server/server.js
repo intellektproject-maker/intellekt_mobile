@@ -181,6 +181,32 @@ app.post('/login', async (req, res) => {
 			});
 		}
 
+		if (idUpper.startsWith('IAT')) {
+			const result = await pool.query(
+				`SELECT roll_no, name, password, must_reset_password FROM test_batch_students WHERE roll_no = $1`,
+				[ idUpper ]
+			);
+
+			if (result.rows.length === 0) {
+				return res.status(401).json({ error: 'Invalid credentials' });
+			}
+
+			const user = result.rows[0];
+
+			if (String(user.password) !== String(password)) {
+				return res.status(401).json({ error: 'Invalid credentials' });
+			}
+
+			return res.json({
+				success: true,
+				role: 'student',
+				studentType: 'test_batch',
+				id: idUpper,
+				name: user.name || '',
+				mustResetPassword: user.must_reset_password === true
+			});
+		}
+
 		if (prefix === 'IA') {
 			const result = await pool.query(
 				`SELECT roll_no, password, must_reset_password FROM students WHERE roll_no = $1`,
@@ -369,20 +395,97 @@ app.put('/mobile/reset-password', async (req, res) => {
 	const { id, newPassword } = req.body || {};
 	const rollNo = String(id || '').toUpperCase().trim();
 
-	if (!rollNo.startsWith('IA') || !newPassword || String(newPassword).length < 6) {
+	if (!rollNo || !newPassword || String(newPassword).length < 6) {
 		return res.status(400).json({ error: 'Valid student ID and a 6-character password are required' });
 	}
 
 	try {
+		const isTestBatch = rollNo.startsWith('IAT');
+		const table = isTestBatch ? 'test_batch_students' : 'students';
+
 		const result = await pool.query(
-			`UPDATE students SET password = $1, must_reset_password = false WHERE roll_no = $2 RETURNING roll_no`,
+			`UPDATE ${table} SET password = $1, must_reset_password = false WHERE roll_no = $2 RETURNING roll_no`,
 			[ newPassword, rollNo ]
 		);
 		if (result.rowCount === 0) return res.status(404).json({ error: 'Student not found' });
 		return res.json({ success: true, message: 'Password updated successfully' });
 	} catch (err) {
 		console.error('PUT /mobile/reset-password error:', err);
-		return res.status(500).json({ error: 'Failed to reset password' });
+		res.status(500).json({ error: 'Failed to reset password' });
+	}
+});
+
+/* =========================================================
+	TEST BATCH STUDENT PROFILE / MARKS / ATTENDANCE
+========================================================= */
+app.get('/test-batch/student/:rollNo', async (req, res) => {
+	const rollNo = String(req.params.rollNo || '').toUpperCase().trim();
+	if (!/^IAT[0-9]{3,}$/.test(rollNo)) {
+		return res.status(400).json({ error: 'Invalid Test Batch roll number' });
+	}
+	try {
+		const result = await pool.query(
+			`SELECT s.roll_no, s.name, s.class, s.board, s.mode_of_education,
+					s.phone, s.email, s.school_name, s.test_series_id,
+					ts.name AS test_series_name
+			 FROM test_batch_students s
+			 JOIN test_series ts ON ts.id = s.test_series_id
+			 WHERE s.roll_no = $1`,
+			[rollNo]
+		);
+		if (result.rows.length === 0) {
+			return res.status(404).json({ error: 'Test Batch student not found' });
+		}
+		res.json({ student: result.rows[0] });
+	} catch (err) {
+		console.error('GET /test-batch/student/:rollNo error:', err);
+		res.status(500).json({ error: 'Failed to load Test Batch student' });
+	}
+});
+
+app.get('/test-batch/marks/:rollNo', async (req, res) => {
+	const rollNo = String(req.params.rollNo || '').toUpperCase().trim();
+	if (!/^IAT[0-9]{3,}$/.test(rollNo)) {
+		return res.status(400).json({ error: 'Invalid Test Batch roll number' });
+	}
+	try {
+		const result = await pool.query(
+			`SELECT id, test_code, subject_name, total_marks, marks_obtained,
+					comments, created_at
+			 FROM test_batch_marks
+			 WHERE roll_no = $1
+			 ORDER BY created_at DESC, id DESC`,
+			[rollNo]
+		);
+		res.json(result.rows);
+	} catch (err) {
+		console.error('GET /test-batch/marks/:rollNo error:', err);
+		res.status(500).json({ error: 'Failed to load Test Batch marks' });
+	}
+});
+
+app.get('/test-batch/attendance/:rollNo', async (req, res) => {
+	const rollNo = String(req.params.rollNo || '').toUpperCase().trim();
+	if (!/^IAT[0-9]{3,}$/.test(rollNo)) {
+		return res.status(400).json({ error: 'Invalid Test Batch roll number' });
+	}
+	try {
+		const result = await pool.query(
+			`SELECT id, attendance_date, status, marked_by, marked_at, edited_by, edited_at
+			 FROM test_batch_attendance
+			 WHERE roll_no = $1
+			 ORDER BY attendance_date DESC, id DESC`,
+			[rollNo]
+		);
+		const total = result.rows.length;
+		const present = result.rows.filter((row) => row.status === 'Present').length;
+		res.json({
+			attendance: result.rows,
+			attendancePercentage: total ? (present / total) * 100 : 0
+		});
+	} catch (err) {
+		console.error('GET /test-batch/attendance/:rollNo error:', err);
+		res.status(500).json({ error: 'Failed to load Test Batch attendance' });
 	}
 });
 

@@ -35,30 +35,28 @@ class TestBatchProvider extends ChangeNotifier {
 
       notifyListeners();
 
-      try {
-        _marks = await TestBatchService.getMarks(rollNo);
-      } catch (error) {
-        debugPrint('Could not load Test Batch marks: $error');
-        _marks = [];
-      }
+      // The Test Batch student endpoint already returns the student's
+      // marks and attendance. Keep the app on that single source of truth.
+      final rawMarks = studentData['marks'];
+      _marks = rawMarks is List
+          ? rawMarks
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList()
+          : [];
 
-      try {
-        final attendanceData = await TestBatchService.getAttendance(rollNo);
-        final rawAttendance = attendanceData['attendance'];
-        _attendance = rawAttendance is List
-            ? rawAttendance
-                .map((item) => Map<String, dynamic>.from(item as Map))
-                .toList()
-            : [];
-        _attendancePercentage = double.tryParse(
-              attendanceData['attendancePercentage']?.toString() ?? '0',
-            ) ??
-            0;
-      } catch (error) {
-        debugPrint('Could not load Test Batch attendance: $error');
-        _attendance = [];
-        _attendancePercentage = 0;
-      }
+      final rawAttendance = studentData['attendance'];
+      _attendance = rawAttendance is List
+          ? rawAttendance
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList()
+          : [];
+
+      _attendancePercentage = double.tryParse(
+            studentData['attendancePercentage']?.toString() ?? '0',
+          ) ??
+          0;
     } catch (error) {
       _student = null;
       _marks = [];

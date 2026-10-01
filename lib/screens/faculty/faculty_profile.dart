@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/constants/colors.dart';
 import '../../models/faculty_model.dart';
@@ -599,6 +600,15 @@ class _FacultyProfileState extends State<FacultyProfile> {
             () => _activeSection =
                 _activeSection == 'assignTask' ? '' : 'assignTask',
           ),
+        ),
+      );
+
+      boxes.add(
+        _TaskBox(
+          title: 'Test Batch Posted Tests',
+          description: 'View tests posted for Test Batch students.',
+          active: false,
+          onTap: () => context.push('/faculty/test-batch/tests'),
         ),
       );
     }

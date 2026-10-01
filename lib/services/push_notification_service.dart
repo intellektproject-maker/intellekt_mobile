@@ -47,7 +47,7 @@ class PushNotificationService {
 
   Future<void> initialize() async {
     tz.initializeTimeZones();
-    tz.setLocalLocation(tz.getLocation(DateTime.now().timeZoneName));
+    tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
     const initializationSettings = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       iOS: DarwinInitializationSettings(),

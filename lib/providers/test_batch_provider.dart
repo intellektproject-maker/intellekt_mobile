@@ -21,21 +21,49 @@ class TestBatchProvider extends ChangeNotifier {
     _isLoading = true;
     _error = null;
     notifyListeners();
+
     try {
       final studentData = await TestBatchService.getStudent(rollNo);
-      final marksData = await TestBatchService.getMarks(rollNo);
-      final attendanceData = await TestBatchService.getAttendance(rollNo);
       final rawStudent = studentData['student'];
-      _student = rawStudent is Map ? Map<String, dynamic>.from(rawStudent) : null;
-      _marks = marksData;
-      final rawAttendance = attendanceData['attendance'];
-      _attendance = rawAttendance is List
-          ? rawAttendance.map((item) => Map<String, dynamic>.from(item as Map)).toList()
-          : [];
-      _attendancePercentage = double.tryParse(
-            attendanceData['attendancePercentage']?.toString() ?? '0',
-          ) ?? 0;
+      _student = rawStudent is Map
+          ? Map<String, dynamic>.from(rawStudent)
+          : null;
+
+      if (_student == null) {
+        throw Exception('Test Batch student profile was not returned.');
+      }
+
+      notifyListeners();
+
+      try {
+        _marks = await TestBatchService.getMarks(rollNo);
+      } catch (error) {
+        debugPrint('Could not load Test Batch marks: $error');
+        _marks = [];
+      }
+
+      try {
+        final attendanceData = await TestBatchService.getAttendance(rollNo);
+        final rawAttendance = attendanceData['attendance'];
+        _attendance = rawAttendance is List
+            ? rawAttendance
+                .map((item) => Map<String, dynamic>.from(item as Map))
+                .toList()
+            : [];
+        _attendancePercentage = double.tryParse(
+              attendanceData['attendancePercentage']?.toString() ?? '0',
+            ) ??
+            0;
+      } catch (error) {
+        debugPrint('Could not load Test Batch attendance: $error');
+        _attendance = [];
+        _attendancePercentage = 0;
+      }
     } catch (error) {
+      _student = null;
+      _marks = [];
+      _attendance = [];
+      _attendancePercentage = 0;
       _error = error.toString().replaceFirst('Exception: ', '');
     } finally {
       _isLoading = false;

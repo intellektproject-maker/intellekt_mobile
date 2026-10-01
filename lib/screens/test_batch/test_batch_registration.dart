@@ -95,14 +95,16 @@ class _TestBatchRegistrationScreenState
       selectedDate = firstDate;
     }
 
-    final duration = int.tryParse(test['duration_minutes']?.toString() ?? '');
-    if (duration != 90 && duration != 180) {
+    final durationValue =
+        int.tryParse(test['duration_minutes']?.toString() ?? '');
+    if (durationValue != 90 && durationValue != 180) {
       _showMessage(
         'This test has an unsupported slot duration.',
         isError: true,
       );
       return;
     }
+    final duration = durationValue!;
 
     var slots = _slotsForDate(selectedDate, duration);
     if (slots.isEmpty) {
@@ -359,8 +361,8 @@ class _TestBatchRegistrationScreenState
       body: RefreshIndicator(
         onRefresh: _loadTests,
         child: _loading
-            ? const ListView(
-                children: [
+            ? ListView(
+                children: const [
                   SizedBox(height: 260),
                   Center(child: CircularProgressIndicator()),
                 ],

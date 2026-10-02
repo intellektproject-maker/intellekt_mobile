@@ -20,6 +20,9 @@ import '../screens/student/useful_links/useful_links_screen.dart';
 import '../screens/student/request_pdf/request_pdf_screen.dart';
 import '../screens/test_batch/test_batch_dashboard.dart';
 import '../screens/test_batch/test_batch_registration.dart';
+import '../screens/test_batch/academic_overview_screen.dart';
+import '../screens/test_batch/test_batch_marks_screen.dart';
+import '../screens/test_batch/test_batch_attendance_screen.dart';
 
 import 'app_routes.dart';
 
@@ -44,7 +47,10 @@ class AppRouter {
             location == AppRoutes.welcome ||
             location == AppRoutes.login;
         final isTestBatchPage = location == AppRoutes.testBatchDashboard ||
-            location == AppRoutes.testBatchRegistration;
+            location == AppRoutes.testBatchRegistration ||
+            location == AppRoutes.testBatchAcademicOverview ||
+            location == AppRoutes.testBatchMarks ||
+            location == AppRoutes.testBatchAttendance;
         final isStudentPage = location == AppRoutes.studentDashboard ||
             location == AppRoutes.studentAttendance ||
             location == AppRoutes.studentMarks ||
@@ -124,6 +130,18 @@ class AppRouter {
           builder: (context, state) => TestBatchRegistrationScreen(
             rollNo: authProvider.user?.id.trim().toUpperCase() ?? '',
           ),
+        ),
+        GoRoute(
+          path: AppRoutes.testBatchAcademicOverview,
+          builder: (context, state) => const TestBatchAcademicOverviewScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.testBatchMarks,
+          builder: (context, state) => const TestBatchMarksScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.testBatchAttendance,
+          builder: (context, state) => const TestBatchAttendanceScreen(),
         ),
         GoRoute(path: AppRoutes.studentDashboard, builder: (context, state) => const StudentDashboard()),
         GoRoute(path: AppRoutes.studentAttendance, builder: (context, state) => const student_attendance.AttendanceScreen()),

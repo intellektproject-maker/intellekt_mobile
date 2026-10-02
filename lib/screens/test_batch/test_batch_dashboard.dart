@@ -178,10 +178,24 @@ class _TestBatchDashboardState extends State<TestBatchDashboard> {
                                           : Colors.red,
                                     ),
                                     title: Text(
-                                      item['attendance_date']?.toString() ?? '-',
+                                      (item['test_code'] ?? 'Test').toString(),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      'Writing Date: ' + _formatWritingDate(item['attendance_date']),
                                     ),
                                     trailing: Text(
                                       item['status']?.toString() ?? '-',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: item['status'] == 'Present'
+                                            ? Colors.green.shade700
+                                            : Colors.red.shade700,
+                                      ),
                                     ),
                                   ),
                                 ).toList(),
@@ -192,6 +206,22 @@ class _TestBatchDashboardState extends State<TestBatchDashboard> {
       ),
     );
   }
+}
+
+String _formatWritingDate(dynamic value) {
+  if (value == null) return '-';
+
+  final raw = value.toString();
+  final parsed = DateTime.tryParse(raw);
+
+  if (parsed == null) {
+    return raw.split('T').first;
+  }
+
+  final local = parsed.toLocal();
+  return '${local.day.toString().padLeft(2, '0')}-'
+      '${local.month.toString().padLeft(2, '0')}-'
+      '${local.year}';
 }
 
 class _ProfileCard extends StatelessWidget {

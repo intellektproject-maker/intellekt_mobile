@@ -80,10 +80,7 @@ class _TestBatchDashboardState extends State<TestBatchDashboard> {
                       Card(
                         elevation: 2,
                         child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 6,
-                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
                           leading: const CircleAvatar(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
@@ -91,116 +88,17 @@ class _TestBatchDashboardState extends State<TestBatchDashboard> {
                           ),
                           title: const Text(
                             'Test Registration',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
-                            ),
+                            style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary),
                           ),
                           subtitle: const Text(
                             'View posted tests and register for your test date and slot.',
                           ),
-                          trailing: const Icon(
-                            Icons.chevron_right_rounded,
-                            color: AppColors.primary,
-                          ),
-                          onTap: () => context.push(
-                            AppRoutes.testBatchRegistration,
-                          ),
+                          trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.primary),
+                          onTap: () => context.push(AppRoutes.testBatchRegistration),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _SummaryCard(
-                              title: 'Attendance',
-                              value: provider.attendancePercentage
-                                      .toStringAsFixed(1) +
-                                  '%',
-                              icon: Icons.assignment_turned_in_outlined,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _SummaryCard(
-                              title: 'Marks',
-                              value: provider.marks.length.toString(),
-                              icon: Icons.menu_book_outlined,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      _SectionCard(
-                        title: 'Marks',
-                        child: provider.marks.isEmpty
-                            ? const Text('No marks available yet.')
-                            : Column(
-                                children: provider.marks.take(10).map(
-                                  (mark) => ListTile(
-                                    contentPadding: EdgeInsets.zero,
-                                    leading: const Icon(
-                                      Icons.assignment_outlined,
-                                      color: AppColors.primary,
-                                    ),
-                                    title: Text(
-                                      (mark['subject_name'] ?? 'Subject')
-                                              .toString() +
-                                          ' • ' +
-                                          (mark['test_code'] ?? '-').toString(),
-                                    ),
-                                    subtitle: Text(
-                                      (mark['marks_obtained'] ?? '-').toString() +
-                                          ' / ' +
-                                          (mark['total_marks'] ?? '-').toString(),
-                                    ),
-                                  ),
-                                ).toList(),
-                              ),
-                      ),
-                      const SizedBox(height: 16),
-                      _SectionCard(
-                        title: 'Attendance',
-                        child: provider.attendance.isEmpty
-                            ? const Text(
-                                'No attendance records available yet.',
-                              )
-                            : Column(
-                                children: provider.attendance.take(10).map(
-                                  (item) => ListTile(
-                                    contentPadding: EdgeInsets.zero,
-                                    leading: Icon(
-                                      item['status'] == 'Present'
-                                          ? Icons.check_circle_outline
-                                          : Icons.cancel_outlined,
-                                      color: item['status'] == 'Present'
-                                          ? Colors.green
-                                          : Colors.red,
-                                    ),
-                                    title: Text(
-                                      (item['test_code'] ?? 'Test').toString(),
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                    subtitle: Text(
-                                      'Writing Date: ' + _formatWritingDate(item['attendance_date']),
-                                    ),
-                                    trailing: Text(
-                                      item['status']?.toString() ?? '-',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        color: item['status'] == 'Present'
-                                            ? Colors.green.shade700
-                                            : Colors.red.shade700,
-                                      ),
-                                    ),
-                                  ),
-                                ).toList(),
-                              ),
-                      ),
+                      _AcademicOverviewLauncher(provider: provider),
                     ],
                   ),
       ),
@@ -208,20 +106,81 @@ class _TestBatchDashboardState extends State<TestBatchDashboard> {
   }
 }
 
-String _formatWritingDate(dynamic value) {
-  if (value == null) return '-';
+class _AcademicOverviewLauncher extends StatelessWidget {
+  final TestBatchProvider provider;
 
-  final raw = value.toString();
-  final parsed = DateTime.tryParse(raw);
+  const _AcademicOverviewLauncher({required this.provider});
 
-  if (parsed == null) {
-    return raw.split('T').first;
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      elevation: 3,
+      child: InkWell(
+        onTap: () => context.push(AppRoutes.testBatchAcademicOverview),
+        borderRadius: BorderRadius.circular(18),
+        splashColor: AppColors.primary.withValues(alpha: 0.08),
+        highlightColor: AppColors.primary.withValues(alpha: 0.04),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.insights_rounded, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Academic Overview',
+                      style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: AppColors.primary),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: _SummaryCard(
+                      title: 'Attendance',
+                      value: '${provider.attendancePercentage.toStringAsFixed(1)}%',
+                      icon: Icons.assignment_turned_in_outlined,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _SummaryCard(
+                      title: 'Marks',
+                      value: '${provider.marks.length}',
+                      icon: Icons.menu_book_outlined,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              const Center(
+                child: Text(
+                  'Tap to view Marks or Attendance',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
-
-  final local = parsed.toLocal();
-  return '${local.day.toString().padLeft(2, '0')}-'
-      '${local.month.toString().padLeft(2, '0')}-'
-      '${local.year}';
 }
 
 class _ProfileCard extends StatelessWidget {
@@ -269,10 +228,7 @@ class _Detail extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 9),
       child: Text(
         label + ': ' + (text.isEmpty ? '-' : text),
-        style: const TextStyle(
-          fontSize: 16,
-          color: Color(0xFF374151),
-        ),
+        style: const TextStyle(fontSize: 16, color: Color(0xFF374151)),
       ),
     );
   }
@@ -291,60 +247,25 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-        elevation: 2,
+        margin: EdgeInsets.zero,
+        elevation: 1,
         child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(15),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(icon, color: AppColors.primary),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: const TextStyle(color: Color(0xFF6B7280)),
-              ),
+              const SizedBox(height: 10),
+              Text(title, style: const TextStyle(color: Color(0xFF6B7280))),
               const SizedBox(height: 4),
               Text(
                 value,
                 style: const TextStyle(
-                  fontSize: 25,
+                  fontSize: 24,
                   fontWeight: FontWeight.w800,
                   color: AppColors.primary,
                 ),
               ),
-            ],
-          ),
-        ),
-      );
-}
-
-class _SectionCard extends StatelessWidget {
-  final String title;
-  final Widget child;
-
-  const _SectionCard({
-    required this.title,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) => Card(
-        elevation: 2,
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: 12),
-              child,
             ],
           ),
         ),

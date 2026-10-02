@@ -119,6 +119,7 @@ class _AcademicOverviewLauncher extends StatelessWidget {
       elevation: 3,
       child: InkWell(
         onTap: () => context.push(AppRoutes.testBatchAcademicOverview),
+        mouseCursor: SystemMouseCursors.click,
         borderRadius: BorderRadius.circular(18),
         splashColor: AppColors.primary.withValues(alpha: 0.08),
         highlightColor: AppColors.primary.withValues(alpha: 0.04),

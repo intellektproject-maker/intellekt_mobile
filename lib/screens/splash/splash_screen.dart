@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../../providers/auth_provider.dart';
 
 import '../../core/constants/colors.dart';
 import '../../core/widgets/intellekt_wordmark.dart';
@@ -22,8 +25,39 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _initializeApp() async {
+    final authProvider = context.read<AuthProvider>();
+
+    // Wait for the persisted secure session to be restored before deciding
+    // where the user should land. A valid session always goes directly to the
+    // authenticated area; only an explicit logout clears that session.
+    while (mounted && !authProvider.isInitialized) {
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
+
+    if (!mounted) return;
+
+    if (authProvider.isLoggedIn) {
+      if (authProvider.user!.mustResetPassword) {
+        context.go(AppRoutes.changePassword);
+      } else if (authProvider.isFaculty) {
+        context.go(AppRoutes.facultyProfile);
+      } else if (authProvider.isTestBatchStudent) {
+        context.go(AppRoutes.testBatchDashboard);
+      } else if (authProvider.isRegularStudent) {
+        context.go(
+          '${AppRoutes.studentDashboard}?roll=${authProvider.user!.id}',
+        );
+      } else {
+        context.go(AppRoutes.login);
+      }
+      return;
+    }
+
+    // No saved session: continue through the normal onboarding/login flow.
     await Future.delayed(const Duration(seconds: 2));
-    if (mounted) context.go(AppRoutes.welcome);
+    if (mounted && !authProvider.isLoggedIn) {
+      context.go(AppRoutes.welcome);
+    }
   }
 
   @override

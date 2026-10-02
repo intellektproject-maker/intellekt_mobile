@@ -98,7 +98,27 @@ class _TestBatchDashboardState extends State<TestBatchDashboard> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _AcademicOverviewLauncher(provider: provider),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _AcademicSummaryLauncher(
+                              title: 'Attendance',
+                              value: '${provider.attendancePercentage.toStringAsFixed(1)}%',
+                              icon: Icons.assignment_turned_in_outlined,
+                              route: AppRoutes.testBatchAttendance,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _AcademicSummaryLauncher(
+                              title: 'Marks',
+                              value: '${provider.marks.length}',
+                              icon: Icons.menu_book_outlined,
+                              route: AppRoutes.testBatchMarks,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
       ),
@@ -106,74 +126,46 @@ class _TestBatchDashboardState extends State<TestBatchDashboard> {
   }
 }
 
-class _AcademicOverviewLauncher extends StatelessWidget {
-  final TestBatchProvider provider;
+class _AcademicSummaryLauncher extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final String route;
 
-  const _AcademicOverviewLauncher({required this.provider});
+  const _AcademicSummaryLauncher({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.route,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      elevation: 3,
+      borderRadius: BorderRadius.circular(16),
+      elevation: 2,
       child: InkWell(
-        onTap: () => context.push(AppRoutes.testBatchAcademicOverview),
+        onTap: () => context.push(route),
         mouseCursor: SystemMouseCursors.click,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         splashColor: AppColors.primary.withValues(alpha: 0.08),
         highlightColor: AppColors.primary.withValues(alpha: 0.04),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.insights_rounded, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Academic Overview',
-                      style: TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right_rounded, color: AppColors.primary),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: _SummaryCard(
-                      title: 'Attendance',
-                      value: '${provider.attendancePercentage.toStringAsFixed(1)}%',
-                      icon: Icons.assignment_turned_in_outlined,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _SummaryCard(
-                      title: 'Marks',
-                      value: '${provider.marks.length}',
-                      icon: Icons.menu_book_outlined,
-                    ),
-                  ),
-                ],
-              ),
+              Icon(icon, color: AppColors.primary),
               const SizedBox(height: 10),
-              const Center(
-                child: Text(
-                  'Tap to view Marks or Attendance',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF6B7280),
-                  ),
+              Text(title, style: const TextStyle(color: Color(0xFF6B7280))),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
                 ),
               ),
             ],

@@ -39,8 +39,32 @@ class _TestBatchRegistrationScreenState
     try {
       final tests = await TestBatchRegistrationService.getTests(widget.rollNo);
       if (!mounted) return;
+      final sortedTests = List<Map<String, dynamic>>.from(tests);
+      sortedTests.sort((a, b) {
+        final aRegistered = _isRegistered(a);
+        final bRegistered = _isRegistered(b);
+
+        // Tests still requiring registration always appear first.
+        if (aRegistered != bRegistered) {
+          return aRegistered ? 1 : -1;
+        }
+
+        // Keep the nearest relevant date first within each group.
+        final aDate = _dateOnly(
+          a['writing_date'] ?? a['application_close_date'] ?? a['test_date'],
+        );
+        final bDate = _dateOnly(
+          b['writing_date'] ?? b['application_close_date'] ?? b['test_date'],
+        );
+
+        if (aDate == null && bDate == null) return 0;
+        if (aDate == null) return 1;
+        if (bDate == null) return -1;
+        return aDate.compareTo(bDate);
+      });
+
       setState(() {
-        _tests = tests;
+        _tests = sortedTests;
         _loading = false;
       });
     } catch (error) {

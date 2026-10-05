@@ -23,6 +23,7 @@ class _TestBatchRegistrationScreenState
   String? _error;
   List<Map<String, dynamic>> _tests = [];
   String? _registeringCode;
+  String? _expandedCode;
 
   @override
   void initState() {
@@ -445,6 +446,8 @@ class _TestBatchRegistrationScreenState
     final registered = _isRegistered(test);
     final code = test['test_code']?.toString() ?? '-';
     final subject = test['subject_name']?.toString() ?? '-';
+    final isExpanded = _expandedCode == code;
+
     final marks = test['total_marks']?.toString() ?? '-';
     final duration = test['duration_minutes']?.toString() ?? '-';
     final portion = test['portion']?.toString() ?? '';
@@ -463,80 +466,113 @@ class _TestBatchRegistrationScreenState
       details.add(
         'Registered writing date: ${_formatDate(test['registered_writing_date'])}',
       );
-      final start = test['registered_slot_start']?.toString();
-      final end = test['registered_slot_end']?.toString();
-      if (start != null && end != null && start.isNotEmpty && end.isNotEmpty) {
-        details.add('Registered slot: ${_slotLabel(start, end)}');
+      final slotStart = test['registered_slot_start']?.toString();
+      final slotEnd = test['registered_slot_end']?.toString();
+      if (slotStart != null &&
+          slotEnd != null &&
+          slotStart.isNotEmpty &&
+          slotEnd.isNotEmpty) {
+        details.add('Registered slot: ${_slotLabel(slotStart, slotEnd)}');
       }
     }
 
     return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    '$subject  •  $code',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
+      elevation: isExpanded ? 3 : 2,
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () {
+              setState(() {
+                _expandedCode = isExpanded ? null : code;
+              });
+            },
+            borderRadius: BorderRadius.circular(12),
+            splashColor: AppColors.primary.withValues(alpha: 0.06),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '$subject  •  $code',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ),
-                ),
-                _statusChip(
-                  registered ? 'Registered' : 'Available',
-                  registered,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ...details.map(
-              (detail) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  detail,
-                  style: const TextStyle(
-                    color: Color(0xFF4B5563),
-                    height: 1.35,
+                  _statusChip(
+                    registered ? 'Registered' : 'Available',
+                    registered,
                   ),
-                ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    isExpanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.primary,
+                  ),
+                ],
               ),
             ),
-            if (!registered) ...[
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+          ),
+          if (isExpanded) ...[
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...details.map(
+                    (detail) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Text(
+                        detail,
+                        style: const TextStyle(
+                          color: Color(0xFF4B5563),
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
                   ),
-                  onPressed: _registeringCode == code
-                      ? null
-                      : () => _startRegistration(test),
-                  icon: _registeringCode == code
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.app_registration_outlined),
-                  label: Text(
-                    _registeringCode == code
-                        ? 'Registering...'
-                        : 'Register for Test',
-                  ),
-                ),
+                  if (!registered) ...[
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                        ),
+                        onPressed: _registeringCode == code
+                            ? null
+                            : () => _startRegistration(test),
+                        icon: _registeringCode == code
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.app_registration_outlined,
+                              ),
+                        label: Text(
+                          _registeringCode == code
+                              ? 'Registering...'
+                              : 'Register for Test',
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ],
+            ),
           ],
-        ),
+        ],
       ),
     );
   }

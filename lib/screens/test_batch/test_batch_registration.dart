@@ -98,7 +98,9 @@ class _TestBatchRegistrationScreenState
 
   bool _isCompleted(Map<String, dynamic> test) {
     final status = test['status']?.toString().trim().toLowerCase() ?? '';
-    return status == 'completed' || status == 'returned';
+    return test['is_completed'] == true ||
+        status == 'completed' ||
+        status == 'returned';
   }
 
   String _categoryForTest(Map<String, dynamic> test) {

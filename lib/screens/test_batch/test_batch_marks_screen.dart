@@ -207,7 +207,10 @@ class _SubjectMarksScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const SizedBox(height: 4),
+          _SummaryCard(
+            title: 'Percentage',
+            value: percentage.toStringAsFixed(1) + '%',
+          ),
           const SizedBox(height: 22),
           Text(
             subject + ' Tests',

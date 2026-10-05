@@ -135,13 +135,7 @@ class _SubjectAttendanceScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Row(
-            children: [
-              Expanded(child: _SummaryCard(title: 'Attendance', value: percentage.toStringAsFixed(1) + '%')),
-              const SizedBox(width: 12),
-              Expanded(child: _SummaryCard(title: 'Classes', value: present.toString() + ' / ' + total.toString())),
-            ],
-          ),
+          const SizedBox(height: 4),
           const SizedBox(height: 22),
           Text(subject + ' Attendance Records', style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800, color: AppColors.primary)),
           const SizedBox(height: 12),

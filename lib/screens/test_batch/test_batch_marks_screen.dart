@@ -212,15 +212,7 @@ class _SubjectMarksScreen extends StatelessWidget {
             value: percentage.toStringAsFixed(1) + '%',
           ),
           const SizedBox(height: 22),
-          Text(
-            subject + ' Tests',
-            style: const TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           if (marks.isEmpty)
             const _EmptyCard(message: 'No marks are available yet.')
           else
@@ -273,11 +265,32 @@ class _MarkCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(17),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            const Icon(Icons.assignment_outlined, color: AppColors.primary),
-            const SizedBox(width: 10),
-            Expanded(child: Text('${subject}  •  ${code}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.primary))),
-          ]),
+          Row(
+            children: [
+              const Icon(Icons.assignment_outlined, color: AppColors.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  code,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (mark['portion']?.toString().trim().isNotEmpty == true) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Portion: ' + mark['portion'].toString(),
+              style: const TextStyle(
+                color: Color(0xFF4B5563),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           Text('${_display(mark['marks_obtained'])} / ${_display(mark['total_marks'])}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
           if (hasInternal || hasExternal) ...[

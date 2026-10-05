@@ -34,14 +34,7 @@ class TestBatchMarksScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Row(
-            children: [
-              Expanded(child: _SummaryCard(title: 'Total', value: '${_display(totalObtained)} / ${_display(totalMaximum)}')),
-              const SizedBox(width: 12),
-              Expanded(child: _SummaryCard(title: 'Percentage', value: '${percentage.toStringAsFixed(1)}%')),
-            ],
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 4),
           const Text(
             'Select Subject',
             style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800, color: AppColors.primary),

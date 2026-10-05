@@ -7,11 +7,13 @@ import '../../services/student/test_batch_registration_service.dart';
 class TestBatchRegistrationScreen extends StatefulWidget {
   final String rollNo;
   final String? subjectFilter;
+  final String? categoryFilter;
 
   const TestBatchRegistrationScreen({
     super.key,
     required this.rollNo,
     this.subjectFilter,
+    this.categoryFilter,
   });
 
   @override
@@ -94,6 +96,17 @@ class _TestBatchRegistrationScreenState
   bool _isRegistered(Map<String, dynamic> test) =>
       test['is_registered'] == true;
 
+  bool _isCompleted(Map<String, dynamic> test) {
+    final status = test['status']?.toString().trim().toLowerCase() ?? '';
+    return status == 'completed' || status == 'returned';
+  }
+
+  String _categoryForTest(Map<String, dynamic> test) {
+    if (_isCompleted(test)) return 'Completed';
+    if (_isRegistered(test)) return 'Registered';
+    return 'Yet to Register';
+  }
+
   bool _matchesSubject(Map<String, dynamic> test, String subject) {
     final value = test['subject_name']?.toString().trim().toLowerCase() ?? '';
     if (subject == 'Mathematics') return value.contains('math');
@@ -102,9 +115,13 @@ class _TestBatchRegistrationScreenState
   }
 
   List<Map<String, dynamic>> get _visibleTests {
-    if (widget.subjectFilter == null) return const [];
+    if (widget.subjectFilter == null || widget.categoryFilter == null) {
+      return const [];
+    }
     return _tests
-        .where((test) => _matchesSubject(test, widget.subjectFilter!))
+        .where((test) =>
+            _matchesSubject(test, widget.subjectFilter!) &&
+            _categoryForTest(test) == widget.categoryFilter)
         .toList();
   }
 
@@ -396,26 +413,29 @@ class _TestBatchRegistrationScreenState
   @override
   Widget build(BuildContext context) {
     final subject = widget.subjectFilter;
+    final category = widget.categoryFilter;
     final visibleTests = _visibleTests;
+
+    final title = subject == null
+        ? 'Test Registration'
+        : category == null
+            ? subject + ' Registration'
+            : category;
 
     return Scaffold(
       backgroundColor: const Color(0xFFECECEF),
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        title: Text(
-          subject == null ? 'Test Registration' : subject + ' Registration',
-        ),
+        title: Text(title),
       ),
       body: RefreshIndicator(
         onRefresh: _loadTests,
         child: _loading
-            ? ListView(
-                children: const [
-                  SizedBox(height: 260),
-                  Center(child: CircularProgressIndicator()),
-                ],
-              )
+            ? ListView(children: const [
+                SizedBox(height: 260),
+                Center(child: CircularProgressIndicator()),
+              ])
             : _error != null
                 ? ListView(
                     padding: const EdgeInsets.all(24),
@@ -423,145 +443,110 @@ class _TestBatchRegistrationScreenState
                       const SizedBox(height: 150),
                       Text(_error!, textAlign: TextAlign.center),
                       const SizedBox(height: 16),
-                      Center(
-                        child: FilledButton(
-                          onPressed: _loadTests,
-                          child: const Text('Retry'),
-                        ),
-                      ),
+                      Center(child: FilledButton(
+                        onPressed: _loadTests,
+                        child: const Text('Retry'),
+                      )),
                     ],
                   )
                 : subject == null
                     ? _subjectSelection()
-                    : visibleTests.isEmpty
-                        ? ListView(
-                            padding: const EdgeInsets.all(24),
-                            children: [
-                              const SizedBox(height: 150),
-                              const Icon(
-                                Icons.event_busy_outlined,
-                                size: 56,
-                                color: Color(0xFF6B7280),
+                    : category == null
+                        ? _categorySelection(subject)
+                        : visibleTests.isEmpty
+                            ? ListView(
+                                padding: const EdgeInsets.all(24),
+                                children: const [
+                                  SizedBox(height: 150),
+                                  Icon(Icons.event_busy_outlined, size: 56, color: Color(0xFF6B7280)),
+                                  SizedBox(height: 14),
+                                  Text('No tests in this section.', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Color(0xFF4B5563))),
+                                ],
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: visibleTests.length,
+                                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                                itemBuilder: (context, index) => _testCard(visibleTests[index]),
                               ),
-                              const SizedBox(height: 14),
-                              Text(
-                                'No ' + subject + ' tests are available for registration.',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Color(0xFF4B5563),
-                                ),
-                              ),
-                            ],
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: visibleTests.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (context, index) =>
-                                _testCard(visibleTests[index]),
-                          ),
       ),
     );
   }
 
   Widget _subjectSelection() {
-    final mathematics = _subjectTests('Mathematics');
-    final physics = _subjectTests('Physics');
-
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         const SizedBox(height: 10),
-        const Text(
-          'Select Subject',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: AppColors.primary,
-          ),
-        ),
+        const Text('Select Subject', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.primary)),
         const SizedBox(height: 14),
-        _subjectCard(
-          subject: 'Mathematics',
-          count: mathematics.length,
-          icon: Icons.calculate_outlined,
-        ),
+        _subjectCard(subject: 'Mathematics', icon: Icons.calculate_outlined),
         const SizedBox(height: 14),
-        _subjectCard(
-          subject: 'Physics',
-          count: physics.length,
-          icon: Icons.science_outlined,
-        ),
+        _subjectCard(subject: 'Physics', icon: Icons.science_outlined),
       ],
     );
   }
 
-  Widget _subjectCard({
-    required String subject,
-    required int count,
-    required IconData icon,
-  }) {
+  Widget _subjectCard({required String subject, required IconData icon}) {
     return Card(
       elevation: 2,
       margin: EdgeInsets.zero,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => TestBatchRegistrationScreen(
-                rollNo: widget.rollNo,
-                subjectFilter: subject,
-              ),
-            ),
-          );
-        },
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => TestBatchRegistrationScreen(rollNo: widget.rollNo, subjectFilter: subject))),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-          child: Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon, color: AppColors.primary, size: 28),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      subject,
-                      style: const TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      count == 0
-                          ? 'No tests available'
-                          : count.toString() +
-                              (count == 1 ? ' test' : ' tests'),
-                      style: const TextStyle(color: Color(0xFF6B7280)),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.primary,
-                size: 30,
-              ),
-            ],
-          ),
+          child: Row(children: [
+            Container(width: 52, height: 52, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: AppColors.primary, size: 28)),
+            const SizedBox(width: 16),
+            Expanded(child: Text(subject, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.primary))),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.primary, size: 30),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _categorySelection(String subject) {
+    final tests = _subjectTests(subject);
+    final yetToRegister = tests.where((test) => _categoryForTest(test) == 'Yet to Register').length;
+    final registered = tests.where((test) => _categoryForTest(test) == 'Registered').length;
+    final completed = tests.where((test) => _categoryForTest(test) == 'Completed').length;
+
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        const SizedBox(height: 10),
+        Text(subject, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.primary)),
+        const SizedBox(height: 16),
+        _categoryCard(title: 'Yet to Register', subtitle: yetToRegister.toString() + (yetToRegister == 1 ? ' test' : ' tests'), icon: Icons.app_registration_outlined, category: 'Yet to Register'),
+        const SizedBox(height: 12),
+        _categoryCard(title: 'Registered', subtitle: registered.toString() + (registered == 1 ? ' test' : ' tests'), icon: Icons.event_available_outlined, category: 'Registered'),
+        const SizedBox(height: 12),
+        _categoryCard(title: 'Completed', subtitle: completed.toString() + (completed == 1 ? ' test' : ' tests'), icon: Icons.task_alt_outlined, category: 'Completed'),
+      ],
+    );
+  }
+
+  Widget _categoryCard({required String title, required String subtitle, required IconData icon, required String category}) {
+    return Card(
+      elevation: 2,
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => TestBatchRegistrationScreen(rollNo: widget.rollNo, subjectFilter: widget.subjectFilter, categoryFilter: category))),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+          child: Row(children: [
+            Container(width: 48, height: 48, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: AppColors.primary)),
+            const SizedBox(width: 15),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primary)),
+              const SizedBox(height: 4),
+              Text(subtitle, style: const TextStyle(color: Color(0xFF6B7280))),
+            ])),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.primary, size: 30),
+          ]),
         ),
       ),
     );
@@ -630,8 +615,12 @@ class _TestBatchRegistrationScreenState
                     ),
                   ),
                   _statusChip(
-                    registered ? 'Registered' : 'Available',
-                    registered,
+                    _isCompleted(test)
+                        ? 'Completed'
+                        : registered
+                            ? 'Registered'
+                            : 'Available',
+                    _isCompleted(test) || registered,
                   ),
                   const SizedBox(width: 4),
                   Icon(
@@ -663,7 +652,7 @@ class _TestBatchRegistrationScreenState
                       ),
                     ),
                   ),
-                  if (!registered) ...[
+                  if (!registered && !_isCompleted(test)) ...[
                     const SizedBox(height: 8),
                     SizedBox(
                       width: double.infinity,

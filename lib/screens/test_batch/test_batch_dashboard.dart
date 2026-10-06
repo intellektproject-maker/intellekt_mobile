@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/test_batch_provider.dart';
+import '../../services/push_notification_service.dart';
 import '../../routes/app_routes.dart';
 
 class TestBatchDashboard extends StatefulWidget {
@@ -45,6 +46,7 @@ class _TestBatchDashboardState extends State<TestBatchDashboard> {
         foregroundColor: Colors.white,
         title: const Text('Test Batch Dashboard'),
         actions: [
+          _TestBatchNotificationBell(rollNo: _rollNo),
           IconButton(
             tooltip: 'Sign out',
             onPressed: _signOut,
@@ -263,4 +265,178 @@ class _SummaryCard extends StatelessWidget {
           ),
         ),
       );
+}
+
+
+class _TestBatchNotificationBell extends StatefulWidget {
+  final String rollNo;
+  const _TestBatchNotificationBell({required this.rollNo});
+
+  @override
+  State<_TestBatchNotificationBell> createState() =>
+      _TestBatchNotificationBellState();
+}
+
+class _TestBatchNotificationBellState
+    extends State<_TestBatchNotificationBell> {
+  List<Map<String, dynamic>> _notifications = const [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  @override
+  void didUpdateWidget(covariant _TestBatchNotificationBell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.rollNo != widget.rollNo) _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    if (widget.rollNo.isEmpty) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+    final notifications = await PushNotificationService.instance
+        .getInAppNotifications(widget.rollNo);
+    if (!mounted) return;
+    setState(() {
+      _notifications = notifications;
+      _loading = false;
+    });
+  }
+
+  Future<void> _openNotifications() async {
+    await _loadNotifications();
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.notifications_none_rounded, color: AppColors.primary),
+              SizedBox(width: 10),
+              Text(
+                'Notifications',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 360,
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _notifications.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: Text(
+                          'No notifications yet.',
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: _notifications.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (_, index) {
+                          final item = _notifications[index];
+                          final title = item['title']?.toString() ?? 'INTELLEKT';
+                          final body = item['body']?.toString() ?? '';
+                          final timestamp = DateTime.tryParse(
+                            item['timestamp']?.toString() ?? '',
+                          );
+                          final timeText = timestamp == null
+                              ? ''
+                              : timestamp.day.toString().padLeft(2, '0') +
+                                  '-' +
+                                  timestamp.month.toString().padLeft(2, '0') +
+                                  '-' +
+                                  timestamp.year.toString() +
+                                  ' ' +
+                                  timestamp.hour.toString().padLeft(2, '0') +
+                                  ':' +
+                                  timestamp.minute.toString().padLeft(2, '0');
+
+                          return ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 6,
+                              horizontal: 0,
+                            ),
+                            leading: const CircleAvatar(
+                              backgroundColor: Color(0xFFE8EAF6),
+                              foregroundColor: AppColors.primary,
+                              child: Icon(Icons.notifications_none_rounded),
+                            ),
+                            title: Text(
+                              title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                body + (timeText.isEmpty ? '' : '\n' + timeText),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+          ),
+          actions: [
+            if (_notifications.isNotEmpty)
+              TextButton(
+                onPressed: () async {
+                  await PushNotificationService.instance
+                      .clearInAppNotifications(widget.rollNo);
+                  if (!dialogContext.mounted) return;
+                  Navigator.of(dialogContext).pop();
+                  if (mounted) setState(() => _notifications = const []);
+                },
+                child: const Text('Clear all'),
+              ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasNotifications = _notifications.isNotEmpty;
+    return Stack(
+      alignment: Alignment.topRight,
+      children: [
+        IconButton(
+          tooltip: 'Notifications',
+          onPressed: _openNotifications,
+          icon: const Icon(Icons.notifications_none_rounded),
+        ),
+        if (hasNotifications)
+          IgnorePointer(
+            child: Container(
+              width: 9,
+              height: 9,
+              margin: const EdgeInsets.only(top: 9, right: 9),
+              decoration: const BoxDecoration(
+                color: Colors.redAccent,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }

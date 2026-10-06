@@ -72,6 +72,26 @@ class TestBatchStudentStatusService {
     return _list(data is Map ? data['attendance'] : data);
   }
 
+  String _testBoard(String code) {
+    final match = RegExp(r'^([SCI])\\d{2}').firstMatch(code.trim().toUpperCase());
+    if (match == null) return '';
+    switch (match.group(1)) {
+      case 'S':
+        return 'stateboard';
+      case 'C':
+        return 'cbse';
+      case 'I':
+        return 'isc';
+      default:
+        return '';
+    }
+  }
+
+  String _testClass(String code) {
+    final match = RegExp(r'^[SCI](\\d{2})').firstMatch(code.trim().toUpperCase());
+    return match?.group(1) ?? '';
+  }
+
   Future<Map<String, dynamic>> fetch({
     required String adminId,
     String? category,
@@ -88,14 +108,22 @@ class TestBatchStudentStatusService {
       final seriesData = seriesResponse.data;
       final series = _list(seriesData is Map ? seriesData['series'] : seriesData);
 
-      final tests = await _tests(adminId: adminId, seriesId: seriesId);
-      final classes = tests
+      // Load students up front. Their class/board fields are the authoritative
+      // source for the Class and Board filter dropdowns.
+      final allStudents = await _students(
+        adminId: adminId,
+        className: className,
+        seriesId: seriesId,
+      );
+
+      final classes = allStudents
           .map((e) => e['class']?.toString().trim() ?? '')
           .where((e) => e.isNotEmpty)
           .toSet()
           .toList()
         ..sort();
-      final boards = tests
+
+      final boards = allStudents
           .map((e) => e['board']?.toString().trim() ?? '')
           .where((e) => e.isNotEmpty)
           .toSet()
@@ -103,9 +131,12 @@ class TestBatchStudentStatusService {
         ..sort();
 
       final normalizedBoard = _normalizeBoard(board);
+
+      final tests = await _tests(adminId: adminId, seriesId: seriesId);
       final filteredTests = tests.where((test) {
-        final testClass = test['class']?.toString().trim() ?? '';
-        final testBoard = _normalizeBoard(test['board']);
+        final code = test['test_code']?.toString().trim() ?? '';
+        final testClass = _testClass(code);
+        final testBoard = _testBoard(code);
         return (className == null || className.isEmpty || testClass == className) &&
             (normalizedBoard.isEmpty || testBoard == normalizedBoard) &&
             (seriesId == null || seriesId.isEmpty ||
@@ -114,10 +145,7 @@ class TestBatchStudentStatusService {
         ..sort((a, b) => (a['test_code']?.toString() ?? '')
             .compareTo(b['test_code']?.toString() ?? ''));
 
-      // A test code is the unique identifier used by the registration APIs.
-      // The backend can return more than one row for the same code, so keep
-      // only one dropdown entry per code to satisfy Flutter's DropdownButton
-      // requirement that every item value is unique.
+      // Test codes must be unique even if the API returns duplicate rows.
       final uniqueTestsByCode = <String, Map<String, dynamic>>{};
       for (final test in filteredTests) {
         final code = test['test_code']?.toString().trim() ?? '';
@@ -133,35 +161,43 @@ class TestBatchStudentStatusService {
         'tests': uniqueFilteredTests,
       };
 
-      if (category == null || category.isEmpty || testCode == null || testCode.isEmpty) {
+      if (category == null ||
+          category.isEmpty ||
+          testCode == null ||
+          testCode.isEmpty) {
         return {'filters': filters, 'students': <Map<String, dynamic>>[]};
       }
 
-      final selectedTest = filteredTests.firstWhere(
-        (test) => (test['test_code']?.toString().trim().toUpperCase() ?? '') == testCode.trim().toUpperCase(),
+      final selectedTest = uniqueFilteredTests.firstWhere(
+        (test) =>
+            (test['test_code']?.toString().trim().toUpperCase() ?? '') ==
+            testCode.trim().toUpperCase(),
         orElse: () => <String, dynamic>{},
       );
       if (selectedTest.isEmpty) {
         return {'filters': filters, 'students': <Map<String, dynamic>>[]};
       }
 
-      final allStudents = await _students(
-        adminId: adminId,
-        className: className,
-        seriesId: seriesId,
-      );
-
-      final subject = selectedTest['subject_name']?.toString().trim().toLowerCase() ?? '';
-      final eligibleStudents = allStudents.where((student) {
+      // If a class/board filter is selected, reload without the narrower class
+      // only when needed so the result set can still be filtered consistently.
+      final resultStudents = allStudents.where((student) {
         final studentBoard = _normalizeBoard(student['board']);
         final studentClass = student['class']?.toString().trim() ?? '';
-        final subjects = student['subjects']?.toString().trim().toLowerCase() ?? '';
+        return (className == null || className.isEmpty || studentClass == className) &&
+            (normalizedBoard.isEmpty || studentBoard == normalizedBoard);
+      }).toList();
+
+      final subject =
+          selectedTest['subject_name']?.toString().trim().toLowerCase() ?? '';
+      final eligibleStudents = resultStudents.where((student) {
+        final subjects =
+            student['subjects']?.toString().trim().toLowerCase() ?? '';
         final subjectEligible =
-            (subject.contains('math') && (subjects == 'mathematics' || subjects == 'both')) ||
-            (subject.contains('physics') && (subjects == 'physics' || subjects == 'both'));
-        return studentClass == className &&
-            studentBoard == normalizedBoard &&
-            subjectEligible;
+            (subject.contains('math') &&
+                    (subjects == 'mathematics' || subjects == 'both')) ||
+                (subject.contains('physics') &&
+                    (subjects == 'physics' || subjects == 'both'));
+        return subjectEligible;
       }).toList();
 
       final registered = await _registeredStudents(adminId, testCode);
@@ -171,7 +207,8 @@ class TestBatchStudentStatusService {
       };
 
       final registeredDates = registered
-          .map((item) => item['registered_writing_date']?.toString().split('T').first ?? '')
+          .map((item) =>
+              item['registered_writing_date']?.toString().split('T').first ?? '')
           .where((date) => date.isNotEmpty)
           .toList();
 
@@ -196,7 +233,8 @@ class TestBatchStudentStatusService {
         final roll = student['roll_no']?.toString().trim().toUpperCase() ?? '';
         final registration = registeredByRoll[roll];
         final attendanceRow = attendanceByRoll[roll];
-        final attendanceStatus = attendanceRow?['status']?.toString().trim().toLowerCase();
+        final attendanceStatus =
+            attendanceRow?['status']?.toString().trim().toLowerCase();
 
         String resolvedCategory;
         if (attendanceStatus == 'present') {
@@ -214,8 +252,10 @@ class TestBatchStudentStatusService {
         final merged = <String, dynamic>{...student};
         merged['test_code'] = selectedTest['test_code'];
         merged['subject_name'] = selectedTest['subject_name'];
-        merged['test_series_name'] = student['test_series_name'] ?? selectedTest['test_series_name'];
-        merged['registered_writing_date'] = registration?['registered_writing_date'];
+        merged['test_series_name'] =
+            student['test_series_name'] ?? selectedTest['test_series_name'];
+        merged['registered_writing_date'] =
+            registration?['registered_writing_date'];
         merged['slot_start'] = registration?['registered_slot_start'];
         merged['slot_end'] = registration?['registered_slot_end'];
         merged['attendance_status'] = attendanceRow?['status'];
@@ -225,7 +265,10 @@ class TestBatchStudentStatusService {
       return {'filters': filters, 'students': results};
     } catch (error) {
       final message = error.toString().replaceFirst('Exception: ', '').trim();
-      throw Exception(message.isEmpty ? 'Failed to load Test Batch student status.' : message);
+      throw Exception(message.isEmpty
+          ? 'Failed to load Test Batch student status.'
+          : message);
     }
+  }
   }
 }

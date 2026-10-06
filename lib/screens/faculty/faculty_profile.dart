@@ -7,6 +7,7 @@ import '../../models/faculty_task_model.dart';
 import '../../repositories/faculty_repository.dart';
 import '../../repositories/faculty_task_repository.dart';
 import 'task_assignment_screen.dart';
+import 'test_batch_student_status_screen.dart';
 
 class FacultyProfile extends StatefulWidget {
   final String facultyId;
@@ -605,10 +606,14 @@ class _FacultyProfileState extends State<FacultyProfile> {
 
       boxes.add(
         _TaskBox(
-          title: 'Test Batch Posted Tests',
-          description: 'View tests posted for Test Batch students.',
+          title: 'Test Batch Registration Status',
+          description: 'View Test Batch students by registration status.',
           active: false,
-          onTap: () => context.push('/faculty/test-batch/tests'),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => TestBatchStudentStatusScreen(adminId: _id),
+            ),
+          ),
         ),
       );
     }

@@ -559,7 +559,6 @@ class _TestBatchRegistrationScreenState
       padding: const EdgeInsets.all(20),
       children: [
         const SizedBox(height: 10),
-        Text(subject, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.primary)),
         const SizedBox(height: 16),
         _categoryCard(title: 'Yet to Register', subtitle: yetToRegister.toString() + (yetToRegister == 1 ? ' test' : ' tests'), icon: Icons.app_registration_outlined, category: 'Yet to Register'),
         const SizedBox(height: 12),

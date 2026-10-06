@@ -149,7 +149,7 @@ class _SubjectAttendanceScreen extends StatelessWidget {
         children: [
           const SizedBox(height: 4),
           const SizedBox(height: 22),
-          Text(subject + ' Attendance Records', style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800, color: AppColors.primary)),
+          const Text('Attendance Records', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800, color: AppColors.primary)),
           const SizedBox(height: 12),
           if (records.isEmpty)
             const Card(

@@ -17,6 +17,19 @@ class TestBatchProvider extends ChangeNotifier {
   String? get error => _error;
   double get attendancePercentage => _attendancePercentage;
 
+  String get registeredSubjects =>
+      (_student?['subjects'] ?? '').toString().trim().toLowerCase();
+
+  bool get isMathematicsRegistered {
+    final subjects = registeredSubjects;
+    return subjects == 'both' || subjects == 'mathematics';
+  }
+
+  bool get isPhysicsRegistered {
+    final subjects = registeredSubjects;
+    return subjects == 'both' || subjects == 'physics';
+  }
+
   Future<void> load(String rollNo) async {
     _isLoading = true;
     _error = null;

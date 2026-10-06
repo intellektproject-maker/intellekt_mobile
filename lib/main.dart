@@ -23,6 +23,7 @@ Future<void> firebaseMessagingBackgroundHandler(
     RemoteMessage message,
     ) async {
   await Firebase.initializeApp();
+  await PushNotificationService.storeBackgroundNotification(message);
 }
 
 Future<void> main() async {

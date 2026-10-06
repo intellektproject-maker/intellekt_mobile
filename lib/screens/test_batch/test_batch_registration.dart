@@ -103,7 +103,12 @@ class _TestBatchRegistrationScreenState
         status == 'returned';
   }
 
+  bool _isLapsed(Map<String, dynamic> test) =>
+      test['is_lapsed'] == true ||
+      test['attendance_status']?.toString().trim().toLowerCase() == 'absent';
+
   String _categoryForTest(Map<String, dynamic> test) {
+    if (_isLapsed(test)) return 'Lapsed';
     if (_isCompleted(test)) return 'Completed';
     if (_isRegistered(test)) return 'Registered';
     return 'Yet to Register';
@@ -548,6 +553,7 @@ class _TestBatchRegistrationScreenState
     final yetToRegister = tests.where((test) => _categoryForTest(test) == 'Yet to Register').length;
     final registered = tests.where((test) => _categoryForTest(test) == 'Registered').length;
     final completed = tests.where((test) => _categoryForTest(test) == 'Completed').length;
+    final lapsed = tests.where((test) => _categoryForTest(test) == 'Lapsed').length;
 
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -560,6 +566,8 @@ class _TestBatchRegistrationScreenState
         _categoryCard(title: 'Registered', subtitle: registered.toString() + (registered == 1 ? ' test' : ' tests'), icon: Icons.event_available_outlined, category: 'Registered'),
         const SizedBox(height: 12),
         _categoryCard(title: 'Completed', subtitle: completed.toString() + (completed == 1 ? ' test' : ' tests'), icon: Icons.task_alt_outlined, category: 'Completed'),
+        const SizedBox(height: 12),
+        _categoryCard(title: 'Lapsed', subtitle: lapsed.toString() + (lapsed == 1 ? ' test' : ' tests'), icon: Icons.event_busy_outlined, category: 'Lapsed'),
       ],
     );
   }

@@ -38,6 +38,8 @@ class PushNotificationService {
       );
 
   static const String _lastFeeReminderPrefix = 'last_fee_reminder_';
+  static const String _inAppNotificationsPrefix = 'in_app_notifications_';
+  static const int _maxInAppNotifications = 30;
   static const Duration _feeReminderInterval = Duration(hours: 24);
 
   Future<void> initialize() async {
@@ -263,11 +265,77 @@ class PushNotificationService {
         '${local.year}';
   }
 
+  static Future<void> storeBackgroundNotification(RemoteMessage message) async {
+    final notification = message.notification;
+    final title = notification?.title ?? message.data['title']?.toString() ?? 'INTELLEKT';
+    final body = notification?.body ?? message.data['body']?.toString() ?? '';
+    await _storeInAppNotification(
+      rollNo: message.data['roll_no']?.toString(),
+      title: title,
+      body: body,
+      data: message.data,
+    );
+  }
+
+  static Future<void> _storeInAppNotification({
+    String? rollNo,
+    required String title,
+    required String body,
+    Map<String, dynamic> data = const {},
+  }) async {
+    if (rollNo == null || rollNo.trim().isEmpty) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final key = _inAppNotificationsPrefix + rollNo.trim().toUpperCase();
+    final existing = prefs.getStringList(key) ?? <String>[];
+    final item = jsonEncode({
+      'title': title,
+      'body': body,
+      'timestamp': DateTime.now().toIso8601String(),
+      'data': data.map((key, value) => MapEntry(key, value.toString())),
+    });
+    existing.insert(0, item);
+    if (existing.length > _maxInAppNotifications) {
+      existing.removeRange(_maxInAppNotifications, existing.length);
+    }
+    await prefs.setStringList(key, existing);
+  }
+
+  Future<List<Map<String, dynamic>>> getInAppNotifications(String rollNo) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = _inAppNotificationsPrefix + rollNo.trim().toUpperCase();
+    final values = prefs.getStringList(key) ?? <String>[];
+    final notifications = <Map<String, dynamic>>[];
+    for (final value in values) {
+      try {
+        final decoded = jsonDecode(value);
+        if (decoded is Map<String, dynamic>) {
+          notifications.add(decoded);
+        }
+      } catch (_) {}
+    }
+    return notifications;
+  }
+
+  Future<void> clearInAppNotifications(String rollNo) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(
+      _inAppNotificationsPrefix + rollNo.trim().toUpperCase(),
+    );
+  }
+
   Future<void> _showForegroundNotification(RemoteMessage message) async {
     if (defaultTargetPlatform != TargetPlatform.android) return;
 
     final notification = message.notification;
     if (notification == null) return;
+
+    await _storeInAppNotification(
+      rollNo: message.data['roll_no']?.toString() ?? _rollNo,
+      title: notification.title ?? 'INTELLEKT',
+      body: notification.body ?? '',
+      data: message.data,
+    );
 
     await _localNotifications.show(
       message.messageId?.hashCode ??

@@ -476,15 +476,49 @@ class _TestBatchRegistrationScreenState
   }
 
   Widget _subjectSelection() {
+    // The backend already filters posted tests using the student's registered
+    // subject(s). Build the subject selector from those eligible tests so an
+    // unregistered subject is disabled/hidden instead of being shown.
+    final mathematicsAvailable = _subjectTests('Mathematics').isNotEmpty;
+    final physicsAvailable = _subjectTests('Physics').isNotEmpty;
+
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         const SizedBox(height: 10),
-        const Text('Select Subject', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.primary)),
+        const Text(
+          'Select Subject',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: AppColors.primary,
+          ),
+        ),
         const SizedBox(height: 14),
-        _subjectCard(subject: 'Mathematics', icon: Icons.calculate_outlined),
-        const SizedBox(height: 14),
-        _subjectCard(subject: 'Physics', icon: Icons.science_outlined),
+        if (mathematicsAvailable)
+          _subjectCard(
+            subject: 'Mathematics',
+            icon: Icons.calculate_outlined,
+          ),
+        if (mathematicsAvailable && physicsAvailable)
+          const SizedBox(height: 14),
+        if (physicsAvailable)
+          _subjectCard(
+            subject: 'Physics',
+            icon: Icons.science_outlined,
+          ),
+        if (!mathematicsAvailable && !physicsAvailable)
+          const Padding(
+            padding: EdgeInsets.only(top: 40),
+            child: Text(
+              'No tests are currently available for your registered subject(s).',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFF6B7280),
+                fontSize: 16,
+              ),
+            ),
+          ),
       ],
     );
   }

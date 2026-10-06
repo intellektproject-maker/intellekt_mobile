@@ -34,19 +34,31 @@ class TestBatchAttendanceScreen extends StatelessWidget {
             style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800, color: AppColors.primary),
           ),
           const SizedBox(height: 12),
-          _SubjectCard(
-            subject: 'Mathematics',
-            icon: Icons.calculate_outlined,
-            records: _subjectRecords(records, 'Mathematics'),
-            formatDate: _formatDate,
-          ),
-          const SizedBox(height: 14),
-          _SubjectCard(
-            subject: 'Physics',
-            icon: Icons.science_outlined,
-            records: _subjectRecords(records, 'Physics'),
-            formatDate: _formatDate,
-          ),        ],
+          if (provider.isMathematicsRegistered)
+            _SubjectCard(
+              subject: 'Mathematics',
+              icon: Icons.calculate_outlined,
+              records: _subjectRecords(records, 'Mathematics'),
+              formatDate: _formatDate,
+            ),
+          if (provider.isMathematicsRegistered && provider.isPhysicsRegistered)
+            const SizedBox(height: 14),
+          if (provider.isPhysicsRegistered)
+            _SubjectCard(
+              subject: 'Physics',
+              icon: Icons.science_outlined,
+              records: _subjectRecords(records, 'Physics'),
+              formatDate: _formatDate,
+            ),
+          if (!provider.isMathematicsRegistered && !provider.isPhysicsRegistered)
+            const Padding(
+              padding: EdgeInsets.only(top: 40),
+              child: Text(
+                'No registered subjects are available.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Color(0xFF6B7280)),
+              ),
+            ),        ],
       ),
     );
   }

@@ -114,11 +114,23 @@ class TestBatchStudentStatusService {
         ..sort((a, b) => (a['test_code']?.toString() ?? '')
             .compareTo(b['test_code']?.toString() ?? ''));
 
+      // A test code is the unique identifier used by the registration APIs.
+      // The backend can return more than one row for the same code, so keep
+      // only one dropdown entry per code to satisfy Flutter's DropdownButton
+      // requirement that every item value is unique.
+      final uniqueTestsByCode = <String, Map<String, dynamic>>{};
+      for (final test in filteredTests) {
+        final code = test['test_code']?.toString().trim() ?? '';
+        if (code.isEmpty) continue;
+        uniqueTestsByCode.putIfAbsent(code.toUpperCase(), () => test);
+      }
+      final uniqueFilteredTests = uniqueTestsByCode.values.toList();
+
       final filters = <String, dynamic>{
         'classes': classes,
         'boards': boards,
         'series': series,
-        'tests': filteredTests,
+        'tests': uniqueFilteredTests,
       };
 
       if (category == null || category.isEmpty || testCode == null || testCode.isEmpty) {
@@ -126,7 +138,7 @@ class TestBatchStudentStatusService {
       }
 
       final selectedTest = filteredTests.firstWhere(
-        (test) => (test['test_code']?.toString().toUpperCase() ?? '') == testCode.toUpperCase(),
+        (test) => (test['test_code']?.toString().trim().toUpperCase() ?? '') == testCode.trim().toUpperCase(),
         orElse: () => <String, dynamic>{},
       );
       if (selectedTest.isEmpty) {

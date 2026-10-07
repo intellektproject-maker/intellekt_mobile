@@ -73,7 +73,7 @@ class TestBatchStudentStatusService {
   }
 
   String _testBoard(String code) {
-    final match = RegExp(r'^([SCI])\\d{2}').firstMatch(code.trim().toUpperCase());
+    final match = RegExp(r'^([SCI])\d{2}').firstMatch(code.trim().toUpperCase());
     if (match == null) return '';
     switch (match.group(1)) {
       case 'S':
@@ -88,7 +88,7 @@ class TestBatchStudentStatusService {
   }
 
   String _testClass(String code) {
-    final match = RegExp(r'^[SCI](\\d{2})').firstMatch(code.trim().toUpperCase());
+    final match = RegExp(r'^[SCI](\d{2})').firstMatch(code.trim().toUpperCase());
     return match?.group(1) ?? '';
   }
 

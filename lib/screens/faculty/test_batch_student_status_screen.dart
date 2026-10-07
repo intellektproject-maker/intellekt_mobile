@@ -199,6 +199,12 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
     }
 
     final seriesIds = seriesById.keys.toList();
+    final testCodes = testsByCode.keys.toList();
+    final selectedTestCode = _testCode?.trim().toUpperCase();
+    final safeTestCode =
+        selectedTestCode != null && testCodes.contains(selectedTestCode)
+            ? selectedTestCode
+            : null;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -239,81 +245,28 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
             }).toList(),
             onChanged: _changeSeries,
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Tests',
-            style: TextStyle(
-              color: AppColors.primary,
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: safeTestCode,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: 'Select Test Code',
+              border: OutlineInputBorder(),
             ),
-          ),
-          const SizedBox(height: 8),
-          if (testsByCode.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 14),
-              child: Text(
-                'No tests found for the selected filters.',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-            )
-          else
-            ...testsByCode.values.map((test) => _testCard(test)),
-        ],
-      ),
-    );
-  }
-
-  Widget _testCard(Map<String, dynamic> test) {
-    final code = test['test_code']?.toString().trim() ?? '';
-    final subject = test['subject_name']?.toString().trim() ?? '';
-    final selected = code.isNotEmpty &&
-        _testCode?.trim().toUpperCase() == code.toUpperCase();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 9),
-      decoration: BoxDecoration(
-        color: selected
-            ? AppColors.primary.withValues(alpha: 0.06)
-            : AppColors.surface,
-        borderRadius: BorderRadius.circular(13),
-        border: Border.all(
-          color: selected ? AppColors.primary : AppColors.border,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            blurRadius: 5,
-            offset: Offset(0, 2),
-            color: Color(0x10000000),
-          ),
-        ],
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(13),
-        onTap: code.isEmpty ? null : () => _loadStudents(code),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
-          child: Row(
-            children: [
-              Expanded(
+            items: testsByCode.values.map((e) {
+              final code = e['test_code']?.toString().trim() ?? '';
+              final subject = e['subject_name']?.toString().trim() ?? '';
+              return DropdownMenuItem(
+                value: code.toUpperCase(),
                 child: Text(
-                  subject.isEmpty ? code : '$subject • $code',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  subject.isEmpty ? code : '$code — $subject',
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              Icon(
-                selected
-                    ? Icons.keyboard_arrow_up_rounded
-                    : Icons.chevron_right_rounded,
-                color: AppColors.primary,
-              ),
-            ],
+              );
+            }).toList(),
+            onChanged: _loadStudents,
           ),
-        ),
+        ],
       ),
     );
   }
@@ -376,36 +329,96 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(11),
+        borderRadius: BorderRadius.circular(13),
         border: Border.all(color: AppColors.border),
-        boxShadow: const [BoxShadow(blurRadius: 6, offset: Offset(0, 2), color: Color(0x12000000))],
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Expanded(child: Text(_value(student, 'name'),
-            style: const TextStyle(color: AppColors.primary, fontSize: 15, fontWeight: FontWeight.w800))),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            decoration: BoxDecoration(color: _statusColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(18)),
-            child: Text(statusLabel, style: TextStyle(color: _statusColor, fontSize: 10, fontWeight: FontWeight.w800)),
+        boxShadow: const [
+          BoxShadow(
+            blurRadius: 6,
+            offset: Offset(0, 2),
+            color: Color(0x12000000),
           ),
-        ]),
-        const SizedBox(height: 3),
-        Text('Roll No: ' + _value(student, 'roll_no'), style: const TextStyle(fontSize: 13)),
-        Text('Class: ' + _value(student, 'class'), style: const TextStyle(fontSize: 13)),
-        Text('Board: ' + _value(student, 'board'), style: const TextStyle(fontSize: 13)),
-        Text('Test Series: ' + _value(student, 'test_series_name'), style: const TextStyle(fontSize: 13)),
-        Text('Test Code: ' + _value(student, 'test_code'), style: const TextStyle(fontSize: 13)),
-        Text('Subject: ' + _value(student, 'subject_name'), style: const TextStyle(fontSize: 13)),
-        if (_category == 'Registered') ...[
-          const SizedBox(height: 2),
-          Text('Writing Date: ' + _value(student, 'registered_writing_date'), style: const TextStyle(fontSize: 13)),
-          Text('Slot: ' + _value(student, 'slot_start') + ' - ' + _value(student, 'slot_end'), style: const TextStyle(fontSize: 13)),
         ],
-      ]),
+      ),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 2),
+        childrenPadding: const EdgeInsets.fromLTRB(13, 0, 13, 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(13),
+        ),
+        collapsedShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(13),
+        ),
+        iconColor: AppColors.primary,
+        collapsedIconColor: AppColors.primary,
+        title: Text(
+          _value(student, 'name'),
+          style: const TextStyle(
+            color: AppColors.primary,
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _statusColor.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Text(
+                statusLabel,
+                style: TextStyle(
+                  color: _statusColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.keyboard_arrow_down_rounded),
+          ],
+        ),
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Roll No: ' + _value(student, 'roll_no'),
+                    style: const TextStyle(fontSize: 13)),
+                Text('Class: ' + _value(student, 'class'),
+                    style: const TextStyle(fontSize: 13)),
+                Text('Board: ' + _value(student, 'board'),
+                    style: const TextStyle(fontSize: 13)),
+                Text('Test Series: ' + _value(student, 'test_series_name'),
+                    style: const TextStyle(fontSize: 13)),
+                Text('Test Code: ' + _value(student, 'test_code'),
+                    style: const TextStyle(fontSize: 13)),
+                Text('Subject: ' + _value(student, 'subject_name'),
+                    style: const TextStyle(fontSize: 13)),
+                if (_category == 'Registered') ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Writing Date: ' + _value(student, 'registered_writing_date'),
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  Text(
+                    'Slot: ' +
+                        _value(student, 'slot_start') +
+                        ' - ' +
+                        _value(student, 'slot_end'),
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

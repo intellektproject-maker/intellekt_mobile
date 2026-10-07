@@ -174,7 +174,7 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
               child: Icon(icon, color: AppColors.primary)),
             const SizedBox(width: 14),
             Expanded(child: Text(category,
-              style: const TextStyle(color: AppColors.primary, fontSize: 17, fontWeight: FontWeight.w800))),
+              style: const TextStyle(color: AppColors.primary, fontSize: 15, fontWeight: FontWeight.w800))),
             Icon(selected ? Icons.keyboard_arrow_up_rounded : Icons.chevron_right_rounded,
               color: AppColors.primary, size: 30),
           ]),
@@ -285,10 +285,10 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(13),
         border: Border.all(color: AppColors.border),
         boxShadow: const [BoxShadow(blurRadius: 6, offset: Offset(0, 2), color: Color(0x12000000))],
       ),
@@ -302,7 +302,7 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
             child: Text(statusLabel, style: TextStyle(color: _statusColor, fontSize: 11, fontWeight: FontWeight.w800)),
           ),
         ]),
-        const SizedBox(height: 8),
+        const SizedBox(height: 5),
         Text('Roll No: ' + _value(student, 'roll_no')),
         Text('Class: ' + _value(student, 'class')),
         Text('Board: ' + _value(student, 'board')),
@@ -310,7 +310,7 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
         Text('Test Code: ' + _value(student, 'test_code')),
         Text('Subject: ' + _value(student, 'subject_name')),
         if (_category == 'Registered') ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text('Writing Date: ' + _value(student, 'registered_writing_date')),
           Text('Slot: ' + _value(student, 'slot_start') + ' - ' + _value(student, 'slot_end')),
         ],

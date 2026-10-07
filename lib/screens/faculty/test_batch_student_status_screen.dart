@@ -184,8 +184,22 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
   }
 
   Widget _filterCard() {
-    final seriesIds = _series.map((e) => e['id']?.toString() ?? '').where((e) => e.isNotEmpty).toList();
-    final testCodes = _tests.map((e) => e['test_code']?.toString() ?? '').where((e) => e.isNotEmpty).toList();
+    final seriesById = <String, Map<String, dynamic>>{};
+    for (final item in _series) {
+      final id = item['id']?.toString().trim() ?? '';
+      if (id.isNotEmpty) seriesById.putIfAbsent(id, () => item);
+    }
+
+    final testsByCode = <String, Map<String, dynamic>>{};
+    for (final item in _tests) {
+      final code = item['test_code']?.toString().trim() ?? '';
+      if (code.isNotEmpty) {
+        testsByCode.putIfAbsent(code.toUpperCase(), () => item);
+      }
+    }
+
+    final seriesIds = seriesById.keys.toList();
+    final testCodes = testsByCode.keys.toList();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -201,8 +215,8 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
           initialValue: seriesIds.contains(_seriesId) ? _seriesId : null,
           isExpanded: true,
           decoration: const InputDecoration(labelText: 'Select Test Series', border: OutlineInputBorder()),
-          items: _series.map((e) {
-            final id = e['id']?.toString() ?? '';
+          items: seriesById.values.map((e) {
+            final id = e['id']?.toString().trim() ?? '';
             return DropdownMenuItem(value: id, child: Text(e['name']?.toString() ?? id));
           }).toList(),
           onChanged: _changeSeries,
@@ -212,8 +226,8 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
           initialValue: testCodes.contains(_testCode) ? _testCode : null,
           isExpanded: true,
           decoration: const InputDecoration(labelText: 'Select Test Code', border: OutlineInputBorder()),
-          items: _tests.map((e) {
-            final code = e['test_code']?.toString() ?? '';
+          items: testsByCode.values.map((e) {
+            final code = e['test_code']?.toString().trim() ?? '';
             final subject = e['subject_name']?.toString() ?? '';
             return DropdownMenuItem(value: code, child: Text(subject.isEmpty ? code : code + ' — ' + subject, overflow: TextOverflow.ellipsis));
           }).toList(),

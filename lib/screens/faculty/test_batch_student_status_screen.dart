@@ -216,13 +216,38 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
 
     final seriesIds = seriesById.keys.toList();
     final testItems = testsByCode.values.toList();
+
+    // Never use the test code itself as the DropdownButton value. The backend
+    // can contain duplicate/variant rows for a code while filters are changing.
+    // An index is guaranteed to be unique for every rendered menu item.
+    final testMenuItems = <DropdownMenuItem<int>>[];
+    for (var index = 0; index < testItems.length; index++) {
+      final test = testItems[index];
+      final code = test['test_code']?.toString().trim() ?? '';
+      final subject = test['subject_name']?.toString().trim() ?? '';
+      testMenuItems.add(
+        DropdownMenuItem<int>(
+          value: index,
+          child: Text(
+            subject.isEmpty ? code : '$code — $subject',
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      );
+    }
+
     final selectedTestCode = _testCode?.trim().toUpperCase();
-    final safeTestCode = selectedTestCode != null &&
-            testItems.any((e) =>
-                (e['test_code']?.toString().trim().toUpperCase() ?? '') ==
-                selectedTestCode)
-        ? selectedTestCode
-        : null;
+    int? safeTestIndex;
+    if (selectedTestCode != null && selectedTestCode.isNotEmpty) {
+      for (var index = 0; index < testItems.length; index++) {
+        final code =
+            testItems[index]['test_code']?.toString().trim().toUpperCase() ?? '';
+        if (code == selectedTestCode) {
+          safeTestIndex = index;
+          break;
+        }
+      }
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -258,22 +283,20 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
             onChanged: _changeSeries,
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: safeTestCode,
+          DropdownButtonFormField<int>(
+            initialValue: safeTestIndex,
             isExpanded: true,
             decoration: const InputDecoration(
                 labelText: 'Select Test Code',
                 border: OutlineInputBorder()),
-            items: testItems.map((e) {
-              final code = e['test_code']?.toString().trim() ?? '';
-              final subject = e['subject_name']?.toString().trim() ?? '';
-              return DropdownMenuItem(
-                value: code.toUpperCase(),
-                child: Text(subject.isEmpty ? code : '$code — $subject',
-                    overflow: TextOverflow.ellipsis),
-              );
-            }).toList(),
-            onChanged: _loadStudents,
+            items: testMenuItems,
+            onChanged: (index) {
+              if (index == null || index < 0 || index >= testItems.length) {
+                return;
+              }
+              final code = testItems[index]['test_code']?.toString().trim() ?? '';
+              _loadStudents(code);
+            },
           ),
         ],
       ),

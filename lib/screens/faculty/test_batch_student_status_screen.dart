@@ -199,50 +199,141 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
     }
 
     final seriesIds = seriesById.keys.toList();
-    final testCodes = testsByCode.keys.toList();
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(_category!, style: TextStyle(color: _statusColor, fontSize: 18, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 14),
-        _dropdown('Select Class', _className, _classes, _changeClass),
-        const SizedBox(height: 12),
-        _dropdown('Select Board', _board, _boards, _changeBoard),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          initialValue: seriesIds.contains(_seriesId) ? _seriesId : null,
-          isExpanded: true,
-          decoration: const InputDecoration(labelText: 'Select Test Series', border: OutlineInputBorder()),
-          items: seriesById.values.map((e) {
-            final id = e['id']?.toString().trim() ?? '';
-            return DropdownMenuItem(value: id, child: Text(e['name']?.toString() ?? id));
-          }).toList(),
-          onChanged: _changeSeries,
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          initialValue: testCodes.contains(_testCode) ? _testCode : null,
-          isExpanded: true,
-          decoration: const InputDecoration(labelText: 'Select Test Code', border: OutlineInputBorder()),
-          items: testsByCode.values.map((e) {
-            final code = e['test_code']?.toString().trim() ?? '';
-            final subject = e['subject_name']?.toString() ?? '';
-            return DropdownMenuItem(value: code, child: Text(subject.isEmpty ? code : code + ' — ' + subject, overflow: TextOverflow.ellipsis));
-          }).toList(),
-          onChanged: _loadStudents,
-        ),
-      ]),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _category!,
+            style: TextStyle(
+              color: _statusColor,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 14),
+          _dropdown('Select Class', _className, _classes, _changeClass),
+          const SizedBox(height: 12),
+          _dropdown('Select Board', _board, _boards, _changeBoard),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: seriesIds.contains(_seriesId) ? _seriesId : null,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: 'Select Test Series',
+              border: OutlineInputBorder(),
+            ),
+            items: seriesById.values.map((e) {
+              final id = e['id']?.toString().trim() ?? '';
+              return DropdownMenuItem(
+                value: id,
+                child: Text(e['name']?.toString() ?? id),
+              );
+            }).toList(),
+            onChanged: _changeSeries,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Tests',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (testsByCode.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 14),
+              child: Text(
+                'No tests found for the selected filters.',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            )
+          else
+            ...testsByCode.values.map((test) => _testCard(test)),
+        ],
+      ),
     );
   }
 
-  Widget _dropdown(String label, String? value, List<String> values, ValueChanged<String?> onChanged) {
+  Widget _testCard(Map<String, dynamic> test) {
+    final code = test['test_code']?.toString().trim() ?? '';
+    final subject = test['subject_name']?.toString().trim() ?? '';
+    final selected = code.isNotEmpty &&
+        _testCode?.trim().toUpperCase() == code.toUpperCase();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 9),
+      decoration: BoxDecoration(
+        color: selected
+            ? AppColors.primary.withValues(alpha: 0.06)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(
+          color: selected ? AppColors.primary : AppColors.border,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            blurRadius: 5,
+            offset: Offset(0, 2),
+            color: Color(0x10000000),
+          ),
+        ],
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(13),
+        onTap: code.isEmpty ? null : () => _loadStudents(code),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  subject.isEmpty ? code : '$subject • $code',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Icon(
+                selected
+                    ? Icons.keyboard_arrow_up_rounded
+                    : Icons.chevron_right_rounded,
+                color: AppColors.primary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _dropdown(
+    String label,
+    String? value,
+    List<String> values,
+    ValueChanged<String?> onChanged,
+  ) {
     return DropdownButtonFormField<String>(
       initialValue: values.contains(value) ? value : null,
       isExpanded: true,
-      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-      items: values.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+      items: values
+          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+          .toList(),
       onChanged: onChanged,
     );
   }

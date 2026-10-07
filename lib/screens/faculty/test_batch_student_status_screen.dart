@@ -19,24 +19,40 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
   List<String> _classes = [], _boards = [];
   List<Map<String, dynamic>> _series = [], _tests = [], _students = [];
   bool _loading = true, _studentsLoading = false;
+  int _filterRequestId = 0;
   String? _error;
 
   @override
   void initState() { super.initState(); _loadFilters(); }
 
   Future<void> _loadFilters() async {
+    final requestId = ++_filterRequestId;
     setState(() { _loading = true; _error = null; });
     try {
       final result = await _service.fetch(
         adminId: widget.adminId, category: _category, className: _className,
         board: _board, seriesId: _seriesId,
       );
-      if (!mounted) return;
+      if (!mounted || requestId != _filterRequestId) return;
       _applyFilters(result['filters']);
+      // The available test list may change whenever Class, Board or Series
+      // changes. Never keep a test code from an older filter set.
+      final availableCodes = _tests
+          .map((e) => e['test_code']?.toString().trim().toUpperCase() ?? '')
+          .where((e) => e.isNotEmpty)
+          .toSet();
+      if (_testCode != null &&
+          !availableCodes.contains(_testCode!.trim().toUpperCase())) {
+        _testCode = null;
+        _students = [];
+      }
       setState(() => _loading = false);
     } catch (e) {
-      if (!mounted) return;
-      setState(() { _error = e.toString().replaceFirst('Exception: ', ''); _loading = false; });
+      if (!mounted || requestId != _filterRequestId) return;
+      setState(() {
+        _error = e.toString().replaceFirst('Exception: ', '');
+        _loading = false;
+      });
     }
   }
 
@@ -199,12 +215,14 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
     }
 
     final seriesIds = seriesById.keys.toList();
-    final testCodes = testsByCode.keys.toList();
+    final testItems = testsByCode.values.toList();
     final selectedTestCode = _testCode?.trim().toUpperCase();
-    final safeTestCode =
-        selectedTestCode != null && testCodes.contains(selectedTestCode)
-            ? selectedTestCode
-            : null;
+    final safeTestCode = selectedTestCode != null &&
+            testItems.any((e) =>
+                (e['test_code']?.toString().trim().toUpperCase() ?? '') ==
+                selectedTestCode)
+        ? selectedTestCode
+        : null;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -216,14 +234,11 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            _category!,
-            style: TextStyle(
-              color: _statusColor,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          Text(_category!,
+              style: TextStyle(
+                  color: _statusColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800)),
           const SizedBox(height: 14),
           _dropdown('Select Class', _className, _classes, _changeClass),
           const SizedBox(height: 12),
@@ -233,15 +248,12 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
             initialValue: seriesIds.contains(_seriesId) ? _seriesId : null,
             isExpanded: true,
             decoration: const InputDecoration(
-              labelText: 'Select Test Series',
-              border: OutlineInputBorder(),
-            ),
+                labelText: 'Select Test Series',
+                border: OutlineInputBorder()),
             items: seriesById.values.map((e) {
               final id = e['id']?.toString().trim() ?? '';
               return DropdownMenuItem(
-                value: id,
-                child: Text(e['name']?.toString() ?? id),
-              );
+                  value: id, child: Text(e['name']?.toString() ?? id));
             }).toList(),
             onChanged: _changeSeries,
           ),
@@ -250,18 +262,15 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
             initialValue: safeTestCode,
             isExpanded: true,
             decoration: const InputDecoration(
-              labelText: 'Select Test Code',
-              border: OutlineInputBorder(),
-            ),
-            items: testsByCode.values.map((e) {
+                labelText: 'Select Test Code',
+                border: OutlineInputBorder()),
+            items: testItems.map((e) {
               final code = e['test_code']?.toString().trim() ?? '';
               final subject = e['subject_name']?.toString().trim() ?? '';
               return DropdownMenuItem(
                 value: code.toUpperCase(),
-                child: Text(
-                  subject.isEmpty ? code : '$code — $subject',
-                  overflow: TextOverflow.ellipsis,
-                ),
+                child: Text(subject.isEmpty ? code : '$code — $subject',
+                    overflow: TextOverflow.ellipsis),
               );
             }).toList(),
             onChanged: _loadStudents,

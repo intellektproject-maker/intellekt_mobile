@@ -14,7 +14,7 @@ class TestBatchStudentStatusScreen extends StatefulWidget {
 class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScreen> {
   final TestBatchStudentStatusService _service = TestBatchStudentStatusService();
 
-  static const _categories = ['Yet to Register', 'Registered', 'Completed', 'Lapsed'];
+  static const _categories = ['Registered', 'Completed', 'Lapsed'];
   String? _category, _className, _board, _seriesId, _testCode;
   List<String> _classes = [], _boards = [];
   List<Map<String, dynamic>> _series = [], _tests = [], _students = [];

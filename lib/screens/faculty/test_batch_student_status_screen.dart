@@ -5,7 +5,14 @@ import '../../services/test_batch/test_batch_student_status_service.dart';
 
 class TestBatchStudentStatusScreen extends StatefulWidget {
   final String adminId;
-  const TestBatchStudentStatusScreen({super.key, required this.adminId});
+  final String? initialCategory;
+  final bool detailOnly;
+  const TestBatchStudentStatusScreen({
+    super.key,
+    required this.adminId,
+    this.initialCategory,
+    this.detailOnly = false,
+  });
 
   @override
   State<TestBatchStudentStatusScreen> createState() => _TestBatchStudentStatusScreenState();
@@ -23,7 +30,11 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
   String? _error;
 
   @override
-  void initState() { super.initState(); _loadFilters(); }
+  void initState() {
+    super.initState();
+    _category = widget.initialCategory;
+    _loadFilters();
+  }
 
   Future<void> _loadFilters() async {
     final requestId = ++_filterRequestId;
@@ -142,10 +153,12 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
                 children: [
-                  const Text('Registration Status',
-                    style: TextStyle(color: AppColors.primary, fontSize: 21, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 12),
-                  ..._categories.map(_categoryCard),
+                  if (!widget.detailOnly) ...[
+                    const Text('Registration Status',
+                      style: TextStyle(color: AppColors.primary, fontSize: 21, fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 12),
+                    ..._categories.map(_categoryCard),
+                  ],
                   if (_category != null) ...[
                     const SizedBox(height: 14),
                     _filterCard(),
@@ -181,7 +194,17 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(15),
-        onTap: () => _selectCategory(category),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => TestBatchStudentStatusScreen(
+                adminId: widget.adminId,
+                initialCategory: category,
+                detailOnly: true,
+              ),
+            ),
+          );
+        },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
           child: Row(children: [

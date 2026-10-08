@@ -73,8 +73,20 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
     final boards = raw['boards'];
     final series = raw['series'];
     final tests = raw['tests'];
-    _classes = classes is List ? classes.map((e) => e.toString()).where((e) => e.isNotEmpty).toList() : [];
-    _boards = boards is List ? boards.map((e) => e.toString()).where((e) => e.isNotEmpty).toList() : [];
+    _classes = classes is List
+        ? classes
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty)
+            .toSet()
+            .toList()
+        : [];
+    _boards = boards is List
+        ? boards
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty)
+            .toSet()
+            .toList()
+        : [];
     _series = series is List ? series.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : [];
     _tests = tests is List ? tests.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : [];
   }
@@ -332,15 +344,24 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
     List<String> values,
     ValueChanged<String?> onChanged,
   ) {
+    final uniqueValues = <String>[];
+    final seen = <String>{};
+    for (final item in values) {
+      final normalized = item.trim();
+      if (normalized.isNotEmpty && seen.add(normalized)) {
+        uniqueValues.add(normalized);
+      }
+    }
+
     return DropdownButtonFormField<String>(
-      initialValue: values.contains(value) ? value : null,
+      initialValue: uniqueValues.contains(value?.trim()) ? value!.trim() : null,
       isExpanded: true,
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),
       ),
-      items: values
-          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+      items: uniqueValues
+          .map((e) => DropdownMenuItem<String>(value: e, child: Text(e)))
           .toList(),
       onChanged: onChanged,
     );

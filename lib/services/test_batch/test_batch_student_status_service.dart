@@ -108,36 +108,46 @@ class TestBatchStudentStatusService {
       final seriesData = seriesResponse.data;
       final series = _list(seriesData is Map ? seriesData['series'] : seriesData);
 
-      // Load students up front. Their class/board fields are the authoritative
-      // source for the Class and Board filter dropdowns.
+      final normalizedBoard = _normalizeBoard(board);
+
+      // Build Class and Board choices from the test catalogue first. This
+      // keeps the filter controls populated even when the student endpoint
+      // returns no rows for the current partial selection.
+      final tests = await _tests(adminId: adminId, seriesId: seriesId);
+
+      final classes = tests
+          .map((e) => _testClass(e['test_code']?.toString() ?? ''))
+          .where((e) => e.isNotEmpty)
+          .toSet()
+          .toList()
+        ..sort();
+
+      final boards = tests
+          .map((e) => _testBoard(e['test_code']?.toString() ?? ''))
+          .where((e) => e.isNotEmpty)
+          .map((e) => e == 'stateboard'
+              ? 'State Board'
+              : e == 'cbse'
+                  ? 'CBSE'
+                  : e == 'isc'
+                      ? 'ISC'
+                      : e)
+          .toSet()
+          .toList()
+        ..sort();
+
       final allStudents = await _students(
         adminId: adminId,
         className: className,
         seriesId: seriesId,
       );
-
-      final classes = allStudents
-          .map((e) => e['class']?.toString().trim() ?? '')
-          .where((e) => e.isNotEmpty)
-          .toSet()
-          .toList()
-        ..sort();
-
-      final boards = allStudents
-          .map((e) => e['board']?.toString().trim() ?? '')
-          .where((e) => e.isNotEmpty)
-          .toSet()
-          .toList()
-        ..sort();
-
-      final normalizedBoard = _normalizeBoard(board);
-
-      final tests = await _tests(adminId: adminId, seriesId: seriesId);
       final filteredTests = tests.where((test) {
         final code = test['test_code']?.toString().trim() ?? '';
         final testClass = _testClass(code);
         final testBoard = _testBoard(code);
-        return (className == null || className.isEmpty || testClass == className) &&
+        final normalizedTestClass = testClass.trim();
+        return (className == null || className.isEmpty ||
+                normalizedTestClass == className.trim()) &&
             (normalizedBoard.isEmpty || testBoard == normalizedBoard) &&
             (seriesId == null || seriesId.isEmpty ||
                 test['test_series_id']?.toString() == seriesId);

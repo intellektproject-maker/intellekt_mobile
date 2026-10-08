@@ -278,10 +278,11 @@ class TestBatchStudentStatusService {
         return {'filters': filters, 'students': <Map<String, dynamic>>[]};
       }
 
+      final selectedTestCode = testCode!;
       final selectedTest = uniqueFilteredTests.firstWhere(
         (test) =>
             (test['test_code']?.toString().trim().toUpperCase() ?? '') ==
-            testCode.trim().toUpperCase(),
+            selectedTestCode.trim().toUpperCase(),
         orElse: () => <String, dynamic>{},
       );
       if (selectedTest.isEmpty) {
@@ -310,7 +311,7 @@ class TestBatchStudentStatusService {
         return subjectEligible;
       }).toList();
 
-      final registered = await _registeredStudents(adminId, testCode);
+      final registered = await _registeredStudents(adminId, selectedTestCode);
       final registeredByRoll = <String, Map<String, dynamic>>{
         for (final item in registered)
           (item['roll_no']?.toString().trim().toUpperCase() ?? ''): item,

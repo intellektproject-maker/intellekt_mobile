@@ -46,6 +46,7 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
       );
       if (!mounted || requestId != _filterRequestId) return;
       _applyFilters(result['filters']);
+      _students = List<Map<String, dynamic>>.from(result['students'] ?? []);
       // The available test list may change whenever Class, Board or Series
       // changes. Never keep a test code from an older filter set.
       final availableCodes = _tests
@@ -175,9 +176,8 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
                     const SizedBox(height: 14),
                     _filterCard(),
                   ],
-                  if (_category != null && _className != null && _board != null &&
-                      _seriesId != null && _testCode != null) ...[
-                    const SizedBox(height: 18),
+                  if (_category != null) ...[
+                    const SizedBox(height: 14),
                     _results(),
                   ],
                 ],
@@ -285,10 +285,10 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(13),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -297,13 +297,13 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
           Text(_category!,
               style: TextStyle(
                   color: _statusColor,
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w800)),
-          const SizedBox(height: 14),
+          const SizedBox(height: 8),
           _dropdown('Select Class', _className, _classes, _changeClass),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
           _dropdown('Select Board', _board, _boards, _changeBoard),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
           DropdownButtonFormField<String>(
             initialValue: seriesIds.contains(_seriesId) ? _seriesId : null,
             isExpanded: true,
@@ -317,7 +317,7 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
             }).toList(),
             onChanged: _changeSeries,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
           DropdownButtonFormField<int>(
             initialValue: safeTestIndex,
             isExpanded: true,

@@ -161,10 +161,120 @@ class TestBatchStudentStatusService {
         'tests': uniqueFilteredTests,
       };
 
-      if (category == null ||
-          category.isEmpty ||
-          testCode == null ||
-          testCode.isEmpty) {
+      // With no Test Code selected, show all students matching the
+      // selected status and any filters already chosen.
+      if (category != null &&
+          category.isNotEmpty &&
+          (testCode == null || testCode.isEmpty)) {
+        final resultStudents = allStudents.where((student) {
+          final studentBoard = _normalizeBoard(student['board']);
+          final studentClass = student['class']?.toString().trim() ?? '';
+          return (className == null ||
+                  className.isEmpty ||
+                  studentClass == className) &&
+              (normalizedBoard.isEmpty || studentBoard == normalizedBoard);
+        }).toList();
+
+        final registrationsByTest = <String, List<Map<String, dynamic>>>{};
+        for (final test in uniqueFilteredTests) {
+          final code = test['test_code']?.toString().trim() ?? '';
+          if (code.isEmpty) continue;
+          registrationsByTest[code.toUpperCase()] =
+              await _registeredStudents(adminId, code);
+        }
+
+        final allRegistrationDates = <String>[];
+        for (final rows in registrationsByTest.values) {
+          for (final row in rows) {
+            final date =
+                row['registered_writing_date']?.toString().split('T').first ??
+                    '';
+            if (date.isNotEmpty) allRegistrationDates.add(date);
+          }
+        }
+
+        List<Map<String, dynamic>> allAttendance = <Map<String, dynamic>>[];
+        if (allRegistrationDates.isNotEmpty) {
+          allRegistrationDates.sort();
+          allAttendance = await _attendance(
+            adminId: adminId,
+            from: allRegistrationDates.first,
+            to: allRegistrationDates.last,
+          );
+        }
+
+        final attendanceByRollDate = <String, String>{};
+        for (final row in allAttendance) {
+          final roll =
+              row['roll_no']?.toString().trim().toUpperCase() ?? '';
+          final date =
+              row['attendance_date']?.toString().split('T').first ?? '';
+          if (roll.isNotEmpty && date.isNotEmpty) {
+            attendanceByRollDate['$roll|$date'] =
+                row['status']?.toString().trim().toLowerCase() ?? '';
+          }
+        }
+
+        final results = <Map<String, dynamic>>[];
+        for (final test in uniqueFilteredTests) {
+          final code = test['test_code']?.toString().trim() ?? '';
+          if (code.isEmpty) continue;
+          final subject =
+              test['subject_name']?.toString().trim().toLowerCase() ?? '';
+
+          final registeredByRoll = <String, Map<String, dynamic>>{
+            for (final row in (registrationsByTest[code.toUpperCase()] ?? []))
+              (row['roll_no']?.toString().trim().toUpperCase() ?? ''): row,
+          };
+
+          for (final student in resultStudents) {
+            final roll =
+                student['roll_no']?.toString().trim().toUpperCase() ?? '';
+            final subjects =
+                student['subjects']?.toString().trim().toLowerCase() ?? '';
+
+            final subjectEligible =
+                (subject.contains('math') &&
+                        (subjects == 'mathematics' || subjects == 'both')) ||
+                    (subject.contains('physics') &&
+                        (subjects == 'physics' || subjects == 'both'));
+            if (!subjectEligible) continue;
+
+            final registration = registeredByRoll[roll];
+            if (registration == null) continue;
+
+            final writingDate =
+                registration['registered_writing_date']?.toString().split('T').first ??
+                    '';
+            final attendanceStatus =
+                attendanceByRollDate['$roll|$writingDate'] ?? '';
+
+            final resolvedCategory = attendanceStatus == 'present'
+                ? 'Completed'
+                : attendanceStatus == 'absent'
+                    ? 'Lapsed'
+                    : 'Registered';
+
+            if (resolvedCategory != category) continue;
+
+            final merged = <String, dynamic>{...student};
+            merged['test_code'] = test['test_code'];
+            merged['subject_name'] = test['subject_name'];
+            merged['test_series_name'] =
+                student['test_series_name'] ?? test['test_series_name'];
+            merged['registered_writing_date'] =
+                registration['registered_writing_date'];
+            merged['slot_start'] = registration['registered_slot_start'];
+            merged['slot_end'] = registration['registered_slot_end'];
+            merged['attendance_status'] = attendanceStatus;
+            results.add(merged);
+          }
+        }
+
+        return {'filters': filters, 'students': results};
+      }
+
+      if (category == null || category.isEmpty) {
         return {'filters': filters, 'students': <Map<String, dynamic>>[]};
       }
 

@@ -114,7 +114,7 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
 
   Future<void> _loadStudents(String? value) async {
     setState(() { _testCode = value; _students = []; });
-    if (value == null || _category == null || _className == null || _board == null || _seriesId == null) return;
+    if (value == null || _category == null) return;
 
     setState(() { _studentsLoading = true; _error = null; });
     try {

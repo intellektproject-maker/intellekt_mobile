@@ -35,6 +35,7 @@ class TestBatchStudentStatusService {
       '/test-batch/students',
       queryParameters: {
         'adminId': adminId.trim().toUpperCase(),
+        'category': category,
         if (className != null && className.isNotEmpty) 'class': className,
         if (seriesId != null && seriesId.isNotEmpty) 'seriesId': seriesId,
       },

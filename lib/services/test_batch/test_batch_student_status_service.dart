@@ -111,19 +111,22 @@ class TestBatchStudentStatusService {
     String? testCode,
   }) async {
     try {
-      final seriesResponse = await _api.get(
-        '/test-batch/series',
-        queryParameters: {'adminId': adminId.trim().toUpperCase()},
-      );
-      final seriesData = seriesResponse.data;
-      final series = _list(seriesData is Map ? seriesData['series'] : seriesData);
-
       final normalizedBoard = _normalizeBoard(board);
 
-      // Build Class and Board choices from the test catalogue first. This
-      // keeps the filter controls populated even when the student endpoint
-      // returns no rows for the current partial selection.
-      final tests = await _tests(adminId: adminId, seriesId: seriesId);
+      // Fetch independent reference data concurrently. Serial network requests
+      // made the status screen wait several seconds per request.
+      final referenceResponses = await Future.wait<dynamic>([
+        _api.get(
+          '/test-batch/series',
+          queryParameters: {'adminId': adminId.trim().toUpperCase()},
+        ),
+        _tests(adminId: adminId, seriesId: seriesId),
+        _students(adminId: adminId, className: className, seriesId: seriesId),
+      ]);
+      final seriesData = referenceResponses[0].data;
+      final series = _list(seriesData is Map ? seriesData['series'] : seriesData);
+      final tests = List<Map<String, dynamic>>.from(referenceResponses[1] as List);
+      final allStudents = List<Map<String, dynamic>>.from(referenceResponses[2] as List);
 
       final classes = tests
           .map((e) => _testClass(e['test_code']?.toString() ?? ''))
@@ -146,11 +149,6 @@ class TestBatchStudentStatusService {
           .toList()
         ..sort();
 
-      final allStudents = await _students(
-        adminId: adminId,
-        className: className,
-        seriesId: seriesId,
-      );
       final filteredTests = tests.where((test) {
         final code = test['test_code']?.toString().trim() ?? '';
         final testClass = _testClass(code);
@@ -195,12 +193,28 @@ class TestBatchStudentStatusService {
               (normalizedBoard.isEmpty || studentBoard == normalizedBoard);
         }).toList();
 
+        // Load registrations concurrently rather than waiting for each test
+        // code sequentially. Keep a bounded batch to avoid flooding the API.
         final registrationsByTest = <String, List<Map<String, dynamic>>>{};
-        for (final test in uniqueFilteredTests) {
-          final code = test['test_code']?.toString().trim() ?? '';
-          if (code.isEmpty) continue;
-          registrationsByTest[code.toUpperCase()] =
-              await _registeredStudents(adminId, code, category: category, className: className, board: board, seriesId: seriesId);
+        const batchSize = 8;
+        for (var start = 0; start < uniqueFilteredTests.length; start += batchSize) {
+          final batch = uniqueFilteredTests.skip(start).take(batchSize).toList();
+          final responses = await Future.wait(
+            batch.map((test) async {
+              final code = test['test_code']?.toString().trim() ?? '';
+              if (code.isEmpty) return (code: code, rows: <Map<String, dynamic>>[]);
+              final rows = await _registeredStudents(
+                adminId, code, category: category, className: className,
+                board: board, seriesId: seriesId,
+              );
+              return (code: code, rows: rows);
+            }),
+          );
+          for (final response in responses) {
+            if (response.code.isNotEmpty) {
+              registrationsByTest[response.code.toUpperCase()] = response.rows;
+            }
+          }
         }
 
         final allRegistrationDates = <String>[];

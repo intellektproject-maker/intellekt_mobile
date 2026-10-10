@@ -319,6 +319,12 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
           ),
           const SizedBox(height: 6),
           DropdownButtonFormField<int>(
+            // Reset the FormField's internal selection whenever its menu
+            // changes. initialValue alone does not reset retained FormField
+            // state when filters replace the available test-code items.
+            key: ValueKey(
+              'test-code-menu-${testItems.map((e) => e['test_code']?.toString().trim().toUpperCase() ?? '').join('|')}',
+            ),
             initialValue: safeTestIndex,
             isExpanded: true,
             decoration: const InputDecoration(

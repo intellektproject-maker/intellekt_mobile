@@ -353,17 +353,30 @@ class TestBatchStudentStatusService {
         );
       }
 
-      final attendanceByRoll = <String, Map<String, dynamic>>{};
+      // Attendance must be matched by both student and writing date.
+      // A student may register for multiple tests on different dates, so
+      // indexing by roll number alone can assign the wrong attendance status.
+      final attendanceByRollDate = <String, Map<String, dynamic>>{};
       for (final item in attendance) {
         final roll = item['roll_no']?.toString().trim().toUpperCase() ?? '';
-        if (roll.isNotEmpty) attendanceByRoll[roll] = item;
+        final date = item['attendance_date']?.toString().split('T').first ?? '';
+        if (roll.isNotEmpty && date.isNotEmpty) {
+          attendanceByRollDate['$roll|$date'] = item;
+        }
       }
 
       final results = <Map<String, dynamic>>[];
       for (final student in eligibleStudents) {
         final roll = student['roll_no']?.toString().trim().toUpperCase() ?? '';
         final registration = registeredByRoll[roll];
-        final attendanceRow = attendanceByRoll[roll];
+        final writingDate = registration?['registered_writing_date']
+                ?.toString()
+                .split('T')
+                .first ??
+            '';
+        final attendanceRow = writingDate.isEmpty
+            ? null
+            : attendanceByRollDate['$roll|$writingDate'];
         final attendanceStatus =
             attendanceRow?['status']?.toString().trim().toLowerCase();
 

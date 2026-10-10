@@ -47,12 +47,18 @@ class TestBatchStudentStatusService {
     String adminId,
     String testCode, {
     String? category,
+    String? className,
+    String? board,
+    String? seriesId,
   }) async {
     final response = await _api.get(
       '/test-batch/tests/' + Uri.encodeComponent(testCode) + '/registered-students',
       queryParameters: {
         'adminId': adminId.trim().toUpperCase(),
         if (category != null && category.isNotEmpty) 'category': category,
+        if (className != null && className.isNotEmpty) 'class': className.trim(),
+        if (board != null && board.isNotEmpty) 'board': board.trim(),
+        if (seriesId != null && seriesId.isNotEmpty) 'seriesId': seriesId,
       },
     );
     final data = response.data;
@@ -194,7 +200,7 @@ class TestBatchStudentStatusService {
           final code = test['test_code']?.toString().trim() ?? '';
           if (code.isEmpty) continue;
           registrationsByTest[code.toUpperCase()] =
-              await _registeredStudents(adminId, code, category: category);
+              await _registeredStudents(adminId, code, category: category, className: className, board: board, seriesId: seriesId);
         }
 
         final allRegistrationDates = <String>[];
@@ -325,7 +331,7 @@ class TestBatchStudentStatusService {
         return subjectEligible;
       }).toList();
 
-      final registered = await _registeredStudents(adminId, selectedTestCode, category: category);
+      final registered = await _registeredStudents(adminId, selectedTestCode, category: category, className: className, board: board, seriesId: seriesId);
       final registeredByRoll = <String, Map<String, dynamic>>{
         for (final item in registered)
           (item['roll_no']?.toString().trim().toUpperCase() ?? ''): item,

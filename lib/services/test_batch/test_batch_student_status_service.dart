@@ -102,6 +102,145 @@ class TestBatchStudentStatusService {
     return match?.group(1) ?? '';
   }
 
+  Future<Map<String, dynamic>> _fetchAggregateStatus({
+    required String adminId,
+    required String category,
+    String? className,
+    String? board,
+    String? seriesId,
+  }) async {
+    final response = await _api.get(
+      '/test-batch/student-status',
+      queryParameters: {
+        'adminId': adminId.trim().toUpperCase(),
+        if (className != null && className.isNotEmpty) 'class': className,
+        if (board != null && board.isNotEmpty) 'board': board,
+        if (seriesId != null && seriesId.isNotEmpty) 'seriesId': seriesId,
+      },
+    );
+    final data = response.data is Map
+        ? Map<String, dynamic>.from(response.data as Map)
+        : <String, dynamic>{};
+    final tests = _list(data['tests']);
+    final series = _list(data['series']);
+    final students = _list(data['students']);
+    final registrations = _list(data['registrations']);
+    final normalizedBoard = _normalizeBoard(board);
+
+    final classes = tests
+        .map((e) => _testClass(e['test_code']?.toString() ?? ''))
+        .where((e) => e.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    final boards = tests
+        .map((e) => _testBoard(e['test_code']?.toString() ?? ''))
+        .where((e) => e.isNotEmpty)
+        .map((e) => e == 'stateboard'
+            ? 'State Board'
+            : e == 'cbse'
+                ? 'CBSE'
+                : 'ISC')
+        .toSet()
+        .toList()
+      ..sort();
+
+    final uniqueTests = <String, Map<String, dynamic>>{};
+    for (final test in tests) {
+      final code = test['test_code']?.toString().trim() ?? '';
+      if (code.isEmpty) continue;
+      final parsedClass = _testClass(code);
+      final parsedBoard = _testBoard(code);
+      if (className != null && className.isNotEmpty &&
+          parsedClass != className.trim()) continue;
+      if (normalizedBoard.isNotEmpty && parsedBoard != normalizedBoard) continue;
+      if (seriesId != null && seriesId.isNotEmpty &&
+          test['test_series_id']?.toString() != seriesId) continue;
+      uniqueTests.putIfAbsent(code.toUpperCase(), () => test);
+    }
+    final filteredTests = uniqueTests.values.toList()
+      ..sort((a, b) => (a['test_code']?.toString() ?? '')
+          .compareTo(b['test_code']?.toString() ?? ''));
+
+    final filters = <String, dynamic>{
+      'classes': classes,
+      'boards': boards,
+      'series': series,
+      'tests': filteredTests,
+    };
+
+    final studentsByRoll = <String, Map<String, dynamic>>{};
+    for (final student in students) {
+      final roll = student['roll_no']?.toString().trim().toUpperCase() ?? '';
+      if (roll.isNotEmpty) studentsByRoll[roll] = student;
+    }
+
+    final registrationsByKey = <String, Map<String, dynamic>>{};
+    for (final registration in registrations) {
+      final code = registration['test_code']?.toString().trim().toUpperCase() ?? '';
+      final roll = registration['roll_no']?.toString().trim().toUpperCase() ?? '';
+      if (code.isEmpty || roll.isEmpty || !uniqueTests.containsKey(code)) continue;
+      registrationsByKey['$code|$roll'] = registration;
+    }
+
+    final results = <Map<String, dynamic>>[];
+    final requestedCategory = category.trim().toLowerCase();
+    for (final test in filteredTests) {
+      final code = test['test_code']?.toString().trim() ?? '';
+      final subject = test['subject_name']?.toString().trim().toLowerCase() ?? '';
+      final registeredRolls = <String>{};
+      for (final entry in registrationsByKey.entries) {
+        if (!entry.key.startsWith('${code.toUpperCase()}|')) continue;
+        final registration = entry.value;
+        final roll = registration['roll_no']?.toString().trim().toUpperCase() ?? '';
+        final student = studentsByRoll[roll] ?? registration;
+        registeredRolls.add(roll);
+        final subjects = student['subjects']?.toString().trim().toLowerCase() ?? '';
+        final subjectEligible =
+            (subject.contains('math') && (subjects == 'mathematics' || subjects == 'both')) ||
+            (subject.contains('physics') && (subjects == 'physics' || subjects == 'both'));
+        if (!subjectEligible) continue;
+
+        final attendance = registration['attendance_status']?.toString().trim().toLowerCase() ?? '';
+        final resolvedCategory = attendance == 'present'
+            ? 'completed'
+            : attendance == 'absent'
+                ? 'lapsed'
+                : 'registered';
+        if (resolvedCategory != requestedCategory) continue;
+
+        final merged = <String, dynamic>{...student};
+        merged['test_code'] = test['test_code'];
+        merged['subject_name'] = test['subject_name'];
+        merged['test_series_name'] = registration['test_series_name'] ?? test['test_series_name'] ?? student['test_series_name'];
+        merged['registered_writing_date'] = registration['registered_writing_date'];
+        merged['slot_start'] = registration['registered_slot_start'];
+        merged['slot_end'] = registration['registered_slot_end'];
+        merged['attendance_status'] = registration['attendance_status'];
+        results.add(merged);
+      }
+
+      if (requestedCategory == 'yet to register' || requestedCategory == 'yet-to-register') {
+        for (final student in students) {
+          final roll = student['roll_no']?.toString().trim().toUpperCase() ?? '';
+          if (roll.isEmpty || registeredRolls.contains(roll)) continue;
+          final subjects = student['subjects']?.toString().trim().toLowerCase() ?? '';
+          final subjectEligible =
+              (subject.contains('math') && (subjects == 'mathematics' || subjects == 'both')) ||
+              (subject.contains('physics') && (subjects == 'physics' || subjects == 'both'));
+          if (!subjectEligible) continue;
+          final merged = <String, dynamic>{...student};
+          merged['test_code'] = test['test_code'];
+          merged['subject_name'] = test['subject_name'];
+          merged['attendance_status'] = null;
+          results.add(merged);
+        }
+      }
+    }
+
+    return {'filters': filters, 'students': results};
+  }
+
   Future<Map<String, dynamic>> fetch({
     required String adminId,
     String? category,
@@ -111,6 +250,18 @@ class TestBatchStudentStatusService {
     String? testCode,
   }) async {
     try {
+      if (category != null &&
+          category.isNotEmpty &&
+          (testCode == null || testCode.trim().isEmpty)) {
+        return await _fetchAggregateStatus(
+          adminId: adminId,
+          category: category,
+          className: className,
+          board: board,
+          seriesId: seriesId,
+        );
+      }
+
       final normalizedBoard = _normalizeBoard(board);
 
       // Fetch independent reference data concurrently. Serial network requests

@@ -160,7 +160,7 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: _loadFilters,
-        child: _loading && _category == null
+        child: _loading
             ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
             : ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -305,6 +305,7 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
           _dropdown('Select Board', _board, _boards, _changeBoard),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
+            key: ValueKey('test-series-menu-${seriesIds.join('|')}'),
             initialValue: seriesIds.contains(_seriesId) ? _seriesId : null,
             isExpanded: true,
             decoration: const InputDecoration(
@@ -360,6 +361,7 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
     }
 
     return DropdownButtonFormField<String>(
+      key: ValueKey('${label}-menu-${uniqueValues.join('|')}'),
       initialValue: uniqueValues.contains(value?.trim()) ? value!.trim() : null,
       isExpanded: true,
       decoration: InputDecoration(

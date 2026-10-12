@@ -658,12 +658,14 @@ class _TestBatchRegistrationScreenState
                     ),
                   ),
                   _statusChip(
-                    _isCompleted(test)
-                        ? 'Completed'
-                        : registered
-                            ? 'Registered'
-                            : 'Available',
-                    _isCompleted(test) || registered,
+                    _isLapsed(test)
+                        ? 'Lapsed'
+                        : _isCompleted(test)
+                            ? 'Completed'
+                            : registered
+                                ? 'Registered'
+                                : 'Available',
+                    _isLapsed(test) || _isCompleted(test) || registered,
                   ),
                   const SizedBox(width: 4),
                   Icon(

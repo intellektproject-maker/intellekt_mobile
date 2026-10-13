@@ -22,9 +22,9 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
   final TestBatchStudentStatusService _service = TestBatchStudentStatusService();
 
   static const _categories = ['Registered', 'Completed', 'Lapsed'];
-  String? _category, _className, _board, _seriesId, _testCode;
+  String? _category, _className, _board, _seriesId, _testCode, _writingDate;
   List<String> _classes = [], _boards = [];
-  List<Map<String, dynamic>> _series = [], _tests = [], _students = [];
+  List<Map<String, dynamic>> _series = [], _tests = [], _students = [], _allStudents = [];
   bool _loading = true, _studentsLoading = false;
   int _filterRequestId = 0;
   String? _error;
@@ -46,7 +46,9 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
       );
       if (!mounted || requestId != _filterRequestId) return;
       _applyFilters(result['filters']);
-      _students = List<Map<String, dynamic>>.from(result['students'] ?? []);
+      _allStudents = List<Map<String, dynamic>>.from(result['students'] ?? []);
+      if (!_writingDateOptions().contains(_writingDate)) _writingDate = null;
+      _students = _filterStudentsByWritingDate();
       // The available test list may change whenever Class, Board or Series
       // changes. Never keep a test code from an older filter set.
       final availableCodes = _tests
@@ -56,6 +58,7 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
       if (_testCode != null &&
           !availableCodes.contains(_testCode!.trim().toUpperCase())) {
         _testCode = null;
+        _allStudents = [];
         _students = [];
       }
       setState(() => _loading = false);
@@ -92,8 +95,41 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
     _tests = tests is List ? tests.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : [];
   }
 
+  String? _dateOnly(dynamic value) {
+    final raw = value?.toString().trim() ?? '';
+    if (raw.isEmpty || raw == '-') return null;
+    final date = raw.split('T').first.split(' ').first;
+    return RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(date) ? date : null;
+  }
+
+  List<String> _writingDateOptions() {
+    final dates = _allStudents
+        .map((student) => _dateOnly(student['registered_writing_date']))
+        .whereType<String>()
+        .toSet()
+        .toList()
+      ..sort();
+    return dates;
+  }
+
+  List<Map<String, dynamic>> _filterStudentsByWritingDate() {
+    if (_writingDate == null || _writingDate!.isEmpty) {
+      return List<Map<String, dynamic>>.from(_allStudents);
+    }
+    return _allStudents.where((student) =>
+      _dateOnly(student['registered_writing_date']) == _writingDate
+    ).toList();
+  }
+
+  void _changeWritingDate(String? value) {
+    setState(() {
+      _writingDate = value;
+      _students = _filterStudentsByWritingDate();
+    });
+  }
+
   Future<void> _selectCategory(String value) async {
-    setState(() { _category = value; _testCode = null; _students = []; });
+    setState(() { _category = value; _testCode = null; _writingDate = null; _allStudents = []; _students = []; });
     await _loadFilters();
   }
 
@@ -125,7 +161,9 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
       if (!mounted) return;
       _applyFilters(result['filters']);
       setState(() {
-        _students = List<Map<String, dynamic>>.from(result['students'] ?? []);
+        _allStudents = List<Map<String, dynamic>>.from(result['students'] ?? []);
+        if (!_writingDateOptions().contains(_writingDate)) _writingDate = null;
+        _students = _filterStudentsByWritingDate();
         _studentsLoading = false;
       });
     } catch (e) {
@@ -317,6 +355,23 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
                   value: id, child: Text(e['name']?.toString() ?? id));
             }).toList(),
             onChanged: _changeSeries,
+          ),
+          const SizedBox(height: 6),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<String>(
+            key: ValueKey('writing-date-menu-${_writingDateOptions().join('|')}'),
+            initialValue: _writingDateOptions().contains(_writingDate) ? _writingDate : null,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: 'Filter by Writing Date',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.calendar_today_outlined),
+            ),
+            items: [
+              const DropdownMenuItem<String>(value: '', child: Text('All Writing Dates')),
+              ..._writingDateOptions().map((date) => DropdownMenuItem<String>(value: date, child: Text(date))),
+            ],
+            onChanged: (value) => _changeWritingDate(value == null || value.isEmpty ? null : value),
           ),
           const SizedBox(height: 6),
           DropdownButtonFormField<int>(

@@ -415,7 +415,41 @@ class PushNotificationService {
         .trim()
         .toLowerCase();
 
-    // Faculty/admin notifications must never be routed into student pages.
+    // Admins (IG001/IG002 or backend role=admin) use admin destinations.
+    // Keep this before the faculty branch because admin accounts also use the
+    // existing staff notification-token and route infrastructure.
+    if (user.isAdmin) {
+      switch (module) {
+        case 'test-batch-admin-test':
+        case 'test-batch-admin-registration':
+        case 'test-batch':
+        case 'test-batch-student-test':
+        case 'test-batch-registration':
+        case 'test-registration':
+        case 'test-batch-test':
+        case 'test':
+        case 'tests':
+        case 'test-schedule':
+        case 'posted-test':
+        case 'test-reminder':
+          return AppRoutes.testBatchAdminTests;
+        case 'profile':
+        case 'dashboard':
+        case 'task':
+        case 'tasks':
+        case 'attendance':
+        case 'marks':
+        case 'mark':
+          return AppRoutes.facultyProfile;
+        case 'faculty-notification':
+        case 'faculty-notifications':
+        case 'notifications':
+        default:
+          return AppRoutes.facultyNotifications;
+      }
+    }
+
+    // Faculty notifications must never be routed into student pages.
     if (auth.isFaculty) {
       switch (module) {
         case 'test-batch-admin-test':

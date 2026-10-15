@@ -360,6 +360,13 @@ class PushNotificationService {
     );
   }
 
+  /// Opens a notification payload from an in-app notification list.
+  /// Routing is resolved only after the authenticated role is available.
+  void openNotificationData(Map<String, dynamic> data) {
+    _pendingNotificationData = Map<String, dynamic>.from(data);
+    _openPendingRouteIfReady();
+  }
+
   void _handleLocalNotificationTap(NotificationResponse response) {
     final payload = response.payload;
     if (payload == null || payload.isEmpty) return;

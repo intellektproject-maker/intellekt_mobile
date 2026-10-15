@@ -387,6 +387,17 @@ class _TestBatchNotificationBellState
                                 body + (timeText.isEmpty ? '' : '\n' + timeText),
                               ),
                             ),
+                            onTap: () {
+                              final rawData = item['data'];
+                              final payload = rawData is Map
+                                  ? Map<String, dynamic>.from(rawData)
+                                  : <String, dynamic>{};
+                              payload.putIfAbsent('title', () => title);
+                              payload.putIfAbsent('body', () => body);
+                              Navigator.of(dialogContext).pop();
+                              PushNotificationService.instance
+                                  .openNotificationData(payload);
+                            },
                           );
                         },
                       ),

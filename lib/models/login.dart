@@ -77,5 +77,7 @@ class LoginModel {
 
   bool get isRegularStudent => isStudent && !isTestBatchStudent;
 
-  bool get isAdmin => role.trim().toLowerCase() == 'admin';
+  bool get isAdmin =>
+      role.trim().toLowerCase() == 'admin' ||
+      const {'IG001', 'IG002'}.contains(id.trim().toUpperCase());
 }

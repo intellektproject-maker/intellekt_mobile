@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/colors.dart';
 import '../../repositories/faculty_task_repository.dart';
+import '../../services/push_notification_service.dart';
 
 class FacultyNotificationsScreen extends StatefulWidget {
   final String facultyId;
@@ -160,7 +161,15 @@ class _FacultyNotificationsScreenState
                             ),
                             child: InkWell(
                               borderRadius: BorderRadius.circular(14),
-                              onTap: isRead ? null : () => _markRead(item),
+                              onTap: () async {
+                                await _markRead(item);
+                                if (!mounted) return;
+                                PushNotificationService.instance.openNotificationData({
+                                  'module_name': item['module_name']?.toString() ?? 'notifications',
+                                  'title': item['title']?.toString() ?? _module(item),
+                                  'body': item['message']?.toString() ?? '',
+                                });
+                              },
                               child: Padding(
                                 padding: const EdgeInsets.all(16),
                                 child: Row(

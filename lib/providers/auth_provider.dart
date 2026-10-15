@@ -21,7 +21,7 @@ class AuthProvider extends ChangeNotifier {
   LoginModel? get user => _user;
   bool get isLoggedIn => _user != null;
   bool get isStudent => _user?.isStudent ?? false;
-  bool get isFaculty => _user?.isFaculty ?? false;
+  bool get isFaculty => (_user?.isFaculty ?? false) || (_user?.isAdmin ?? false);
   bool get isTestBatchStudent => _user?.isTestBatchStudent ?? false;
   bool get isRegularStudent => _user?.isRegularStudent ?? false;
 
@@ -56,7 +56,7 @@ class AuthProvider extends ChangeNotifier {
 
       if (!restoredUser.success ||
           restoredUser.id.isEmpty ||
-          (!restoredUser.isStudent && !restoredUser.isFaculty)) {
+          (!restoredUser.isStudent && !restoredUser.isFaculty && !restoredUser.isAdmin)) {
         await _secureStorage.delete(key: _sessionKey);
         _user = null;
         return;
@@ -72,7 +72,7 @@ class AuthProvider extends ChangeNotifier {
         } catch (error) {
           debugPrint('Could not re-register the notification token: $error');
         }
-      } else if (restoredUser.isFaculty) {
+      } else if (restoredUser.isFaculty || restoredUser.isAdmin) {
         try {
           await PushNotificationService.instance.registerForFaculty(
             restoredUser.id,
@@ -117,7 +117,7 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-      if (!loginResult.isStudent && !loginResult.isFaculty) {
+      if (!loginResult.isStudent && !loginResult.isFaculty && !loginResult.isAdmin) {
         _error = 'This account type is not supported by this application.';
         _setLoading(false);
         return false;
@@ -142,7 +142,7 @@ class AuthProvider extends ChangeNotifier {
         } catch (error) {
           debugPrint('Could not register the notification token: $error');
         }
-      } else if (loginResult.isFaculty) {
+      } else if (loginResult.isFaculty || loginResult.isAdmin) {
         try {
           await PushNotificationService.instance.registerForFaculty(
             loginResult.id,

@@ -27,7 +27,7 @@ class PushNotificationService {
   String? _facultyId;
   GoRouter? _router;
   AuthProvider? _authProvider;
-  String? _pendingRoute;
+  Map<String, dynamic>? _pendingNotificationData;
 
   static const AndroidNotificationChannel _androidChannel =
       AndroidNotificationChannel(
@@ -352,8 +352,19 @@ class PushNotificationService {
           icon: '@mipmap/ic_launcher',
         ),
       ),
-      payload: jsonEncode(message.data),
+      payload: jsonEncode({
+        ...message.data,
+        'title': notification.title ?? 'INTELLEKT',
+        'body': notification.body ?? '',
+      }),
     );
+  }
+
+  /// Opens a notification payload from an in-app notification list.
+  /// Routing is resolved only after the authenticated role is available.
+  void openNotificationData(Map<String, dynamic> data) {
+    _pendingNotificationData = Map<String, dynamic>.from(data);
+    _openPendingRouteIfReady();
   }
 
   void _handleLocalNotificationTap(NotificationResponse response) {
@@ -363,11 +374,8 @@ class PushNotificationService {
     try {
       final decoded = jsonDecode(payload);
       if (decoded is Map<String, dynamic>) {
-        final route = _routeForPayload(decoded);
-        if (route != null) {
-          _pendingRoute = route;
-          _openPendingRouteIfReady();
-        }
+        _pendingNotificationData = Map<String, dynamic>.from(decoded);
+        _openPendingRouteIfReady();
       }
     } catch (error) {
       debugPrint('Could not open foreground notification: $error');
@@ -375,68 +383,198 @@ class PushNotificationService {
   }
 
   void _handleNotificationTap(RemoteMessage message) {
-    final route = _routeForPayload(message.data);
-    if (route == null) {
-      debugPrint(
-        'Notification tap ignored: unsupported module '
-        '${message.data['module_name'] ?? message.data['module']}',
-      );
-      return;
+    // Preserve the payload until authentication is ready so the same
+    // notification can be routed safely for the signed-in role.
+    final data = Map<String, dynamic>.from(message.data);
+    final notification = message.notification;
+    if ((data['title'] == null || data['title'].toString().trim().isEmpty) &&
+        notification?.title != null) {
+      data['title'] = notification!.title;
     }
-
-    _pendingRoute = route;
+    if ((data['body'] == null || data['body'].toString().trim().isEmpty) &&
+        notification?.body != null) {
+      data['body'] = notification!.body;
+    }
+    _pendingNotificationData = data;
     _openPendingRouteIfReady();
   }
 
   String? _routeForPayload(Map<String, dynamic> data) {
+    final auth = _authProvider;
+    final user = auth?.user;
+    if (auth == null || user == null) return null;
+
     final module = (data['module_name'] ?? data['module'] ?? data['type'])
         ?.toString()
         .trim()
         .toLowerCase()
         .replaceAll('_', '-');
+    final title = (data['title'] ?? '').toString().trim().toLowerCase();
+    final reminderType = (data['reminder_type'] ?? '')
+        .toString()
+        .trim()
+        .toLowerCase();
 
-    switch (module) {
-      case 'attendance':
-        return AppRoutes.studentAttendance;
-      case 'marks':
-      case 'mark':
-        return AppRoutes.studentMarks;
-      case 'test-batch-admin-test':
-        return AppRoutes.testBatchAdminTests;
-      case 'test-batch-student-test':
-        return AppRoutes.testBatchRegistration;
-      case 'test':
-      case 'tests':
-      case 'test-schedule':
-      case 'posted-test':
-        return AppRoutes.studentTestSchedule;
-      case 'fee':
-      case 'fees':
-        return AppRoutes.studentFee;
-      case 'useful-link':
-      case 'useful-links':
-        return AppRoutes.studentUsefulLinks;
-      case 'request-pdf':
-        return AppRoutes.studentRequestPdf;
-      default:
-        return null;
+    // Admins (IG001/IG002 or backend role=admin) use admin destinations.
+    // Keep this before the faculty branch because admin accounts also use the
+    // existing staff notification-token and route infrastructure.
+    if (user.isAdmin) {
+      switch (module) {
+        case 'test-batch-admin-test':
+        case 'test-batch-admin-registration':
+        case 'test-batch':
+        case 'test-batch-student-test':
+        case 'test-batch-registration':
+        case 'test-registration':
+        case 'test-batch-test':
+        case 'test':
+        case 'tests':
+        case 'test-schedule':
+        case 'posted-test':
+        case 'test-reminder':
+          return AppRoutes.testBatchAdminTests;
+        case 'profile':
+        case 'dashboard':
+        case 'task':
+        case 'tasks':
+        case 'attendance':
+        case 'marks':
+        case 'mark':
+          return AppRoutes.facultyProfile;
+        case 'faculty-notification':
+        case 'faculty-notifications':
+        case 'notifications':
+        default:
+          return AppRoutes.facultyNotifications;
+      }
     }
+
+    // Faculty notifications must never be routed into student pages.
+    if (auth.isFaculty) {
+      switch (module) {
+        case 'test-batch-admin-test':
+        case 'test-batch-admin-registration':
+        case 'test-batch':
+          return AppRoutes.testBatchAdminTests;
+        case 'faculty-notification':
+        case 'faculty-notifications':
+        case 'notifications':
+          return AppRoutes.facultyNotifications;
+        case 'tasks':
+        case 'task':
+        case 'attendance':
+        case 'marks':
+        case 'mark':
+        case 'test':
+        case 'tests':
+        case 'test-reminder':
+        case 'test-schedule':
+        case 'profile':
+          return AppRoutes.facultyProfile;
+        default:
+          // Faculty push notifications without a recognized feature should
+          // still land in their own notification centre, not a student route.
+          return AppRoutes.facultyNotifications;
+      }
+    }
+
+    if (auth.isTestBatchStudent) {
+      switch (module) {
+        case 'attendance':
+        case 'test-batch-attendance':
+          return AppRoutes.testBatchAttendance;
+        case 'marks':
+        case 'mark':
+        case 'test-batch-marks':
+          return AppRoutes.testBatchMarks;
+        case 'test-batch-student-test':
+        case 'test-batch-registration':
+        case 'test-registration':
+        case 'test-batch-test':
+          return AppRoutes.testBatchRegistration;
+        case 'test':
+        case 'tests':
+        case 'test-schedule':
+        case 'posted-test':
+        case 'test-reminder':
+          return AppRoutes.testBatchRegistration;
+        case 'profile':
+        case 'dashboard':
+          return AppRoutes.testBatchDashboard;
+        default:
+          return null;
+      }
+    }
+
+    if (auth.isRegularStudent) {
+      // A general test reminder is intended to bring the student to their
+      // dashboard/profile; explicit schedule updates open the schedule page.
+      if (module == 'test-reminder' ||
+          title.contains('test reminder') ||
+          reminderType == 'student_1_day') {
+        return AppRoutes.studentDashboard;
+      }
+
+      switch (module) {
+        case 'profile':
+        case 'dashboard':
+          return AppRoutes.studentDashboard;
+        case 'attendance':
+          return AppRoutes.studentAttendance;
+        case 'marks':
+        case 'mark':
+          return AppRoutes.studentMarks;
+        case 'test':
+        case 'tests':
+        case 'test-schedule':
+        case 'posted-test':
+          return AppRoutes.studentTestSchedule;
+        case 'fee':
+        case 'fees':
+          return AppRoutes.studentFee;
+        case 'useful-link':
+        case 'useful-links':
+          return AppRoutes.studentUsefulLinks;
+        case 'request-pdf':
+          return AppRoutes.studentRequestPdf;
+        // Never send a regular student into isolated Test Batch screens.
+        case 'test-batch-admin-test':
+        case 'test-batch-admin-registration':
+        case 'test-batch-student-test':
+        case 'test-batch-registration':
+          return AppRoutes.studentDashboard;
+        default:
+          return null;
+      }
+    }
+
+    return null;
   }
 
   void _openPendingRouteIfReady() {
-    final route = _pendingRoute;
+    final data = _pendingNotificationData;
     final router = _router;
     final authProvider = _authProvider;
 
-    if (route == null || router == null || authProvider == null) return;
+    if (data == null || router == null || authProvider == null) return;
     if (!authProvider.isInitialized || !authProvider.isLoggedIn) return;
 
-    final rollNo = authProvider.user?.id.trim();
-    final destination = rollNo == null || rollNo.isEmpty
-        ? route
-        : Uri(path: route, queryParameters: {'roll': rollNo}).toString();
+    final route = _routeForPayload(data);
+    if (route == null) {
+      debugPrint(
+        'Notification tap ignored for role/module: '
+        '${data['module_name'] ?? data['module'] ?? data['type']}',
+      );
+      _pendingNotificationData = null;
+      return;
+    }
 
-    _pendingRoute = null;
+    final userId = authProvider.user?.id.trim();
+    final destination = userId == null || userId.isEmpty
+        ? route
+        : Uri(path: route, queryParameters: {'roll': userId}).toString();
+
+    _pendingNotificationData = null;
     router.go(destination);
   }
 }

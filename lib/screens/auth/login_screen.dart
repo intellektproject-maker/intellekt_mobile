@@ -61,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    if (user.isFaculty) {
+    if (user.isFaculty || user.isAdmin) {
       context.go(AppRoutes.facultyProfile);
       return;
     }

@@ -479,6 +479,14 @@ class PushNotificationService {
     }
 
     if (auth.isTestBatchStudent) {
+      // Test Batch reminder payloads may use a broad module name such as
+      // "test-batch" while the notification title identifies it as a reminder.
+      if (title.contains('test reminder') ||
+          reminderType.contains('test') ||
+          module == 'test-batch') {
+        return AppRoutes.testBatchRegistration;
+      }
+
       switch (module) {
         case 'attendance':
         case 'test-batch-attendance':
@@ -491,7 +499,6 @@ class PushNotificationService {
         case 'test-batch-registration':
         case 'test-registration':
         case 'test-batch-test':
-          return AppRoutes.testBatchRegistration;
         case 'test':
         case 'tests':
         case 'test-schedule':

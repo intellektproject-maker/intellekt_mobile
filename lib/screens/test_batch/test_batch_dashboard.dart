@@ -349,20 +349,27 @@ class _TestBatchNotificationBellState
                           final item = _notifications[index];
                           final title = item['title']?.toString() ?? 'INTELLEKT';
                           final body = item['body']?.toString() ?? '';
-                          final timestamp = DateTime.tryParse(
+                          final parsedTimestamp = DateTime.tryParse(
                             item['timestamp']?.toString() ?? '',
                           );
+                          // Notification timestamps are stored as ISO-8601.
+                          // Render explicitly in IST, independent of device timezone.
+                          final timestamp = parsedTimestamp?.toUtc().add(
+                            const Duration(hours: 5, minutes: 30),
+                          );
+                          final hour = timestamp == null
+                              ? 0
+                              : timestamp.hour % 12 == 0
+                                  ? 12
+                                  : timestamp.hour % 12;
                           final timeText = timestamp == null
                               ? ''
-                              : timestamp.day.toString().padLeft(2, '0') +
-                                  '-' +
-                                  timestamp.month.toString().padLeft(2, '0') +
-                                  '-' +
-                                  timestamp.year.toString() +
-                                  ' ' +
-                                  timestamp.hour.toString().padLeft(2, '0') +
-                                  ':' +
-                                  timestamp.minute.toString().padLeft(2, '0');
+                              : '${timestamp.day.toString().padLeft(2, '0')}/'
+                                  '${timestamp.month.toString().padLeft(2, '0')}/'
+                                  '${timestamp.year}, '
+                                  '$hour:'
+                                  '${timestamp.minute.toString().padLeft(2, '0')} '
+                                  '${timestamp.hour >= 12 ? 'PM' : 'AM'} IST';
 
                           return ListTile(
                             contentPadding: const EdgeInsets.symmetric(

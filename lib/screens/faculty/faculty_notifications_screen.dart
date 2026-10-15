@@ -94,6 +94,23 @@ class _FacultyNotificationsScreenState
         .join(' ');
   }
 
+  String _formatIstDateTime(String raw) {
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return raw;
+
+    // Backend timestamps are ISO-8601; display them explicitly in IST,
+    // regardless of the phone's configured timezone.
+    final ist = parsed.toUtc().add(const Duration(hours: 5, minutes: 30));
+    final hour = ist.hour % 12 == 0 ? 12 : ist.hour % 12;
+    final date = '${ist.day.toString().padLeft(2, '0')}/'
+        '${ist.month.toString().padLeft(2, '0')}/'
+        '${ist.year}';
+    final time = '$hour:'
+        '${ist.minute.toString().padLeft(2, '0')} '
+        '${ist.hour >= 12 ? 'PM' : 'AM'} IST';
+    return '$date, $time';
+  }
+
   @override
   Widget build(BuildContext context) {
     final unreadCount =
@@ -151,6 +168,9 @@ class _FacultyNotificationsScreenState
                           final item = _notifications[index - 1];
                           final isRead = item['is_read'] == true;
                           final createdAt = item['created_at']?.toString() ?? '';
+                          final createdAtText = createdAt.isEmpty
+                              ? ''
+                              : _formatIstDateTime(createdAt);
 
                           return Card(
                             elevation: 0,
@@ -227,7 +247,7 @@ class _FacultyNotificationsScreenState
                                           if (createdAt.isNotEmpty) ...[
                                             const SizedBox(height: 8),
                                             Text(
-                                              createdAt,
+                                              createdAtText,
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 color: Colors.grey.shade500,

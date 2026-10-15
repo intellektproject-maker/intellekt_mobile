@@ -352,7 +352,11 @@ class PushNotificationService {
           icon: '@mipmap/ic_launcher',
         ),
       ),
-      payload: jsonEncode(message.data),
+      payload: jsonEncode({
+        ...message.data,
+        'title': notification.title ?? 'INTELLEKT',
+        'body': notification.body ?? '',
+      }),
     );
   }
 

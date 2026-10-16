@@ -607,7 +607,6 @@ class _TestBatchRegistrationScreenState
     final chapter = test['chapter']?.toString() ?? '';
 
     final details = <String>[
-      'Test date: ${_formatDate(test['test_date'])}',
       'Marks: $marks',
       'Duration: $duration minutes',
       if (portion.isNotEmpty) 'Portion: $portion',

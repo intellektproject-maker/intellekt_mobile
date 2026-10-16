@@ -465,8 +465,6 @@ class _TestCard extends StatelessWidget {
 
           _TestDetail(label: 'Subject', value: _getSubjectName()),
 
-          _TestDetail(label: 'Test Date', value: formatDate(test.testDate)),
-
           _TestDetail(
             label: 'Total Marks',
             value: test.totalMarks?.toString() ?? '-',

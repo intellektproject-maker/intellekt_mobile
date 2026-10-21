@@ -299,7 +299,355 @@ class _FacultyProfileState extends State<FacultyProfile> {
     }
   }
 
+  Widget _drop<T>({
+    required String label,
+    required T? value,
+    required List<T> items,
+    String Function(T)? display,
+    required ValueChanged<T?> onChanged,
+  }) {
+    final selectedValue = items.contains(value) ? value : null;
 
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: DropdownButtonFormField<T>(
+        initialValue: selectedValue,
+        isExpanded: true,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+        items: items
+            .map(
+              (item) => DropdownMenuItem<T>(
+                value: item,
+                child: Text(
+                  display?.call(item) ?? item.toString(),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            )
+            .toList(),
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.primary,
+        elevation: 0,
+        title: const Text(
+          'Faculty Profile',
+          style: TextStyle(
+            color: AppColors.primary,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+      body: SafeArea(child: _buildBody()),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                size: 48,
+                color: AppColors.primary,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Unable to load faculty profile',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              Text(_error!, textAlign: TextAlign.center),
+              const SizedBox(height: 18),
+              FilledButton(
+                onPressed: _loadEverything,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final faculty = _faculty;
+    if (faculty == null) {
+      return const Center(child: Text('Faculty profile not found.'));
+    }
+
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: _loadEverything,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 36),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _ProfileHeader(faculty: faculty),
+            const SizedBox(height: 20),
+            _SectionCard(
+              title: 'Personal Details',
+              children: [
+                _ProfileDetailRow(
+                  icon: Icons.badge_outlined,
+                  label: 'Faculty ID',
+                  value: faculty.facultyId,
+                ),
+                _ProfileDetailRow(
+                  icon: Icons.person_outline_rounded,
+                  label: 'Name',
+                  value: faculty.name,
+                ),
+                _ProfileDetailRow(
+                  icon: Icons.email_outlined,
+                  label: 'Email',
+                  value: faculty.email,
+                ),
+                _ProfileDetailRow(
+                  icon: Icons.phone_outlined,
+                  label: 'Phone',
+                  value: faculty.phone,
+                  showDivider: false,
+                ),
+              ],
+            ),
+            const SizedBox(height: 28),
+            const Text(
+              'Task Management',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 14),
+            _buildTaskBoxes(),
+            if (_activeSection == 'myChecklist') ...[
+              const SizedBox(height: 16),
+              _TaskPanel(
+                title: 'My Task Checklist',
+                facultyList: _facultyList,
+                loading: _tasksLoading,
+                tasks: _filtered(_myTasks, _myFilter),
+                filter: _myFilter,
+                onFilter: (value) => setState(() => _myFilter = value),
+                stats: _myTasks,
+                showCheckbox: true,
+                canManage: _isAdmin,
+                onToggle: _toggleTask,
+                onDelete: _deleteTask,
+                onReassign: _reassignTask,
+              ),
+            ],
+            if (_isAdmin && _activeSection == 'allTasks') ...[
+              const SizedBox(height: 16),
+              _TaskPanel(
+                title: 'All Faculty Assigned Tasks',
+                facultyList: _facultyList,
+                loading: _allLoading,
+                tasks: _filtered(_allTasks, _allFilter),
+                filter: _allFilter,
+                onFilter: (value) => setState(() => _allFilter = value),
+                stats: _allTasks,
+                showCheckbox: false,
+                canManage: true,
+                onToggle: _toggleTask,
+                onDelete: _deleteTask,
+                onReassign: _reassignTask,
+              ),
+            ],
+            if (_isAdmin && _activeSection == 'dailyTasks') ...[
+              const SizedBox(height: 16),
+              _TaskPanel(
+                title: 'All Faculty Daily Task',
+                facultyList: _facultyList,
+                loading: _dailyLoading,
+                tasks: _filtered(_dailyTasks, _dailyFilter),
+                filter: _dailyFilter,
+                onFilter: (value) => setState(() => _dailyFilter = value),
+                stats: _dailyTasks,
+                showCheckbox: false,
+                canManage: true,
+                onToggle: _toggleTask,
+                onDelete: _deleteTask,
+                onReassign: _reassignTask,
+              ),
+            ],
+            if (_isAdmin && _activeSection == 'assignTask') ...[
+              const SizedBox(height: 16),
+              _AssignmentCard(onAssign: _showAssignmentForm),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTaskBoxes() {
+    final boxes = <Widget>[];
+
+    if (_isAdmin) {
+      boxes.add(
+        _TaskBox(
+          title: 'All Faculty Assigned Tasks',
+          description:
+              'View, filter and delete tasks assigned to all faculty members.',
+          notification: _notifications.contains('all-tasks'),
+          active: _activeSection == 'allTasks',
+          onTap: () async {
+            final next = _activeSection == 'allTasks' ? '' : 'allTasks';
+            setState(() {
+              _activeSection = next;
+              _allLoading = next == 'allTasks';
+            });
+
+            if (next == 'allTasks') {
+              await _markNotification('all-tasks');
+              try {
+                final tasks = await _taskRepository.getAllTasks(_id);
+                if (mounted) setState(() => _allTasks = tasks);
+              } catch (e) {
+                _showMessage(e.toString().replaceFirst('Exception: ', ''));
+              } finally {
+                if (mounted) setState(() => _allLoading = false);
+              }
+            }
+          },
+        ),
+      );
+
+      boxes.add(
+        _TaskBox(
+          title: 'All Faculty Daily Task',
+          description: 'View daily repeated tasks for all faculty.',
+          notification: _notifications.contains('daily-tasks'),
+          active: _activeSection == 'dailyTasks',
+          onTap: () async {
+            final next = _activeSection == 'dailyTasks' ? '' : 'dailyTasks';
+            setState(() {
+              _activeSection = next;
+              _dailyLoading = next == 'dailyTasks';
+            });
+
+            if (next == 'dailyTasks') {
+              await _markNotification('daily-tasks');
+              try {
+                final tasks = await _taskRepository.getDailyTasks(_id);
+                if (mounted) setState(() => _dailyTasks = tasks);
+              } catch (e) {
+                _showMessage(e.toString().replaceFirst('Exception: ', ''));
+              } finally {
+                if (mounted) setState(() => _dailyLoading = false);
+              }
+            }
+          },
+        ),
+      );
+
+      boxes.add(
+        _TaskBox(
+          title: 'Task Assignment',
+          description: 'Assign weekly or daily tasks.',
+          active: _activeSection == 'assignTask',
+          onTap: () => setState(
+            () => _activeSection =
+                _activeSection == 'assignTask' ? '' : 'assignTask',
+          ),
+        ),
+      );
+
+      boxes.add(
+        _TaskBox(
+          title: 'Test Batch Registration Status',
+          description: 'View Test Batch students by registration status.',
+          active: false,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => TestBatchStudentStatusScreen(adminId: _id),
+            ),
+          ),
+        ),
+      );
+    }
+
+    boxes.add(
+      _TaskBox(
+        title: 'My Task Checklist',
+        description: 'View, filter and update my assigned tasks.',
+        notification: _notifications.contains('tasks'),
+        active: _activeSection == 'myChecklist',
+        onTap: () async {
+          final next =
+              _activeSection == 'myChecklist' ? '' : 'myChecklist';
+
+          setState(() {
+            _activeSection = next;
+            _tasksLoading = next == 'myChecklist';
+          });
+
+          if (next == 'myChecklist') {
+            await _markNotification('tasks');
+            try {
+              final tasks = await _taskRepository.getMyTasks(_id);
+              if (mounted) setState(() => _myTasks = tasks);
+            } catch (e) {
+              _showMessage(e.toString().replaceFirst('Exception: ', ''));
+            } finally {
+              if (mounted) setState(() => _tasksLoading = false);
+            }
+          }
+        },
+      ),
+    );
+
+    return Column(
+      children: boxes
+          .map(
+            (box) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: box,
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final year = date.year.toString().padLeft(4, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
+}
 
 class _TaskPanel extends StatelessWidget {
   final String title;

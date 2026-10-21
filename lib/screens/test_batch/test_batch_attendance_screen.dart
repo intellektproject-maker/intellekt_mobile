@@ -19,8 +19,6 @@ class TestBatchAttendanceScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<TestBatchProvider>();
     final records = provider.attendance;
-    final present = records.where((item) => item['status']?.toString().toLowerCase() == 'present').length;
-    final total = records.length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFECECEF),

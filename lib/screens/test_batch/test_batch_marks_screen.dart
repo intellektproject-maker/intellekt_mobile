@@ -24,9 +24,6 @@ class TestBatchMarksScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<TestBatchProvider>();
     final marks = provider.marks;
-    final totalObtained = marks.fold<double>(0, (sum, item) => sum + _number(item['marks_obtained']));
-    final totalMaximum = marks.fold<double>(0, (sum, item) => sum + _number(item['total_marks']));
-    final percentage = totalMaximum > 0 ? (totalObtained / totalMaximum) * 100 : 0.0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFECECEF),

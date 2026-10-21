@@ -65,7 +65,6 @@ class TestBatchMarksScreen extends StatelessWidget {
     );
   }
 
-  String _display(double value) => value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(2);
 }
 
 class _SubjectCard extends StatelessWidget {

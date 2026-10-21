@@ -193,21 +193,4 @@ class _SubjectAttendanceScreen extends StatelessWidget {
     }).toList();
   }
 
-class _SummaryCard extends StatelessWidget {
-  final String title;
-  final String value;
-  const _SummaryCard({required this.title, required this.value});
 
-  @override
-  Widget build(BuildContext context) => Card(
-    elevation: 2,
-    child: Padding(
-      padding: const EdgeInsets.all(17),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: const TextStyle(color: Color(0xFF6B7280))),
-        const SizedBox(height: 7),
-        Text(value, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800, color: AppColors.primary)),
-      ]),
-    ),
-  );
-}

@@ -6,6 +6,7 @@ import 'package:intellekt_mobile/routes/app_router.dart';
 void main() {
   testWidgets('INTELLEKT app starts', (WidgetTester tester) async {
     final authProvider = AuthProvider();
+    await tester.runAsync(() => authProvider.restoreSession());
     final router = AppRouter.createRouter(authProvider);
 
     await tester.pumpWidget(
@@ -15,6 +16,7 @@ void main() {
       ),
     );
 
+    await tester.pump(const Duration(seconds: 2));
     await tester.pump();
 
     expect(find.byType(IntellektApp), findsOneWidget);

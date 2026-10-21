@@ -229,43 +229,7 @@ class _Detail extends StatelessWidget {
   }
 }
 
-class _SummaryCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
 
-  const _SummaryCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) => Card(
-        margin: EdgeInsets.zero,
-        elevation: 1,
-        child: Padding(
-          padding: const EdgeInsets.all(15),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: AppColors.primary),
-              const SizedBox(height: 10),
-              Text(title, style: const TextStyle(color: Color(0xFF6B7280))),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-}
 
 
 class _TestBatchNotificationBell extends StatefulWidget {

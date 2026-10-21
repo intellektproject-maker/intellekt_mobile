@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/constants/colors.dart';
 import '../../models/faculty_model.dart';
@@ -27,8 +26,6 @@ class _FacultyProfileState extends State<FacultyProfile> {
   List<FacultyTaskModel> _allTasks = <FacultyTaskModel>[];
   List<FacultyTaskModel> _dailyTasks = <FacultyTaskModel>[];
   List<FacultyModel> _facultyList = <FacultyModel>[];
-  List<String> _classOptions = <String>[];
-  List<String> _testCodes = <String>[];
   Set<String> _notifications = <String>{};
 
   String? _error;
@@ -118,8 +115,6 @@ class _FacultyProfileState extends State<FacultyProfile> {
       List<FacultyTaskModel> allTasks = <FacultyTaskModel>[];
       List<FacultyTaskModel> dailyTasks = <FacultyTaskModel>[];
       List<FacultyModel> facultyList = <FacultyModel>[];
-      List<String> classOptions = <String>[];
-      List<String> testCodes = <String>[];
 
       try {
         allTasks = await _taskRepository.getAllTasks(_id);
@@ -139,26 +134,12 @@ class _FacultyProfileState extends State<FacultyProfile> {
         debugPrint('Faculty list load failed: $e');
       }
 
-      try {
-        classOptions = await _taskRepository.getClassOptions();
-      } catch (e) {
-        debugPrint('Class options load failed: $e');
-      }
-
-      try {
-        testCodes = await _taskRepository.getTestCodes();
-      } catch (e) {
-        debugPrint('Test codes load failed: $e');
-      }
-
       if (!mounted) return;
 
       setState(() {
         _allTasks = allTasks;
         _dailyTasks = dailyTasks;
         _facultyList = facultyList;
-        _classOptions = classOptions;
-        _testCodes = testCodes;
       });
     } catch (e) {
       debugPrint('Optional admin task data failed: $e');

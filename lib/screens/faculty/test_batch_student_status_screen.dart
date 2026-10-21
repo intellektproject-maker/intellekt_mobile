@@ -128,8 +128,7 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
     });
   }
 
-  Future<void> _selectCategory(String value) async {
-    setState(() { _category = value; _testCode = null; _writingDate = null; _allStudents = []; _students = []; });
+);
     await _loadFilters();
   }
 

@@ -81,9 +81,6 @@ class _SubjectCard extends StatelessWidget {
   double _number(dynamic value) =>
       double.tryParse(value?.toString() ?? '') ?? 0;
 
-  String _display(double value) =>
-      value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(2);
-
   @override
   Widget build(BuildContext context) {
     final obtained = marks.fold<double>(
@@ -262,7 +259,6 @@ class _MarkCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final subject = mark['subject_name']?.toString() ?? 'Subject';
     final code = mark['test_code']?.toString() ?? '-';
     final hasInternal = mark['internal_marks'] != null;
     final hasExternal = mark['external_marks'] != null;

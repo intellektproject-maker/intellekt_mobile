@@ -717,6 +717,15 @@ class _FacultyProfileState extends State<FacultyProfile> {
           ),
         ),
       );
+
+      boxes.add(
+        _TaskBox(
+          title: 'Test Batch Admin Actions',
+          description: 'Post tests, enter marks and record Test Batch attendance.',
+          active: false,
+          onTap: () => context.push(AppRoutes.testBatchAdminActions),
+        ),
+      );
     }
 
     boxes.add(

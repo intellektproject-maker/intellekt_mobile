@@ -14,6 +14,7 @@ import '../screens/faculty/faculty_post_test_screen.dart';
 import '../screens/faculty/faculty_manage_marks_screen.dart';
 import '../screens/faculty/faculty_enter_marks_screen.dart';
 import '../screens/faculty/faculty_enter_attendance_screen.dart';
+import '../screens/faculty/faculty_manage_attendance_screen.dart';
 
 import '../screens/student/dashboard/student_dashboard.dart';
 import '../screens/student/attendance/attendance_screen.dart'
@@ -70,7 +71,8 @@ class AppRouter {
             location == AppRoutes.facultyPostTest ||
             location == AppRoutes.facultyManageMarks ||
             location == AppRoutes.facultyEnterMarks ||
-            location == AppRoutes.facultyEnterAttendance;
+            location == AppRoutes.facultyEnterAttendance ||
+            location == AppRoutes.facultyManageAttendance;
 
         if (isLoggedIn && isAuthenticationPage) {
           if (authProvider.user!.mustResetPassword) {
@@ -131,6 +133,12 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.facultyRegisteredStudents,
           builder: (context, state) => const RegisteredStudentsScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.facultyManageAttendance,
+          builder: (context, state) => FacultyManageAttendanceScreen(
+            facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
         ),
         GoRoute(
           path: AppRoutes.facultyEnterAttendance,

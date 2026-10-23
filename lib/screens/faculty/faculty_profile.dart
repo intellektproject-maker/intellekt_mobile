@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/colors.dart';
 import '../../models/faculty_model.dart';
 import '../../models/faculty_task_model.dart';
+import '../../routes/app_routes.dart';
 import '../../repositories/faculty_repository.dart';
 import '../../repositories/faculty_task_repository.dart';
 import 'task_assignment_screen.dart';
@@ -369,22 +370,87 @@ class _FacultyProfileState extends State<FacultyProfile> {
         foregroundColor: AppColors.primary,
         elevation: 0,
         title: const Text(
-          'Faculty Profile',
+          'Faculty Dashboard',
           style: TextStyle(
             color: AppColors.primary,
             fontWeight: FontWeight.w800,
           ),
         ),
       ),
+      drawer: _buildFacultyDrawer(),
       body: SafeArea(child: _buildBody()),
+    );
+  }
+
+  Widget _buildFacultyDrawer() {
+    return Drawer(
+      backgroundColor: AppColors.surface,
+      child: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(color: AppColors.primary),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const Icon(Icons.school_outlined, color: Colors.white, size: 36),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Faculty Menu',
+                    style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+                  ),
+                  if ((_faculty?.name ?? '').trim().isNotEmpty)
+                    Text(_faculty!.name, style: const TextStyle(color: Colors.white70)),
+                ],
+              ),
+            ),
+            ExpansionTile(
+              leading: const Icon(Icons.assignment_outlined),
+              title: const Text('Test', style: TextStyle(fontWeight: FontWeight.w700)),
+              children: [
+                _drawerItem(icon: Icons.edit_note_outlined, title: 'Enter Marks', route: AppRoutes.facultyEnterMarks),
+                _drawerItem(icon: Icons.post_add_outlined, title: 'Post Test', route: AppRoutes.facultyPostTest),
+                _drawerItem(icon: Icons.fact_check_outlined, title: 'Manage Marks', route: AppRoutes.facultyManageMarks),
+                _drawerItem(icon: Icons.groups_2_outlined, title: 'Registered Students', route: AppRoutes.facultyRegisteredStudents),
+              ],
+            ),
+            ExpansionTile(
+              leading: const Icon(Icons.calendar_month_outlined),
+              title: const Text('Attendance', style: TextStyle(fontWeight: FontWeight.w700)),
+              children: [
+                _drawerItem(icon: Icons.playlist_add_check_outlined, title: 'Enter Attendance', route: AppRoutes.facultyEnterAttendance),
+                _drawerItem(icon: Icons.event_note_outlined, title: 'Manage Attendance', route: AppRoutes.facultyManageAttendance),
+              ],
+            ),
+            _drawerItem(icon: Icons.mark_email_unread_outlined, title: 'Enquiries & Requests', route: AppRoutes.facultyEnquiriesRequests),
+            _drawerItem(icon: Icons.analytics_outlined, title: 'Student Records', route: AppRoutes.facultyStudentRecords),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _drawerItem({
+    required IconData icon,
+    required String title,
+    required String route,
+  }) {
+    return ListTile(
+      leading: Icon(icon, size: 21),
+      title: Text(title),
+      dense: true,
+      onTap: () {
+        Navigator.of(context).pop();
+        context.push(route);
+      },
     );
   }
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
 
     if (_error != null) {
@@ -394,31 +460,20 @@ class _FacultyProfileState extends State<FacultyProfile> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: AppColors.primary,
-              ),
+              const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.primary),
               const SizedBox(height: 12),
-              const Text(
-                'Unable to load faculty profile',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-              ),
+              const Text('Unable to load faculty dashboard', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
               Text(_error!, textAlign: TextAlign.center),
               const SizedBox(height: 18),
-              FilledButton(
-                onPressed: _loadEverything,
-                child: const Text('Retry'),
-              ),
+              FilledButton(onPressed: _loadEverything, child: const Text('Retry')),
             ],
           ),
         ),
       );
     }
 
-    final faculty = _faculty;
-    if (faculty == null) {
+    if (_faculty == null) {
       return const Center(child: Text('Faculty profile not found.'));
     }
 
@@ -431,143 +486,9 @@ class _FacultyProfileState extends State<FacultyProfile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _ProfileHeader(faculty: faculty),
-            const SizedBox(height: 20),
-            _SectionCard(
-              title: 'Personal Details',
-              children: [
-                _ProfileDetailRow(
-                  icon: Icons.badge_outlined,
-                  label: 'Faculty ID',
-                  value: faculty.facultyId,
-                ),
-                _ProfileDetailRow(
-                  icon: Icons.person_outline_rounded,
-                  label: 'Name',
-                  value: faculty.name,
-                ),
-                _ProfileDetailRow(
-                  icon: Icons.email_outlined,
-                  label: 'Email',
-                  value: faculty.email,
-                ),
-                _ProfileDetailRow(
-                  icon: Icons.phone_outlined,
-                  label: 'Phone',
-                  value: faculty.phone,
-                  showDivider: false,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Teaching Tools',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _TeachingToolCard(
-                    icon: Icons.groups_2_outlined,
-                    title: 'Registered Students',
-                    subtitle: 'Browse registrations',
-                    onTap: () => context.push(AppRoutes.facultyRegisteredStudents),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _TeachingToolCard(
-                    icon: Icons.edit_note_outlined,
-                    title: 'Manage Marks',
-                    subtitle: 'Review and correct marks',
-                    onTap: () => context.push(AppRoutes.facultyManageMarks),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _TeachingToolCard(
-                    icon: Icons.edit_note_outlined,
-                    title: 'Enter Marks',
-                    subtitle: 'Record test results',
-                    onTap: () => context.push(AppRoutes.facultyEnterMarks),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _TeachingToolCard(
-                    icon: Icons.assignment_outlined,
-                    title: 'Post Test',
-                    subtitle: 'Create or edit tests',
-                    onTap: () => context.push(AppRoutes.facultyPostTest),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _TeachingToolCard(
-                    icon: Icons.fact_check_outlined,
-                    title: 'Enter Attendance',
-                    subtitle: 'Record class attendance',
-                    onTap: () => context.push(AppRoutes.facultyEnterAttendance),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _TeachingToolCard(
-                    icon: Icons.calendar_month_outlined,
-                    title: 'Manage Attendance',
-                    subtitle: 'Review and correct records',
-                    onTap: () => context.push(AppRoutes.facultyManageAttendance),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _TeachingToolCard(
-                    icon: Icons.mark_email_unread_outlined,
-                    title: 'Enquiries & Requests',
-                    subtitle: 'Review enquiries and requests',
-                    onTap: () => context.push(AppRoutes.facultyEnquiriesRequests),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _TeachingToolCard(
-                    icon: Icons.analytics_outlined,
-                    title: 'Student Records',
-                    subtitle: 'View marks and attendance',
-                    onTap: () => context.push(AppRoutes.facultyStudentRecords),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 28),
             const Text(
               'Task Management',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-              ),
+              style: TextStyle(color: AppColors.primary, fontSize: 24, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 14),
             _buildTaskBoxes(),

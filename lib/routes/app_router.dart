@@ -9,6 +9,7 @@ import '../screens/splash/splash_screen.dart';
 import '../screens/faculty/faculty_profile_shell.dart';
 import '../screens/faculty/faculty_notifications_screen.dart';
 import '../screens/faculty/test_batch_admin_tests_screen.dart';
+import '../screens/faculty/test_batch_admin_actions_screen.dart';
 import '../screens/faculty/registered_students_screen.dart';
 import '../screens/faculty/faculty_post_test_screen.dart';
 import '../screens/faculty/faculty_manage_marks_screen.dart';
@@ -69,6 +70,7 @@ class AppRouter {
         final isFacultyPage = location == AppRoutes.facultyProfile ||
             location == AppRoutes.facultyNotifications ||
             location == AppRoutes.testBatchAdminTests ||
+            location == AppRoutes.testBatchAdminActions ||
             location == AppRoutes.facultyRegisteredStudents ||
             location == AppRoutes.facultyPostTest ||
             location == AppRoutes.facultyManageMarks ||
@@ -172,6 +174,12 @@ class AppRouter {
           path: AppRoutes.facultyPostTest,
           builder: (context, state) => FacultyPostTestScreen(
             facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.testBatchAdminActions,
+          builder: (context, state) => TestBatchAdminActionsScreen(
+            adminId: authProvider.user?.id.trim().toUpperCase() ?? '',
           ),
         ),
         GoRoute(

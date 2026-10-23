@@ -16,6 +16,7 @@ import '../screens/faculty/faculty_enter_marks_screen.dart';
 import '../screens/faculty/faculty_enter_attendance_screen.dart';
 import '../screens/faculty/faculty_manage_attendance_screen.dart';
 import '../screens/faculty/faculty_enquiries_requests_screen.dart';
+import '../screens/faculty/faculty_student_records_screen.dart';
 
 import '../screens/student/dashboard/student_dashboard.dart';
 import '../screens/student/attendance/attendance_screen.dart'
@@ -74,7 +75,8 @@ class AppRouter {
             location == AppRoutes.facultyEnterMarks ||
             location == AppRoutes.facultyEnterAttendance ||
             location == AppRoutes.facultyManageAttendance ||
-            location == AppRoutes.facultyEnquiriesRequests;
+            location == AppRoutes.facultyEnquiriesRequests ||
+            location == AppRoutes.facultyStudentRecords;
 
         if (isLoggedIn && isAuthenticationPage) {
           if (authProvider.user!.mustResetPassword) {
@@ -135,6 +137,10 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.facultyRegisteredStudents,
           builder: (context, state) => const RegisteredStudentsScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.facultyStudentRecords,
+          builder: (context, state) => const FacultyStudentRecordsScreen(),
         ),
         GoRoute(
           path: AppRoutes.facultyEnquiriesRequests,

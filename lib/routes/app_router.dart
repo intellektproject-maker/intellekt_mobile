@@ -9,6 +9,8 @@ import '../screens/splash/splash_screen.dart';
 import '../screens/faculty/faculty_profile_shell.dart';
 import '../screens/faculty/faculty_notifications_screen.dart';
 import '../screens/faculty/test_batch_admin_tests_screen.dart';
+import '../screens/faculty/registered_students_screen.dart';
+import '../screens/faculty/faculty_post_test_screen.dart';
 
 import '../screens/student/dashboard/student_dashboard.dart';
 import '../screens/student/attendance/attendance_screen.dart'
@@ -60,7 +62,9 @@ class AppRouter {
             location == AppRoutes.studentRequestPdf;
         final isFacultyPage = location == AppRoutes.facultyProfile ||
             location == AppRoutes.facultyNotifications ||
-            location == AppRoutes.testBatchAdminTests;
+            location == AppRoutes.testBatchAdminTests ||
+            location == AppRoutes.facultyRegisteredStudents ||
+            location == AppRoutes.facultyPostTest;
 
         if (isLoggedIn && isAuthenticationPage) {
           if (authProvider.user!.mustResetPassword) {
@@ -115,6 +119,16 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.facultyNotifications,
           builder: (context, state) => FacultyNotificationsScreen(
+            facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.facultyRegisteredStudents,
+          builder: (context, state) => const RegisteredStudentsScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.facultyPostTest,
+          builder: (context, state) => FacultyPostTestScreen(
             facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
           ),
         ),

@@ -34,4 +34,5 @@ class AppRoutes {
   static const facultyRegisteredStudents = '/faculty/registered-students';
   static const facultyPostTest = '/faculty/post-test';
   static const facultyManageMarks = '/faculty/manage-marks';
+  static const facultyEnterMarks = '/faculty/enter-marks';
 }

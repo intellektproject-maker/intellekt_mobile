@@ -495,6 +495,15 @@ class _FacultyProfileState extends State<FacultyProfile> {
               children: [
                 Expanded(
                   child: _TeachingToolCard(
+                    icon: Icons.edit_note_outlined,
+                    title: 'Enter Marks',
+                    subtitle: 'Record test results',
+                    onTap: () => context.push(AppRoutes.facultyEnterMarks),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _TeachingToolCard(
                     icon: Icons.assignment_outlined,
                     title: 'Post Test',
                     subtitle: 'Create or edit tests',

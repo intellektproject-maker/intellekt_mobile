@@ -219,10 +219,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     final present = presentDates.length;
     final absent = absentDates.length;
 
-    final notEntered = (daysInMonth - monthAttendance.length)
-        .clamp(0, daysInMonth);
-
-    final sortedAttendance =
+final sortedAttendance =
     List<Map<String, dynamic>>.from(monthAttendance)
       ..sort(
             (a, b) => DateTime.parse(
@@ -304,8 +301,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           _AttendanceSummaryCard(
             present: present,
             absent: absent,
-            notEntered: notEntered,
-            lastUpdatedDate: sortedAttendance.isEmpty
+lastUpdatedDate: sortedAttendance.isEmpty
                 ? 'No Data'
                 : _formatDate(
               sortedAttendance.first['attendance_date'],
@@ -352,19 +348,17 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 class _AttendanceSummaryCard extends StatelessWidget {
   final int present;
   final int absent;
-  final int notEntered;
-  final String lastUpdatedDate;
+final String lastUpdatedDate;
 
   const _AttendanceSummaryCard({
     required this.present,
     required this.absent,
-    required this.notEntered,
-    required this.lastUpdatedDate,
+required this.lastUpdatedDate,
   });
 
   @override
   Widget build(BuildContext context) {
-    final total = present + absent + notEntered;
+    final total = present + absent;
 
     return Container(
       width: double.infinity,
@@ -406,14 +400,6 @@ class _AttendanceSummaryCard extends StatelessWidget {
                       value: absent,
                       color: Colors.red,
                     ),
-
-                    const SizedBox(height: 16),
-
-                    _SummaryText(
-                      label: 'Not Entered',
-                      value: notEntered,
-                      color: Colors.grey,
-                    ),
                   ],
                 ),
               ),
@@ -439,12 +425,6 @@ class _AttendanceSummaryCard extends StatelessWidget {
                       PieChartSectionData(
                         value: absent.toDouble(),
                         color: Colors.red,
-                        showTitle: false,
-                        radius: 65,
-                      ),
-                      PieChartSectionData(
-                        value: notEntered.toDouble(),
-                        color: Colors.grey,
                         showTitle: false,
                         radius: 65,
                       ),

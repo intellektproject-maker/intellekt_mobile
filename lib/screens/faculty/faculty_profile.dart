@@ -512,6 +512,28 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _TeachingToolCard(
+                    icon: Icons.fact_check_outlined,
+                    title: 'Enter Attendance',
+                    subtitle: 'Record class attendance',
+                    onTap: () => context.push(AppRoutes.facultyEnterAttendance),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _TeachingToolCard(
+                    icon: Icons.calendar_month_outlined,
+                    title: 'Attendance Records',
+                    subtitle: 'View attendance history',
+                    onTap: () => context.push(AppRoutes.facultyEnterAttendance),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 28),
             const Text(
               'Task Management',

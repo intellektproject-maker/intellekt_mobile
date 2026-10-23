@@ -527,9 +527,9 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 Expanded(
                   child: _TeachingToolCard(
                     icon: Icons.calendar_month_outlined,
-                    title: 'Attendance Records',
-                    subtitle: 'View attendance history',
-                    onTap: () => context.push(AppRoutes.facultyEnterAttendance),
+                    title: 'Manage Attendance',
+                    subtitle: 'Review and correct records',
+                    onTap: () => context.push(AppRoutes.facultyManageAttendance),
                   ),
                 ),
               ],

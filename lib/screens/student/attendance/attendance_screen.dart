@@ -210,13 +210,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       _absentSubjectFilter,
     );
 
-    final daysInMonth = DateTime(
-      _selectedMonth.year,
-      _selectedMonth.month + 1,
-      0,
-    ).day;
-
-    final present = presentDates.length;
+final present = presentDates.length;
     final absent = absentDates.length;
 
 final sortedAttendance =

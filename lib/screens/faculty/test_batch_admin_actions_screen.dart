@@ -299,6 +299,8 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     finally { if (mounted) setState(() => _loading = false); }
   }
 
+  List<String> get _availableWritingDates => _students.map((s) => _dateOnly(s['registered_writing_date'] ?? s['writing_date'])).whereType<String>().toSet().toList()..sort();
+
   String? _dateOnly(dynamic v) {
     final s = v?.toString().trim() ?? '';
     if (s.isEmpty) return null;
@@ -357,7 +359,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
       DropdownButtonFormField<String>(
         value: _writingDate,
         decoration: const InputDecoration(labelText: 'Writing date', border: OutlineInputBorder()),
-        items: _students.map((s) => _dateOnly(s['registered_writing_date'] ?? s['writing_date'])).whereType<String>().toSet().toList()..sort().map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+        items: _availableWritingDates.map((d) => DropdownMenuItem<String>(value: d, child: Text(d))).toList(),
         onChanged: (v) => setState(() => _writingDate = v),
       ),
       const SizedBox(height: 10),

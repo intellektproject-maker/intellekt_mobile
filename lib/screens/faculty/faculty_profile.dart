@@ -534,6 +534,19 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _TeachingToolCard(
+                    icon: Icons.mark_email_unread_outlined,
+                    title: 'Enquiries & Requests',
+                    subtitle: 'Review enquiries and requests',
+                    onTap: () => context.push(AppRoutes.facultyEnquiriesRequests),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 28),
             const Text(
               'Task Management',

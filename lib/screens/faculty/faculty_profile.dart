@@ -482,6 +482,19 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _TeachingToolCard(
+                    icon: Icons.edit_note_outlined,
+                    title: 'Manage Marks',
+                    subtitle: 'Review and correct marks',
+                    onTap: () => context.push(AppRoutes.facultyManageMarks),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _TeachingToolCard(
                     icon: Icons.assignment_outlined,
                     title: 'Post Test',
                     subtitle: 'Create or edit tests',

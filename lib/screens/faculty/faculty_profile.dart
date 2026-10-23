@@ -459,6 +459,107 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 ),
               ],
             ),
+            const SizedBox(height: 24),
+            const Text(
+              'Teaching Tools',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _TeachingToolCard(
+                    icon: Icons.groups_2_outlined,
+                    title: 'Registered Students',
+                    subtitle: 'Browse registrations',
+                    onTap: () => context.push(AppRoutes.facultyRegisteredStudents),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _TeachingToolCard(
+                    icon: Icons.edit_note_outlined,
+                    title: 'Manage Marks',
+                    subtitle: 'Review and correct marks',
+                    onTap: () => context.push(AppRoutes.facultyManageMarks),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _TeachingToolCard(
+                    icon: Icons.edit_note_outlined,
+                    title: 'Enter Marks',
+                    subtitle: 'Record test results',
+                    onTap: () => context.push(AppRoutes.facultyEnterMarks),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _TeachingToolCard(
+                    icon: Icons.assignment_outlined,
+                    title: 'Post Test',
+                    subtitle: 'Create or edit tests',
+                    onTap: () => context.push(AppRoutes.facultyPostTest),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _TeachingToolCard(
+                    icon: Icons.fact_check_outlined,
+                    title: 'Enter Attendance',
+                    subtitle: 'Record class attendance',
+                    onTap: () => context.push(AppRoutes.facultyEnterAttendance),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _TeachingToolCard(
+                    icon: Icons.calendar_month_outlined,
+                    title: 'Manage Attendance',
+                    subtitle: 'Review and correct records',
+                    onTap: () => context.push(AppRoutes.facultyManageAttendance),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _TeachingToolCard(
+                    icon: Icons.mark_email_unread_outlined,
+                    title: 'Enquiries & Requests',
+                    subtitle: 'Review enquiries and requests',
+                    onTap: () => context.push(AppRoutes.facultyEnquiriesRequests),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _TeachingToolCard(
+                    icon: Icons.analytics_outlined,
+                    title: 'Student Records',
+                    subtitle: 'View marks and attendance',
+                    onTap: () => context.push(AppRoutes.facultyStudentRecords),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 28),
             const Text(
               'Task Management',
@@ -1336,6 +1437,50 @@ class _ProfileDetailRow extends StatelessWidget {
         if (showDivider)
           const Divider(height: 1, color: AppColors.border),
       ],
+    );
+  }
+}
+
+
+class _TeachingToolCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _TeachingToolCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppColors.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: AppColors.primary, size: 28),
+              const SizedBox(height: 12),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 4),
+              Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

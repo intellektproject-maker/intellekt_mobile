@@ -9,6 +9,14 @@ import '../screens/splash/splash_screen.dart';
 import '../screens/faculty/faculty_profile_shell.dart';
 import '../screens/faculty/faculty_notifications_screen.dart';
 import '../screens/faculty/test_batch_admin_tests_screen.dart';
+import '../screens/faculty/registered_students_screen.dart';
+import '../screens/faculty/faculty_post_test_screen.dart';
+import '../screens/faculty/faculty_manage_marks_screen.dart';
+import '../screens/faculty/faculty_enter_marks_screen.dart';
+import '../screens/faculty/faculty_enter_attendance_screen.dart';
+import '../screens/faculty/faculty_manage_attendance_screen.dart';
+import '../screens/faculty/faculty_enquiries_requests_screen.dart';
+import '../screens/faculty/faculty_student_records_screen.dart';
 
 import '../screens/student/dashboard/student_dashboard.dart';
 import '../screens/student/attendance/attendance_screen.dart'
@@ -60,7 +68,15 @@ class AppRouter {
             location == AppRoutes.studentRequestPdf;
         final isFacultyPage = location == AppRoutes.facultyProfile ||
             location == AppRoutes.facultyNotifications ||
-            location == AppRoutes.testBatchAdminTests;
+            location == AppRoutes.testBatchAdminTests ||
+            location == AppRoutes.facultyRegisteredStudents ||
+            location == AppRoutes.facultyPostTest ||
+            location == AppRoutes.facultyManageMarks ||
+            location == AppRoutes.facultyEnterMarks ||
+            location == AppRoutes.facultyEnterAttendance ||
+            location == AppRoutes.facultyManageAttendance ||
+            location == AppRoutes.facultyEnquiriesRequests ||
+            location == AppRoutes.facultyStudentRecords;
 
         if (isLoggedIn && isAuthenticationPage) {
           if (authProvider.user!.mustResetPassword) {
@@ -115,6 +131,46 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.facultyNotifications,
           builder: (context, state) => FacultyNotificationsScreen(
+            facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.facultyRegisteredStudents,
+          builder: (context, state) => const RegisteredStudentsScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.facultyStudentRecords,
+          builder: (context, state) => const FacultyStudentRecordsScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.facultyEnquiriesRequests,
+          builder: (context, state) => const FacultyEnquiriesRequestsScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.facultyManageAttendance,
+          builder: (context, state) => FacultyManageAttendanceScreen(
+            facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.facultyEnterAttendance,
+          builder: (context, state) => FacultyEnterAttendanceScreen(
+            facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.facultyEnterMarks,
+          builder: (context, state) => FacultyEnterMarksScreen(
+            facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.facultyManageMarks,
+          builder: (context, state) => const FacultyManageMarksScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.facultyPostTest,
+          builder: (context, state) => FacultyPostTestScreen(
             facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
           ),
         ),

@@ -43,10 +43,15 @@ class _FacultyManageMarksScreenState extends State<FacultyManageMarksScreen> {
   Future<void> _loadFilters() async {
     setState(() { _loadingFilters = true; _error = null; });
     try {
-      final results = await Future.wait([_api.get('/classes'), _api.get('/tests'), _api.get('/record-edit-requests/approved', queryParameters: {'facultyId': widget.facultyId})]);
+      final results = await Future.wait([_api.get('/classes'), _api.get('/tests')]);
       _classes = results[0].data is List ? (results[0].data as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : [];
       _tests = results[1].data is List ? (results[1].data as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : [];
-      _approved = results[2].data is List ? (results[2].data as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : [];
+      try {
+        final approvedResponse = await _api.get('/record-edit-requests/approved', queryParameters: {'facultyId': widget.facultyId});
+        _approved = approvedResponse.data is List ? (approvedResponse.data as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : [];
+      } catch (e) {
+        debugPrint('Approved edit requests unavailable: $e');
+      }
     } catch (e) { _error = e.toString().replaceFirst('Exception: ', ''); }
     finally { if (mounted) setState(() => _loadingFilters = false); }
   }

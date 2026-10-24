@@ -85,11 +85,9 @@ class _PostTestTabState extends State<_PostTestTab> {
   final _duration = TextEditingController(text: '90');
   final _portion = TextEditingController();
   final _chapter = TextEditingController();
-  final _slotStart = TextEditingController();
-  final _slotEnd = TextEditingController();
   List<Map<String, dynamic>> _series = [];
   String? _seriesId;
-  DateTime? _writingDate, _openDate, _closeDate, _writingCloseDate;
+  DateTime? _openDate, _closeDate, _writingCloseDate;
   bool _loading = true, _saving = false;
   String? _error, _message;
 
@@ -98,7 +96,7 @@ class _PostTestTabState extends State<_PostTestTab> {
 
   @override
   void dispose() {
-    for (final c in [_code, _subject, _marks, _duration, _portion, _chapter, _slotStart, _slotEnd]) {
+    for (final c in [_code, _subject, _marks, _duration, _portion, _chapter]) {
       c.dispose();
     }
     super.dispose();
@@ -118,7 +116,7 @@ class _PostTestTabState extends State<_PostTestTab> {
         _loading = false;
       });
     } catch (e) {
-      if (mounted) setState(() { _error = _messageOf(e); _loading = false; });
+      if (mounted) setState(() { _error = _messageOfError(e); _loading = false; });
     }
   }
 
@@ -133,8 +131,8 @@ class _PostTestTabState extends State<_PostTestTab> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_seriesId == null || _writingDate == null || _openDate == null || _closeDate == null || _writingCloseDate == null) {
-      setState(() => _error = 'Choose a test series and all four dates.');
+    if (_seriesId == null || _openDate == null || _closeDate == null || _writingCloseDate == null) {
+      setState(() => _error = 'Choose a test series and all three dates.');
       return;
     }
     if (_closeDate!.isBefore(_openDate!) || !_writingCloseDate!.isAfter(_closeDate!)) {
@@ -155,10 +153,6 @@ class _PostTestTabState extends State<_PostTestTab> {
         'test_code': code,
         'test_series_id': int.parse(_seriesId!),
         'subject_name': _subject.text.trim(),
-        'test_date': _date(_writingDate),
-        'writing_date': _date(_writingDate),
-        'slot_start': _slotStart.text.trim().isEmpty ? null : _slotStart.text.trim(),
-        'slot_end': _slotEnd.text.trim().isEmpty ? null : _slotEnd.text.trim(),
         'duration_minutes': duration,
         'total_marks': marks,
         'portion': _portion.text.trim(),
@@ -171,10 +165,10 @@ class _PostTestTabState extends State<_PostTestTab> {
       if (!mounted) return;
       setState(() => _message = (response.data is Map ? response.data['message'] : null)?.toString() ?? 'Test posted successfully.');
       _formKey.currentState!.reset();
-      _code.clear(); _subject.clear(); _marks.clear(); _portion.clear(); _chapter.clear(); _slotStart.clear(); _slotEnd.clear();
-      setState(() { _writingDate = null; _openDate = null; _closeDate = null; _writingCloseDate = null; _duration.text = '90'; });
+      _code.clear(); _subject.clear(); _marks.clear(); _portion.clear(); _chapter.clear();
+      setState(() { _openDate = null; _closeDate = null; _writingCloseDate = null; _duration.text = '90'; });
     } catch (e) {
-      if (mounted) setState(() => _error = _messageOf(e));
+      if (mounted) setState(() => _error = _messageOfError(e));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -215,16 +209,10 @@ class _PostTestTabState extends State<_PostTestTab> {
             Expanded(child: TextFormField(controller: _duration, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Duration (minutes)', border: OutlineInputBorder()), validator: _required)),
           ]),
           const SizedBox(height: 10),
-          _dateButton('Writing date', _writingDate, () async { final d = await _pick(_writingDate); if (d != null) setState(() => _writingDate = d); }),
           _dateButton('Apply for Test — Open Date', _openDate, () async { final d = await _pick(_openDate); if (d != null) setState(() => _openDate = d); }),
           _dateButton('Apply for Test — Close Date', _closeDate, () async { final d = await _pick(_closeDate); if (d != null) setState(() => _closeDate = d); }),
           _dateButton('Writing Close date', _writingCloseDate, () async { final d = await _pick(_writingCloseDate); if (d != null) setState(() => _writingCloseDate = d); }),
           const SizedBox(height: 8),
-          Row(children: [
-            Expanded(child: TextFormField(controller: _slotStart, decoration: const InputDecoration(labelText: 'Slot start (HH:mm)', hintText: '17:30', border: OutlineInputBorder()))),
-            const SizedBox(width: 10),
-            Expanded(child: TextFormField(controller: _slotEnd, decoration: const InputDecoration(labelText: 'Slot end (HH:mm)', hintText: '19:00', border: OutlineInputBorder()))),
-          ]),
           const SizedBox(height: 10),
           TextFormField(controller: _portion, decoration: const InputDecoration(labelText: 'Portion', border: OutlineInputBorder())),
           const SizedBox(height: 10),
@@ -269,7 +257,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
       final r = await widget.api.get('/test-batch/tests', queryParameters: {'adminId': widget.adminId});
       final data = r.data;
       if (mounted) setState(() => _tests = data is Map && data['tests'] is List ? (data['tests'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : []);
-    } catch (e) { if (mounted) setState(() => _error = _messageOf(e)); }
+    } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
     finally { if (mounted) setState(() => _loading = false); }
   }
 
@@ -295,7 +283,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
           _remarks[roll] = s['remarks']?.toString() ?? '';
         }
       });
-    } catch (e) { if (mounted) setState(() => _error = _messageOf(e)); }
+    } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
     finally { if (mounted) setState(() => _loading = false); }
   }
 
@@ -332,7 +320,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
       });
       if (mounted) setState(() => _message = 'Saved marks for ${records.length} student(s). You can enter remaining marks later.');
       await _loadStudents();
-    } catch (e) { if (mounted) setState(() => _error = _messageOf(e)); }
+    } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
     finally { if (mounted) setState(() => _saving = false); }
   }
 
@@ -345,7 +333,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
         value: _testCode,
         isExpanded: true,
         decoration: const InputDecoration(labelText: 'Select test', border: OutlineInputBorder()),
-        items: _tests.map((t) => DropdownMenuItem(value: t['test_code']?.toString(), child: Text('${t['test_code']} • ${t['subject_name'] ?? ''}'))).toList(),
+        items: _tests.map((t) => DropdownMenuItem(value: t['test_code']?.toString(), child: Text('${t['test_code']} - ${t['subject_name'] ?? ''}'))).toList(),
         onChanged: (v) => setState(() { _testCode = v; _students = []; _writingDate = null; }),
       ),
       const SizedBox(height: 10),

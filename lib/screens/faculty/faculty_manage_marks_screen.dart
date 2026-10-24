@@ -131,7 +131,7 @@ class _FacultyManageMarksScreenState extends State<FacultyManageMarksScreen> {
             DropdownButtonFormField<String>(value: _filteredTests.any((t) => (t['test_code'] ?? '').toString() == _testCode) ? _testCode : null, isExpanded: true, decoration: const InputDecoration(labelText: 'Test Code (select Board and Class first)', border: OutlineInputBorder()), items: _filteredTests.map((t) { final code = (t['test_code'] ?? '').toString(); return DropdownMenuItem(value: code, child: Text(code)); }).toList(), onChanged: _board == null || _className == null ? null : (v) => setState(() => _testCode = v)),
             const SizedBox(height: 12),
             Row(children: [
-              Expanded(child: FilledButton.icon(onPressed: _loading ? null : _load, icon: const Icon(Icons.search), label: const Text('Search marks'))),
+              Expanded(child: FilledButton.icon(onPressed: _loading ? null : _load, icon: const Icon(Icons.search), label: const Text('View Marks'))),
               const SizedBox(width: 8),
               OutlinedButton(onPressed: () { _name.clear(); setState(() { _board = null; _className = null; _testCode = null; _marks = []; _error = null; }); }, child: const Text('Clear')),
             ]),

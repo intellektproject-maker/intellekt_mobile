@@ -14,6 +14,7 @@ class _FacultyManageAttendanceScreenState extends State<FacultyManageAttendanceS
   final _api = ApiClient();
   List<Map<String, dynamic>> _classes = [];
   List<Map<String, dynamic>> _rows = [];
+  List<Map<String, dynamic>> _approved = [];
   String? _classBoard;
   String _subject = '';
   DateTime _from = DateTime.now().subtract(const Duration(days: 7));
@@ -23,7 +24,15 @@ class _FacultyManageAttendanceScreenState extends State<FacultyManageAttendanceS
   String? _error;
 
   @override
-  void initState() { super.initState(); _loadClasses(); }
+  void initState() { super.initState(); _loadClasses(); _loadApproved(); }
+
+  Future<void> _loadApproved() async {
+    try {
+      final response = await _api.get('/record-edit-requests/approved', queryParameters: {'facultyId': widget.facultyId});
+      if (response.data is List) _approved = (response.data as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      if (mounted) setState(() {});
+    } catch (e) { debugPrint('Could not load approved edit requests: $e'); }
+  }
 
   Future<void> _loadClasses() async {
     try {
@@ -63,26 +72,41 @@ class _FacultyManageAttendanceScreenState extends State<FacultyManageAttendanceS
   Future<void> _edit(Map<String, dynamic> row) async {
     final current = (row['status'] ?? 'Present').toString();
     final selected = await showDialog<String>(context: context, builder: (ctx) => SimpleDialog(
-      title: Text('Update attendance: ${row['name'] ?? row['student_name'] ?? row['roll_no'] ?? ''}'),
+      title: Text('Request attendance edit: ${row['name'] ?? row['roll_no'] ?? ''}'),
       children: ['Present', 'Absent'].map((s) => SimpleDialogOption(onPressed: () => Navigator.pop(ctx, s), child: Row(children: [Icon(s == 'Present' ? Icons.check_circle_outline : Icons.cancel_outlined), const SizedBox(width: 10), Text(s), if (s == current) const Spacer(), if (s == current) const Icon(Icons.check, size: 16)]))).toList(),
     ));
     if (selected == null || selected == current) return;
     final dateText = (row['attendance_date'] ?? '').toString().split('T').first;
+    Map<String, dynamic>? approved;
+    for (final request in _approved) {
+      if ((request['record_type'] ?? '') == 'attendance' &&
+          (request['roll_no'] ?? '').toString().toUpperCase() == (row['roll_no'] ?? '').toString().toUpperCase() &&
+          (request['subject_id'] ?? '').toString() == (row['subject_id'] ?? '').toString() &&
+          (request['attendance_date'] ?? '').toString().split('T').first == dateText &&
+          (request['status'] ?? '') == 'Approved') {
+        approved = request;
+        break;
+      }
+    }
     try {
-      await _api.put('/attendance', data: {
-        'records': [{'roll_no': row['roll_no'], 'status': selected}],
-        'subject': row['subject_id'],
-        'facultyId': widget.facultyId,
-        'date': dateText,
-      });
-      if (!mounted) return;
-      setState(() {
-        final i = _rows.indexWhere((r) => (r['roll_no'] ?? '') == (row['roll_no'] ?? '') && (r['attendance_date'] ?? '') == (row['attendance_date'] ?? '') && (r['subject_id'] ?? '') == (row['subject_id'] ?? ''));
-        if (i >= 0) _rows[i]['status'] = selected;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Attendance updated.')));
+      if (approved != null) {
+        await _api.post('/record-edit-requests/${approved['id']}/apply', data: {'facultyId': widget.facultyId, 'newValue': selected});
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Approved attendance edit applied.')));
+        await _loadApproved();
+        await _search();
+      } else {
+        await _api.post('/record-edit-requests', data: {
+          'facultyId': widget.facultyId,
+          'recordType': 'attendance',
+          'roll_no': row['roll_no'],
+          'subject_id': row['subject_id'],
+          'attendance_date': dateText,
+          'requested_value': selected,
+        });
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Edit request sent to IG001 and IG002 for approval.')));
+      }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update failed: ${e.toString().replaceFirst('Exception: ', '')}')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Request failed: ${e.toString().replaceFirst('Exception: ', '')}')));
     }
   }
 

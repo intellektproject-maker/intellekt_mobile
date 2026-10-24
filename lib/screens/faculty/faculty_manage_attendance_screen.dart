@@ -114,7 +114,7 @@ class _FacultyManageAttendanceScreenState extends State<FacultyManageAttendanceS
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Manage Attendance'), foregroundColor: AppColors.primary, backgroundColor: AppColors.surface, actions: [IconButton(onPressed: () => _search(), icon: const Icon(Icons.refresh))]),
+      appBar: AppBar(title: const Text('Manage Attendance'), foregroundColor: AppColors.primary, backgroundColor: AppColors.surface, actions: [IconButton(onPressed: () async { await _loadApproved(); await _search(); }, icon: const Icon(Icons.refresh))]),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         Card(color: AppColors.surface, elevation: 0, child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           if (_loadingClasses) const LinearProgressIndicator(),
@@ -131,9 +131,9 @@ class _FacultyManageAttendanceScreenState extends State<FacultyManageAttendanceS
         if (!_loading && _rows.isEmpty) const Card(child: ListTile(title: Text('No attendance records loaded.'))),
         ..._rows.map((r) => Card(color: AppColors.surface, elevation: 0, margin: const EdgeInsets.only(bottom: 8), child: ListTile(
           title: Text((r['name'] ?? r['student_name'] ?? 'Student').toString(), style: const TextStyle(fontWeight: FontWeight.w700)),
-          subtitle: Text('Roll: ${r['roll_no'] ?? '-'} • ${r['attendance_date'] ?? '-'}\nSubject: ${r['subject_name'] ?? r['subject_id'] ?? '-'}'),
+          subtitle: Text('Roll: ${r['roll_no'] ?? '-'} • ${r['attendance_date'] ?? '-'}\nSubject: ${r['subject_name'] ?? r['subject_id'] ?? '-'} • Status: ${r['status'] ?? '-'}'),
           isThreeLine: true,
-          trailing: TextButton(onPressed: () => _edit(r), child: Text((r['status'] ?? '-').toString())),
+          trailing: TextButton.icon(onPressed: () => _edit(r), icon: const Icon(Icons.edit_outlined), label: const Text('Edit')),
         ))),
       ]),
     );

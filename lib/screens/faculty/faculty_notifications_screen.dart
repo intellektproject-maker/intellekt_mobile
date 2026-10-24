@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../routes/app_routes.dart';
 
 import '../../core/constants/colors.dart';
 import '../../repositories/faculty_task_repository.dart';
@@ -184,8 +186,14 @@ class _FacultyNotificationsScreenState
                               onTap: () async {
                                 await _markRead(item);
                                 if (!mounted) return;
+                                final moduleName = item['module_name']?.toString() ?? '';
+                                if ((widget.facultyId == 'IG001' || widget.facultyId == 'IG002') &&
+                                    moduleName == 'record-edit-request') {
+                                  context.push(AppRoutes.recordEditRequests);
+                                  return;
+                                }
                                 PushNotificationService.instance.openNotificationData({
-                                  'module_name': item['module_name']?.toString() ?? 'notifications',
+                                  'module_name': moduleName.isEmpty ? 'notifications' : moduleName,
                                   'title': item['title']?.toString() ?? _module(item),
                                   'body': item['message']?.toString() ?? '',
                                 });

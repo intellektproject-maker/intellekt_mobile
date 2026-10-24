@@ -3,12 +3,14 @@ class FacultyModel {
   final String name;
   final String email;
   final String phone;
+  final String subjectName;
 
   const FacultyModel({
     required this.facultyId,
     required this.name,
     required this.email,
     required this.phone,
+    this.subjectName = '',
   });
 
   factory FacultyModel.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class FacultyModel {
       name: json['name']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
       phone: json['phone']?.toString() ?? '',
+      subjectName: json['subject_name']?.toString() ?? '',
     );
   }
 
@@ -26,6 +29,7 @@ class FacultyModel {
       'name': name,
       'email': email,
       'phone': phone,
+      'subject_name': subjectName,
     };
   }
 

@@ -426,6 +426,8 @@ class _FacultyProfileState extends State<FacultyProfile> {
             ),
             _drawerItem(icon: Icons.mark_email_unread_outlined, title: 'Enquiries & Requests', route: AppRoutes.facultyEnquiriesRequests),
             _drawerItem(icon: Icons.analytics_outlined, title: 'Student Records', route: AppRoutes.facultyStudentRecords),
+            if (_isAdmin)
+              _drawerItem(icon: Icons.fact_check_outlined, title: 'Record Edit Requests', route: AppRoutes.recordEditRequests),
           ],
         ),
       ),
@@ -486,6 +488,8 @@ class _FacultyProfileState extends State<FacultyProfile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildFacultyDetails(),
+            const SizedBox(height: 24),
             const Text(
               'Task Management',
               style: TextStyle(color: AppColors.primary, fontSize: 24, fontWeight: FontWeight.w800),
@@ -549,6 +553,43 @@ class _FacultyProfileState extends State<FacultyProfile> {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildFacultyDetails() {
+    final faculty = _faculty!;
+    Widget detail(IconData icon, String label, String value) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(icon, color: AppColors.primary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+            const SizedBox(height: 2),
+            Text(value.isEmpty ? 'Not available' : value, style: const TextStyle(fontWeight: FontWeight.w600)),
+          ])),
+        ]),
+      );
+    }
+
+    return Card(
+      color: AppColors.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: BorderSide(color: Colors.grey.shade200)),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Faculty Details', style: TextStyle(color: AppColors.primary, fontSize: 20, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 16),
+          detail(Icons.person_outline, 'Name', faculty.name),
+          detail(Icons.badge_outlined, 'Faculty ID', faculty.facultyId),
+          detail(Icons.email_outlined, 'Email', faculty.email),
+          detail(Icons.phone_outlined, 'Phone', faculty.phone),
+          if ((faculty.subjectId ?? '').isNotEmpty)
+            detail(Icons.menu_book_outlined, 'Subject', faculty.subjectId!),
+        ]),
       ),
     );
   }

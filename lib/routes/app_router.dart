@@ -17,6 +17,7 @@ import '../screens/faculty/faculty_enter_attendance_screen.dart';
 import '../screens/faculty/faculty_manage_attendance_screen.dart';
 import '../screens/faculty/faculty_enquiries_requests_screen.dart';
 import '../screens/faculty/faculty_student_records_screen.dart';
+import '../screens/faculty/faculty_record_edit_requests_screen.dart';
 
 import '../screens/student/dashboard/student_dashboard.dart';
 import '../screens/student/attendance/attendance_screen.dart'
@@ -72,6 +73,7 @@ class AppRouter {
             location == AppRoutes.facultyRegisteredStudents ||
             location == AppRoutes.facultyPostTest ||
             location == AppRoutes.facultyManageMarks ||
+            location == AppRoutes.recordEditRequests ||
             location == AppRoutes.facultyEnterMarks ||
             location == AppRoutes.facultyEnterAttendance ||
             location == AppRoutes.facultyManageAttendance ||
@@ -165,8 +167,16 @@ class AppRouter {
           ),
         ),
         GoRoute(
+          path: AppRoutes.recordEditRequests,
+          builder: (context, state) => FacultyRecordEditRequestsScreen(
+            adminId: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
+        ),
+        GoRoute(
           path: AppRoutes.facultyManageMarks,
-          builder: (context, state) => const FacultyManageMarksScreen(),
+          builder: (context, state) => FacultyManageMarksScreen(
+            facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
         ),
         GoRoute(
           path: AppRoutes.facultyPostTest,

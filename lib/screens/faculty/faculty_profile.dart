@@ -587,8 +587,8 @@ class _FacultyProfileState extends State<FacultyProfile> {
           detail(Icons.badge_outlined, 'Faculty ID', faculty.facultyId),
           detail(Icons.email_outlined, 'Email', faculty.email),
           detail(Icons.phone_outlined, 'Phone', faculty.phone),
-          if ((faculty.subjectId ?? '').isNotEmpty)
-            detail(Icons.menu_book_outlined, 'Subject', faculty.subjectId!),
+          if (faculty.subjectName.trim().isNotEmpty)
+            detail(Icons.menu_book_outlined, 'Subject', faculty.subjectName),
         ]),
       ),
     );

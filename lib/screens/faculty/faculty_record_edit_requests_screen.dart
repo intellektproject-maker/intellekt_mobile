@@ -39,7 +39,7 @@ class _FacultyRecordEditRequestsScreenState extends State<FacultyRecordEditReque
       builder: (ctx) => AlertDialog(
         title: Text(decision == 'approve' ? 'Approve edit request?' : 'Decline edit request?'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text('\${request['requested_by_name'] ?? request['requested_by']} requested to change \${request['student_name'] ?? request['roll_no']} from \${request['original_value']} to \${request['requested_value']}.'),
+          Text('${request['requested_by_name'] ?? request['requested_by']} requested to change ${request['student_name'] ?? request['roll_no']} from ${request['original_value']} to ${request['requested_value']}.'),
           const SizedBox(height: 12),
           TextField(controller: noteController, decoration: const InputDecoration(labelText: 'Admin note (optional)', border: OutlineInputBorder())),
         ]),
@@ -51,14 +51,14 @@ class _FacultyRecordEditRequestsScreenState extends State<FacultyRecordEditReque
     );
     if (confirmed != true) { noteController.dispose(); return; }
     try {
-      await _api.put('/record-edit-requests/\${request['id']}/review', data: {
+      await _api.put('/record-edit-requests/${request['id']}/review', data: {
         'adminId': widget.adminId, 'decision': decision, 'note': noteController.text.trim(),
       });
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Request \${decision}d.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Request ${decision}d.')));
       await _load();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Review failed: \${e.toString().replaceFirst('Exception: ', '')}')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Review failed: ${e.toString().replaceFirst('Exception: ', '')}')));
     } finally { noteController.dispose(); }
   }
 
@@ -94,16 +94,16 @@ class _FacultyRecordEditRequestsScreenState extends State<FacultyRecordEditReque
                               padding: const EdgeInsets.all(16),
                               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                 Row(children: [
-                                  Expanded(child: Text('\${r['student_name'] ?? 'Student'} (\${r['roll_no'] ?? '-'})', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800))),
+                                  Expanded(child: Text('${r['student_name'] ?? 'Student'} (${r['roll_no'] ?? '-'})', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800))),
                                   Chip(label: Text((r['status'] ?? 'Pending').toString())),
                                 ]),
                                 const SizedBox(height: 5),
-                                Text('Type: \${type == 'marks' ? 'Marks' : 'Attendance'} • \${type == 'marks' ? 'Test \${r['test_code'] ?? '-'}' : 'Subject \${r['subject_id'] ?? '-'} • \${r['attendance_date'] ?? '-'}'}'),
-                                Text('Requested by: \${r['requested_by_name'] ?? r['requested_by'] ?? '-'}'),
+                                Text('Type: ${type == 'marks' ? 'Marks' : 'Attendance'} • ${type == 'marks' ? 'Test ${r['test_code'] ?? '-'}' : 'Subject ${r['subject_id'] ?? '-'} • ${r['attendance_date'] ?? '-'}'}'),
+                                Text('Requested by: ${r['requested_by_name'] ?? r['requested_by'] ?? '-'}'),
                                 const SizedBox(height: 8),
-                                Text('Current value: \${r['original_value']}'),
-                                Text('Requested value: \${r['requested_value']}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                                if ((r['review_note'] ?? '').toString().isNotEmpty) Text('Note: \${r['review_note']}'),
+                                Text('Current value: ${r['original_value']}'),
+                                Text('Requested value: ${r['requested_value']}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                                if ((r['review_note'] ?? '').toString().isNotEmpty) Text('Note: ${r['review_note']}'),
                                 if (pending) ...[
                                   const SizedBox(height: 10),
                                   Row(children: [

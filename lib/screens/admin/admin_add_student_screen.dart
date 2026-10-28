@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
-import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 
 class AdminAddStudentScreen extends StatefulWidget {
@@ -47,7 +46,15 @@ class _AdminAddStudentScreenState extends State<AdminAddStudentScreen> {
     final board = separator >= 0 ? classBoard.substring(0, separator).trim() : '';
     final className = separator >= 0 ? classBoard.substring(separator + 1).trim() : '';
     final subjectNames = (e['subjects'] ?? '').toString();
-    _subjectsText = subjectNames;
+    final normalizedSubjects = subjectNames.toLowerCase();
+    _subjectsText = normalizedSubjects.contains('both') ||
+            (normalizedSubjects.contains('math') && normalizedSubjects.contains('phys'))
+        ? 'Both'
+        : normalizedSubjects.contains('phys')
+            ? 'Physics'
+            : normalizedSubjects.contains('math')
+                ? 'Mathematics'
+                : '';
     final values = <String, String>{
       'roll_no': '',
       'name': (e['student_name'] ?? '').toString(),
@@ -56,7 +63,7 @@ class _AdminAddStudentScreenState extends State<AdminAddStudentScreen> {
       'phone': (e['mobile_number'] ?? '').toString().replaceAll(RegExp(r'\D'), ''),
       'email': '',
       'school_name': (e['school_name'] ?? '').toString(),
-      'date_of_birth': e['date_of_birth'] == null ? '' : e['date_of_birth'].toString().substring(0, 10),
+      'date_of_birth': e['date_of_birth'] == null || e['date_of_birth'].toString().length < 10 ? '' : e['date_of_birth'].toString().substring(0, 10),
       'academic_year_from': (e['academic_year_from'] ?? '').toString(),
       'academic_year_to': (e['academic_year_to'] ?? '').toString(),
       'parent_name': (e['parent_name'] ?? '').toString(),
@@ -142,7 +149,7 @@ class _AdminAddStudentScreenState extends State<AdminAddStudentScreen> {
       return;
     }
     setState(() { _saving = true; _error = null; });
-    final adminId = AuthProvider().user?.id.trim().toUpperCase() ?? '';
+    final adminId = (widget.args['adminId'] ?? '').toString().trim().toUpperCase();
     try {
       final common = <String, dynamic>{
         'enquiry_id': _enquiryId,

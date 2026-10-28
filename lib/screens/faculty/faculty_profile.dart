@@ -34,6 +34,7 @@ class _FacultyProfileState extends State<FacultyProfile> {
 
   String? _error;
   bool _loading = true;
+  bool _isTestBatch = false;
   bool _tasksLoading = false;
   bool _allLoading = false;
   bool _dailyLoading = false;
@@ -488,6 +489,8 @@ class _FacultyProfileState extends State<FacultyProfile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildBatchToggle(),
+            if (!_isTestBatch) ...[
             _buildFacultyDetails(),
             const SizedBox(height: 24),
             const Text(
@@ -551,7 +554,81 @@ class _FacultyProfileState extends State<FacultyProfile> {
               const SizedBox(height: 16),
               _AssignmentCard(onAssign: _showAssignmentForm),
             ],
+            ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBatchToggle() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(4),
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _batchToggleOption(
+              label: 'Regular Batch',
+              selected: !_isTestBatch,
+              onTap: () {
+                if (_isTestBatch) {
+                  setState(() {
+                    _isTestBatch = false;
+                    _activeSection = '';
+                  });
+                }
+              },
+            ),
+          ),
+          Expanded(
+            child: _batchToggleOption(
+              label: 'Test Batch',
+              selected: _isTestBatch,
+              onTap: () {
+                if (!_isTestBatch) {
+                  setState(() {
+                    _isTestBatch = true;
+                    _activeSection = '';
+                  });
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _batchToggleOption({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: selected ? AppColors.primary : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: selected ? Colors.white : AppColors.primary,
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
+              ),
+            ),
+          ),
         ),
       ),
     );

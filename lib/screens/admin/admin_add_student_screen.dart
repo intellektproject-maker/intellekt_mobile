@@ -84,7 +84,7 @@ class _AdminAddStudentScreenState extends State<AdminAddStudentScreen> {
   Future<void> _loadOptions() async {
     try {
       if (_isTestBatch) {
-        final adminId = AuthProvider().user?.id.trim().toUpperCase() ?? '';
+        final adminId = (widget.args['adminId'] ?? '').toString().trim().toUpperCase();
         final response = await _api.get('/test-batch/series', queryParameters: {'adminId': adminId});
         final data = response.data;
         final list = data is Map ? data['series'] : null;

@@ -145,6 +145,18 @@ class _AdminEnquiriesScreenState extends State<AdminEnquiriesScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+              if ((item['status'] ?? 'Pending').toString() == 'Pending')
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () {
+                      Navigator.pop(sheetContext);
+                      _startAdmission(item);
+                    },
+                    child: const Text('Continue to Add Student'),
+                  ),
+                ),
             ],
           ),
         ),

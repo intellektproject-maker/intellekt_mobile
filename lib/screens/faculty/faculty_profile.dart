@@ -8,6 +8,7 @@ import '../../repositories/faculty_repository.dart';
 import '../../repositories/faculty_task_repository.dart';
 import 'task_assignment_screen.dart';
 import 'test_batch_student_status_screen.dart';
+import '../../routes/app_routes.dart';
 
 class FacultyProfile extends StatefulWidget {
   final String facultyId;
@@ -72,8 +73,9 @@ class _FacultyProfileState extends State<FacultyProfile> {
 
       Set<String> notifications = <String>{};
       try {
-        final notificationList =
-            await _taskRepository.getFacultyNotifications(_id);
+        final notificationList = await _taskRepository.getFacultyNotifications(
+          _id,
+        );
         notifications = notificationList
             .map((item) => item['module_name']?.toString() ?? '')
             .where((item) => item.isNotEmpty)
@@ -355,9 +357,9 @@ class _FacultyProfileState extends State<FacultyProfile> {
   void _showMessage(String message) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -476,7 +478,8 @@ class _FacultyProfileState extends State<FacultyProfile> {
                     icon: Icons.groups_2_outlined,
                     title: 'Registered Students',
                     subtitle: 'Browse registrations',
-                    onTap: () => context.push(AppRoutes.facultyRegisteredStudents),
+                    onTap: () =>
+                        context.push(AppRoutes.facultyRegisteredStudents),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -529,7 +532,8 @@ class _FacultyProfileState extends State<FacultyProfile> {
                     icon: Icons.calendar_month_outlined,
                     title: 'Manage Attendance',
                     subtitle: 'Review and correct records',
-                    onTap: () => context.push(AppRoutes.facultyManageAttendance),
+                    onTap: () =>
+                        context.push(AppRoutes.facultyManageAttendance),
                   ),
                 ),
               ],
@@ -542,7 +546,8 @@ class _FacultyProfileState extends State<FacultyProfile> {
                     icon: Icons.mark_email_unread_outlined,
                     title: 'Enquiries & Requests',
                     subtitle: 'Review enquiries and requests',
-                    onTap: () => context.push(AppRoutes.facultyEnquiriesRequests),
+                    onTap: () =>
+                        context.push(AppRoutes.facultyEnquiriesRequests),
                   ),
                 ),
               ],
@@ -699,8 +704,9 @@ class _FacultyProfileState extends State<FacultyProfile> {
           description: 'Assign weekly or daily tasks.',
           active: _activeSection == 'assignTask',
           onTap: () => setState(
-            () => _activeSection =
-                _activeSection == 'assignTask' ? '' : 'assignTask',
+            () => _activeSection = _activeSection == 'assignTask'
+                ? ''
+                : 'assignTask',
           ),
         ),
       );
@@ -721,7 +727,8 @@ class _FacultyProfileState extends State<FacultyProfile> {
       boxes.add(
         _TaskBox(
           title: 'Test Batch Admin Actions',
-          description: 'Post tests, enter marks and record Test Batch attendance.',
+          description:
+              'Post tests, enter marks and record Test Batch attendance.',
           active: false,
           onTap: () => context.push(AppRoutes.testBatchAdminActions),
         ),
@@ -735,8 +742,7 @@ class _FacultyProfileState extends State<FacultyProfile> {
         notification: _notifications.contains('tasks'),
         active: _activeSection == 'myChecklist',
         onTap: () async {
-          final next =
-              _activeSection == 'myChecklist' ? '' : 'myChecklist';
+          final next = _activeSection == 'myChecklist' ? '' : 'myChecklist';
 
           setState(() {
             _activeSection = next;
@@ -761,10 +767,8 @@ class _FacultyProfileState extends State<FacultyProfile> {
     return Column(
       children: boxes
           .map(
-            (box) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: box,
-            ),
+            (box) =>
+                Padding(padding: const EdgeInsets.only(bottom: 12), child: box),
           )
           .toList(),
     );
@@ -861,11 +865,7 @@ class _TaskPanel extends StatelessWidget {
               value: _count('overdue'),
               type: 'overdue',
             ),
-            _StatBox(
-              label: 'Due Today',
-              value: _count('today'),
-              type: 'today',
-            ),
+            _StatBox(label: 'Due Today', value: _count('today'), type: 'today'),
           ],
         ),
         const SizedBox(height: 16),
@@ -875,18 +875,10 @@ class _TaskPanel extends StatelessWidget {
             labelText: 'Filter Tasks',
             border: OutlineInputBorder(),
           ),
-          items: const [
-            'All',
-            'Pending',
-            'Completed',
-            'Overdue',
-            'Due Today',
-          ]
+          items: const ['All', 'Pending', 'Completed', 'Overdue', 'Due Today']
               .map(
-                (value) => DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                ),
+                (value) =>
+                    DropdownMenuItem<String>(value: value, child: Text(value)),
               )
               .toList(),
           onChanged: (value) {
@@ -1016,10 +1008,7 @@ class _TaskCard extends StatelessWidget {
                   const SizedBox(height: 5),
                   Text(
                     'Assigned by: $assignedByDisplay',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                 ],
                 if (canManage) ...[
@@ -1100,7 +1089,9 @@ class _TaskBox extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: active ? AppColors.primary.withValues(alpha: 0.06) : AppColors.surface,
+          color: active
+              ? AppColors.primary.withValues(alpha: 0.06)
+              : AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: active ? AppColors.primary : AppColors.border,
@@ -1273,12 +1264,12 @@ class _ProfileHeader extends StatelessWidget {
     final initials = faculty.name.trim().isEmpty
         ? '?'
         : faculty.name
-            .trim()
-            .split(RegExp(r'\s+'))
-            .take(2)
-            .map((part) => part[0])
-            .join()
-            .toUpperCase();
+              .trim()
+              .split(RegExp(r'\s+'))
+              .take(2)
+              .map((part) => part[0])
+              .join()
+              .toUpperCase();
 
     return Container(
       width: double.infinity,
@@ -1411,11 +1402,7 @@ class _ProfileDetailRow extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(9),
                 ),
-                child: Icon(
-                  icon,
-                  size: 18,
-                  color: AppColors.primary,
-                ),
+                child: Icon(icon, size: 18, color: AppColors.primary),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1443,13 +1430,11 @@ class _ProfileDetailRow extends StatelessWidget {
             ],
           ),
         ),
-        if (showDivider)
-          const Divider(height: 1, color: AppColors.border),
+        if (showDivider) const Divider(height: 1, color: AppColors.border),
       ],
     );
   }
 }
-
 
 class _TeachingToolCard extends StatelessWidget {
   final IconData icon;
@@ -1485,7 +1470,13 @@ class _TeachingToolCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
               const SizedBox(height: 4),
-              Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ],
           ),
         ),

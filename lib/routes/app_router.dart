@@ -20,6 +20,7 @@ import '../screens/faculty/faculty_enquiries_requests_screen.dart';
 import '../screens/faculty/faculty_student_records_screen.dart';
 import '../screens/admin/admin_menu_screen.dart';
 import '../screens/admin/admin_enquiries_screen.dart';
+import '../screens/admin/admin_add_student_screen.dart';
 
 import '../screens/student/dashboard/student_dashboard.dart';
 import '../screens/student/attendance/attendance_screen.dart'
@@ -58,7 +59,8 @@ class AppRouter {
             location == AppRoutes.welcome ||
             location == AppRoutes.login;
         final isAdminPage = location == AppRoutes.adminMenu ||
-            location == AppRoutes.adminEnquiries;
+            location == AppRoutes.adminEnquiries ||
+            location == AppRoutes.adminAddStudent;
         final isTestBatchPage = location == AppRoutes.testBatchDashboard ||
             location == AppRoutes.testBatchRegistration ||
             location == AppRoutes.testBatchAcademicOverview ||
@@ -133,6 +135,7 @@ class AppRouter {
       routes: [
         GoRoute(path: AppRoutes.adminMenu, builder: (context, state) => const AdminMenuScreen()),
         GoRoute(path: AppRoutes.adminEnquiries, builder: (context, state) => const AdminEnquiriesScreen()),
+        GoRoute(path: AppRoutes.adminAddStudent, builder: (context, state) => AdminAddStudentScreen(args: state.extra is Map<String, dynamic> ? state.extra as Map<String, dynamic> : const {})),
         GoRoute(path: AppRoutes.splash, builder: (context, state) => const SplashScreen()),
         GoRoute(path: AppRoutes.welcome, builder: (context, state) => const WelcomeScreen()),
         GoRoute(path: AppRoutes.login, builder: (context, state) => const LoginScreen()),

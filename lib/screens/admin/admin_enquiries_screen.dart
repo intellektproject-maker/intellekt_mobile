@@ -184,7 +184,18 @@ class _AdminEnquiriesScreenState extends State<AdminEnquiriesScreen> {
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back),
         ),
-        actions: [IconButton(onPressed: _load, tooltip: 'Refresh', icon: const Icon(Icons.refresh))],
+        actions: [
+          PopupMenuButton<String>(
+            tooltip: 'Add student',
+            icon: const Icon(Icons.person_add_alt_1),
+            onSelected: (batch) => context.push(AppRoutes.adminAddStudent, extra: {'batch': batch}),
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'Regular Batch', child: Text('Add Regular Student')),
+              PopupMenuItem(value: 'Test Batch', child: Text('Add Test Batch Student')),
+            ],
+          ),
+          IconButton(onPressed: _load, tooltip: 'Refresh', icon: const Icon(Icons.refresh)),
+        ],
       ),
       body: Column(
         children: [

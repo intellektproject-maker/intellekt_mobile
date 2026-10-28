@@ -1,8 +1,11 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
+import '../../routes/app_routes.dart';
 
 class AdminEnquiriesScreen extends StatefulWidget {
   const AdminEnquiriesScreen({super.key});
@@ -67,6 +70,33 @@ class _AdminEnquiriesScreenState extends State<AdminEnquiriesScreen> {
       ].whereType<Object>().join(' ').toLowerCase();
       return searchable.contains(query);
     }).toList();
+  }
+
+  Future<void> _startAdmission(Map<String, dynamic> item) async {
+    final id = item['id']?.toString() ?? '';
+    if (id.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('This enquiry has no valid ID.')));
+      return;
+    }
+    final batch = (item['batch'] ?? 'Regular Batch').toString();
+    if (batch != 'Test Batch' && batch != 'Regular Batch') {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('This enquiry has an unsupported batch type.')));
+      return;
+    }
+    final token = List<int>.generate(32, (_) => Random.secure().nextInt(256))
+        .map((value) => value.toRadixString(16).padLeft(2, '0')).join();
+    try {
+      final response = await _api.post('/enquiries/$id/admission/start', data: {'admission_token': token});
+      final payload = Map<String, dynamic>.from(response.data as Map);
+      if (payload['success'] != true) throw Exception('Could not start admission for this enquiry.');
+      if (!mounted) return;
+      await context.push(AppRoutes.adminAddStudent, extra: {'enquiry': item, 'admissionToken': token, 'batch': batch});
+      if (mounted) await _load();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))));
+      await _load();
+    }
   }
 
   void _showDetails(Map<String, dynamic> item) {

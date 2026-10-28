@@ -22,7 +22,7 @@ class _AdminEnquiriesScreenState extends State<AdminEnquiriesScreen> {
   String? _error;
   String _status = 'All';
 
-  static const List<String> _statuses = ['All', 'Pending', 'Admission In Progress', 'Admitted'];
+  static const List<String> _statuses = ['All', 'Pending', 'Admitted'];
 
   @override
   void initState() {
@@ -62,6 +62,7 @@ class _AdminEnquiriesScreenState extends State<AdminEnquiriesScreen> {
     final query = _searchController.text.trim().toLowerCase();
     return _all.where((item) {
       final status = (item['status'] ?? 'Pending').toString();
+      if (status == 'Admission In Progress') return false;
       if (_status != 'All' && status != _status) return false;
       if (query.isEmpty) return true;
       final searchable = [
@@ -93,6 +94,11 @@ class _AdminEnquiriesScreenState extends State<AdminEnquiriesScreen> {
       await context.push(AppRoutes.adminAddStudent, extra: {'enquiry': item, 'admissionToken': token, 'batch': batch});
       if (mounted) await _load();
     } catch (error) {
+      try {
+        await _api.post('/enquiries/$id/admission/cancel', data: {'admission_token': token});
+      } catch (_) {
+        // The backend's 30-minute admission lock remains the final recovery path.
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))));
       await _load();

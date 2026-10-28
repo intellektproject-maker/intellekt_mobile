@@ -115,19 +115,6 @@ class _AdminEnquiriesScreenState extends State<AdminEnquiriesScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () {
-                    Navigator.pop(sheetContext);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Student admission form integration is being added next.')),
-                    );
-                  },
-                  child: const Text('Continue to Add Student'),
-                ),
-              ),
             ],
           ),
         ),

@@ -45,6 +45,23 @@ class FacultyProfileShell extends StatelessWidget {
     return Stack(
       children: [
         FacultyProfile(facultyId: facultyId),
+        if (authProvider.user?.isAdmin == true)
+          Positioned(
+            top: MediaQuery.paddingOf(context).top + 4,
+            left: 8,
+            child: IconButton.filledTonal(
+              onPressed: () => context.push(AppRoutes.adminMenu),
+              tooltip: 'Menu',
+              icon: const Icon(Icons.menu_rounded, size: 20),
+              style: IconButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                backgroundColor: Colors.white,
+                padding: const EdgeInsets.all(9),
+                minimumSize: const Size(40, 40),
+                maximumSize: const Size(40, 40),
+              ),
+            ),
+          ),
         Positioned(
           top: MediaQuery.paddingOf(context).top + 4,
           right: 56,

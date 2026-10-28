@@ -40,4 +40,8 @@ class AppRoutes {
   static const facultyManageAttendance = '/faculty/manage-attendance';
   static const facultyEnquiriesRequests = '/faculty/enquiries-requests';
   static const facultyStudentRecords = '/faculty/student-records';
+
+  // Admin-only admission workflow
+  static const adminMenu = '/admin/menu';
+  static const adminEnquiries = '/admin/enquiries';
 }

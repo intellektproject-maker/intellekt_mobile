@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/colors.dart';
-import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 
 class AdminMenuScreen extends StatelessWidget {
@@ -10,12 +9,6 @@ class AdminMenuScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auth = AuthProvider();
-    // The router also enforces this access check; keep this screen defensive.
-    if (!auth.isAdmin) {
-      return const Scaffold(body: Center(child: Text('Access denied.')));
-    }
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(

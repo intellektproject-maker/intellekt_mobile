@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/colors.dart';
+import '../../routes/app_routes.dart';
 import '../../models/faculty_model.dart';
 import '../../models/faculty_task_model.dart';
 import '../../repositories/faculty_repository.dart';

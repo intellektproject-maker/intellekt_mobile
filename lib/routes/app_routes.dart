@@ -44,4 +44,5 @@ class AppRoutes {
   // Admin-only admission workflow
   static const adminMenu = '/admin/menu';
   static const adminEnquiries = '/admin/enquiries';
+  static const adminAddStudent = '/admin/add-student';
 }

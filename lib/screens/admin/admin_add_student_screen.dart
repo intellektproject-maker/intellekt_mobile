@@ -107,7 +107,10 @@ class _AdminAddStudentScreenState extends State<AdminAddStudentScreen> {
           final wanted = _subjectsText.toLowerCase();
           for (final subject in _subjects) {
             final name = (subject['subject_name'] ?? '').toString().toLowerCase();
-            if (name.isNotEmpty && wanted.contains(name)) {
+            final matchesMaths = (wanted.contains('math') || wanted.contains('maths')) &&
+                (name.contains('math') || name.contains('maths'));
+            final matchesPhysics = wanted.contains('phys') && name.contains('phys');
+            if (name.isNotEmpty && (wanted.contains(name) || matchesMaths || matchesPhysics)) {
               final id = int.tryParse(subject['subject_id'].toString());
               if (id != null) _subjectIds.add(id);
             }

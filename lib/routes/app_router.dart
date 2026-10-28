@@ -135,7 +135,7 @@ class AppRouter {
       routes: [
         GoRoute(path: AppRoutes.adminMenu, builder: (context, state) => const AdminMenuScreen()),
         GoRoute(path: AppRoutes.adminEnquiries, builder: (context, state) => const AdminEnquiriesScreen()),
-        GoRoute(path: AppRoutes.adminAddStudent, builder: (context, state) => AdminAddStudentScreen(args: state.extra is Map<String, dynamic> ? state.extra as Map<String, dynamic> : const {})),
+        GoRoute(path: AppRoutes.adminAddStudent, builder: (context, state) => AdminAddStudentScreen(args: <String, dynamic>{if (state.extra is Map<String, dynamic>) ...state.extra as Map<String, dynamic>, 'adminId': authProvider.user?.id.trim().toUpperCase() ?? ''})),
         GoRoute(path: AppRoutes.splash, builder: (context, state) => const SplashScreen()),
         GoRoute(path: AppRoutes.welcome, builder: (context, state) => const WelcomeScreen()),
         GoRoute(path: AppRoutes.login, builder: (context, state) => const LoginScreen()),

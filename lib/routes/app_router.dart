@@ -18,6 +18,8 @@ import '../screens/faculty/faculty_enter_attendance_screen.dart';
 import '../screens/faculty/faculty_manage_attendance_screen.dart';
 import '../screens/faculty/faculty_enquiries_requests_screen.dart';
 import '../screens/faculty/faculty_student_records_screen.dart';
+import '../screens/admin/admin_menu_screen.dart';
+import '../screens/admin/admin_enquiries_screen.dart';
 
 import '../screens/student/dashboard/student_dashboard.dart';
 import '../screens/student/attendance/attendance_screen.dart'
@@ -55,6 +57,8 @@ class AppRouter {
         final isAuthenticationPage = location == AppRoutes.splash ||
             location == AppRoutes.welcome ||
             location == AppRoutes.login;
+        final isAdminPage = location == AppRoutes.adminMenu ||
+            location == AppRoutes.adminEnquiries;
         final isTestBatchPage = location == AppRoutes.testBatchDashboard ||
             location == AppRoutes.testBatchRegistration ||
             location == AppRoutes.testBatchAcademicOverview ||
@@ -90,11 +94,19 @@ class AppRouter {
         }
 
         if (!isLoggedIn &&
-            (isStudentPage ||
+            (isAdminPage || isStudentPage ||
                 isTestBatchPage ||
                 isFacultyPage ||
                 location == AppRoutes.changePassword)) {
           return AppRoutes.login;
+        }
+
+        if (isLoggedIn && isAdminPage && !authProvider.user!.isAdmin) {
+          return authProvider.isFaculty
+              ? AppRoutes.facultyProfile
+              : authProvider.isTestBatchStudent
+                  ? AppRoutes.testBatchDashboard
+                  : AppRoutes.studentDashboard;
         }
 
         if (isLoggedIn && isTestBatchPage && !authProvider.isTestBatchStudent) {
@@ -119,6 +131,8 @@ class AppRouter {
         return null;
       },
       routes: [
+        GoRoute(path: AppRoutes.adminMenu, builder: (context, state) => const AdminMenuScreen()),
+        GoRoute(path: AppRoutes.adminEnquiries, builder: (context, state) => const AdminEnquiriesScreen()),
         GoRoute(path: AppRoutes.splash, builder: (context, state) => const SplashScreen()),
         GoRoute(path: AppRoutes.welcome, builder: (context, state) => const WelcomeScreen()),
         GoRoute(path: AppRoutes.login, builder: (context, state) => const LoginScreen()),

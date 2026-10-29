@@ -377,7 +377,7 @@ class _AttendanceTab extends StatefulWidget {
 class _AttendanceTabState extends State<_AttendanceTab> {
   DateTime _date = DateTime.now();
   List<Map<String, dynamic>> _students = [];
-  final Map<String, String> _status = {};
+  final Map<String, String?> _status = {};
   bool _loading = false, _saving = false;
   String? _error, _message;
 
@@ -393,7 +393,9 @@ class _AttendanceTabState extends State<_AttendanceTab> {
         _students = rows;
         _status.clear();
         for (final s in rows) {
-          _status[(s['roll_no'] ?? '').toString()] = (s['status'] ?? 'Present').toString();
+          final savedStatus = s['status']?.toString();
+          _status[(s['roll_no'] ?? '').toString()] =
+              const {'Present', 'Absent'}.contains(savedStatus) ? savedStatus : null;
         }
       });
     } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
@@ -404,7 +406,17 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     if (_students.isEmpty) { setState(() => _error = 'No registered Test Batch students found for this writing date.'); return; }
     setState(() { _saving = true; _error = null; _message = null; });
     try {
-      final records = _students.map((s) => {'roll_no': s['roll_no'], 'status': _status[(s['roll_no'] ?? '').toString()] ?? 'Present'}).toList();
+      final unmarked = _students.where((s) =>
+          _status[(s['roll_no'] ?? '').toString()] == null).toList();
+      if (unmarked.isNotEmpty) {
+        setState(() => _error =
+            'Select Present or Absent for every student before saving attendance.');
+        return;
+      }
+      final records = _students.map((s) => {
+        'roll_no': s['roll_no'],
+        'status': _status[(s['roll_no'] ?? '').toString()],
+      }).toList();
       await widget.api.post('/test-batch/attendance', data: {'adminId': widget.adminId, 'attendanceDate': _dateString, 'records': records});
       if (mounted) setState(() => _message = 'Attendance saved for ${records.length} student(s).');
       await _load();
@@ -435,7 +447,10 @@ class _AttendanceTabState extends State<_AttendanceTab> {
         subtitle: Text('Roll: $roll\nTests: ${s['test_codes'] ?? '-'}'),
         isThreeLine: true,
         trailing: DropdownButton<String>(
-          value: const {'Present', 'Absent'}.contains(_status[roll]) ? _status[roll] : 'Present',
+          value: const {'Present', 'Absent'}.contains(_status[roll])
+              ? _status[roll]
+              : null,
+          hint: const Text('Select status'),
           items: const [DropdownMenuItem(value: 'Present', child: Text('Present')), DropdownMenuItem(value: 'Absent', child: Text('Absent'))],
           onChanged: (v) => setState(() => _status[roll] = v ?? 'Present'),
         ),

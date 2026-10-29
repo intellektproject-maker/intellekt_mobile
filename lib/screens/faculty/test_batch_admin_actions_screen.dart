@@ -28,11 +28,11 @@ class _TestBatchAdminActionsScreenState extends State<TestBatchAdminActionsScree
   void initState() {
     super.initState();
     _isAuthorized = const {'IG001', 'IG002'}.contains(widget.adminId.trim().toUpperCase());
-    final safeInitialIndex = initialTabIndex < 0
+    final safeInitialIndex = widget.initialTabIndex < 0
         ? 0
-        : initialTabIndex > 2
+        : widget.initialTabIndex > 2
             ? 2
-            : initialTabIndex;
+            : widget.initialTabIndex;
     _tabs = TabController(
       length: 3,
       vsync: this,

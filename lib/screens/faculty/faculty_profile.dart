@@ -8,6 +8,7 @@ import '../../repositories/faculty_repository.dart';
 import '../../repositories/faculty_task_repository.dart';
 import 'task_assignment_screen.dart';
 import 'test_batch_student_status_screen.dart';
+import 'test_batch_admin_actions_screen.dart';
 import '../../routes/app_routes.dart';
 
 class FacultyProfile extends StatefulWidget {
@@ -702,28 +703,77 @@ class _FacultyProfileState extends State<FacultyProfile> {
   }
 
   Widget _buildTestBatchTools() {
-    return Row(
-      children: [
-        Expanded(
-          child: _TeachingToolCard(
-            icon: Icons.groups_2_outlined,
-            title: 'Test Batch Registration Status',
-            subtitle: 'Registered, completed and lapsed students',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => TestBatchStudentStatusScreen(adminId: _id),
-              ),
+    Widget actionCard({
+      required IconData icon,
+      required String title,
+      required String subtitle,
+      required int tabIndex,
+    }) {
+      return _TeachingToolCard(
+        icon: icon,
+        title: title,
+        subtitle: subtitle,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => TestBatchAdminActionsScreen(
+              adminId: _id,
+              initialTabIndex: tabIndex,
             ),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _TeachingToolCard(
-            icon: Icons.fact_check_outlined,
-            title: 'Test Batch Administration',
-            subtitle: 'Post tests, enter marks and attendance',
-            onTap: () => context.push(AppRoutes.testBatchAdminActions),
-          ),
+      );
+    }
+
+    return Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _TeachingToolCard(
+                icon: Icons.groups_2_outlined,
+                title: 'Registration Status',
+                subtitle: 'Registered, completed and lapsed students',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => TestBatchStudentStatusScreen(adminId: _id),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: actionCard(
+                icon: Icons.post_add_outlined,
+                title: 'Post Test',
+                subtitle: 'Create or edit Test Batch tests',
+                tabIndex: 0,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: actionCard(
+                icon: Icons.edit_note_outlined,
+                title: 'Enter Marks',
+                subtitle: 'Record marks for registered students',
+                tabIndex: 1,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: actionCard(
+                icon: Icons.fact_check_outlined,
+                title: 'Attendance',
+                subtitle: 'Mark attendance by writing date',
+                tabIndex: 2,
+              ),
+            ),
+          ],
         ),
       ],
     );

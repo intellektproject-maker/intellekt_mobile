@@ -661,7 +661,7 @@ class _FacultyProfileState extends State<FacultyProfile> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFF8B2CF5),
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(40),
       ),
       child: Row(
@@ -693,7 +693,7 @@ class _FacultyProfileState extends State<FacultyProfile> {
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: selected ? const Color(0xFF8B2CF5) : Colors.white,
+              color: selected ? AppColors.primary : Colors.white,
               fontWeight: FontWeight.w700,
             ),
           ),

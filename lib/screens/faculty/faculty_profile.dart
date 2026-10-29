@@ -546,20 +546,22 @@ class _FacultyProfileState extends State<FacultyProfile> {
               ],
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _TeachingToolCard(
-                    icon: Icons.mark_email_unread_outlined,
-                    title: 'Enquiries & Requests',
-                    subtitle: 'Review enquiries and requests',
-                    onTap: () =>
-                        context.push(AppRoutes.facultyEnquiriesRequests),
+            if (_isAdmin) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: _TeachingToolCard(
+                      icon: Icons.mark_email_unread_outlined,
+                      title: 'Enquiries & Requests',
+                      subtitle: 'Review enquiries and requests',
+                      onTap: () =>
+                          context.push(AppRoutes.facultyEnquiriesRequests),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
             Row(
               children: [
                 Expanded(

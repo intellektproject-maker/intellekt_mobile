@@ -51,7 +51,10 @@ class _FacultyProfileState extends State<FacultyProfile> {
 
   bool get _canAccessTestBatch {
     if (_isAdmin) return true;
-    final match = RegExp(r'^IG(\\d{3,})
+    if (!_id.startsWith('IG') || _id.length <= 4) return false;
+    final sequence = int.tryParse(_id.substring(2));
+    return sequence != null && sequence >= 3;
+  }
 
   @override
   void initState() {

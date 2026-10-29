@@ -62,7 +62,15 @@ class _TestBatchAdminActionsScreenState extends State<TestBatchAdminActionsScree
         backgroundColor: AppColors.surface,
         bottom: TabBar(
           controller: _tabs,
+          isScrollable: false,
           labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: AppColors.primary,
+          indicatorSize: TabBarIndicatorSize.tab,
+          indicatorWeight: 3,
+          dividerColor: Colors.transparent,
+          labelStyle: const TextStyle(fontWeight: FontWeight.w700),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
           tabs: const [
             Tab(icon: Icon(Icons.post_add_outlined), text: 'Post Test'),
             Tab(icon: Icon(Icons.edit_note_outlined), text: 'Enter Marks'),

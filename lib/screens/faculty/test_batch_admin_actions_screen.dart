@@ -7,7 +7,12 @@ import '../../core/constants/colors.dart';
 /// All records are loaded from and saved to the dedicated Test Batch API.
 class TestBatchAdminActionsScreen extends StatefulWidget {
   final String adminId;
-  const TestBatchAdminActionsScreen({super.key, required this.adminId});
+  final int initialTabIndex;
+  const TestBatchAdminActionsScreen({
+    super.key,
+    required this.adminId,
+    this.initialTabIndex = 0,
+  });
 
   @override
   State<TestBatchAdminActionsScreen> createState() => _TestBatchAdminActionsScreenState();
@@ -23,7 +28,16 @@ class _TestBatchAdminActionsScreenState extends State<TestBatchAdminActionsScree
   void initState() {
     super.initState();
     _isAuthorized = const {'IG001', 'IG002'}.contains(widget.adminId.trim().toUpperCase());
-    _tabs = TabController(length: 3, vsync: this);
+    final safeInitialIndex = initialTabIndex < 0
+        ? 0
+        : initialTabIndex > 2
+            ? 2
+            : initialTabIndex;
+    _tabs = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: safeInitialIndex,
+    );
   }
 
   @override

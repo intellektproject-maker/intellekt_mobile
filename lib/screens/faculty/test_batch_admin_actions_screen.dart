@@ -264,10 +264,41 @@ class _EnterMarksTab extends StatefulWidget {
 
 class _EnterMarksTabState extends State<_EnterMarksTab> {
   List<Map<String, dynamic>> _tests = [], _students = [];
-  String? _testCode, _writingDate;
+  String? _selectedClass, _selectedSubject, _testCode, _writingDate;
   final Map<String, String> _marks = {}, _remarks = {};
   bool _loading = false, _saving = false;
   String? _error, _message;
+
+  String _classFor(Map<String, dynamic> test) {
+    final explicit = (test['class'] ?? test['class_name'] ?? test['class_level'] ?? '').toString().trim();
+    if (explicit.isNotEmpty) return explicit;
+    final code = (test['test_code'] ?? '').toString().toUpperCase();
+    final match = RegExp(r'^[SCI](\\d{2})[MP]').firstMatch(code);
+    return match?.group(1) ?? 'Other';
+  }
+
+  String _subjectFor(Map<String, dynamic> test) {
+    final explicit = (test['subject_name'] ?? test['subject'] ?? '').toString().trim();
+    if (explicit.isNotEmpty) return explicit;
+    final code = (test['test_code'] ?? '').toString().toUpperCase();
+    final match = RegExp(r'^[SCI]\\d{2}([MP])').firstMatch(code);
+    if (match?.group(1) == 'M') return 'Mathematics';
+    if (match?.group(1) == 'P') return 'Physics';
+    return 'Other';
+  }
+
+  List<String> get _classes => _tests.map(_classFor).toSet().toList()
+    ..sort((a, b) => a.compareTo(b));
+
+  List<String> get _subjectsForClass => _tests
+    .where((t) => _selectedClass == null || _classFor(t) == _selectedClass)
+    .map(_subjectFor).toSet().toList()
+    ..sort();
+
+  List<Map<String, dynamic>> get _filteredTests => _tests.where((t) =>
+    (_selectedClass == null || _classFor(t) == _selectedClass) &&
+    (_selectedSubject == null || _subjectFor(t) == _selectedSubject)
+  ).toList();
 
   @override
   void initState() { super.initState(); _loadTests(); }
@@ -352,10 +383,40 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
       const Text('Enter Test Batch marks', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.primary)),
       if (_loading && _tests.isEmpty) const LinearProgressIndicator(),
       DropdownButtonFormField<String>(
+        value: _selectedClass,
+        isExpanded: true,
+        decoration: const InputDecoration(labelText: 'Filter by class', border: OutlineInputBorder()),
+        items: _classes.map((value) => DropdownMenuItem(value: value, child: Text(value == 'Other' ? value : 'Class $value'))).toList(),
+        onChanged: (v) => setState(() {
+          _selectedClass = v;
+          _selectedSubject = null;
+          _testCode = null;
+          _students = [];
+          _writingDate = null;
+        }),
+      ),
+      const SizedBox(height: 10),
+      DropdownButtonFormField<String>(
+        value: _selectedSubject,
+        isExpanded: true,
+        decoration: const InputDecoration(labelText: 'Filter by subject', border: OutlineInputBorder()),
+        items: _subjectsForClass.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
+        onChanged: _selectedClass == null ? null : (v) => setState(() {
+          _selectedSubject = v;
+          _testCode = null;
+          _students = [];
+          _writingDate = null;
+        }),
+      ),
+      const SizedBox(height: 10),
+      DropdownButtonFormField<String>(
         value: _testCode,
         isExpanded: true,
-        decoration: const InputDecoration(labelText: 'Select test', border: OutlineInputBorder()),
-        items: _tests.map((t) => DropdownMenuItem(value: t['test_code']?.toString(), child: Text('${t['test_code']} - ${t['subject_name'] ?? ''}'))).toList(),
+        decoration: const InputDecoration(labelText: 'Select test code', border: OutlineInputBorder()),
+        items: _filteredTests.map((t) => DropdownMenuItem(
+          value: t['test_code']?.toString(),
+          child: Text((t['test_code'] ?? '').toString()),
+        )).toList(),
         onChanged: (v) => setState(() { _testCode = v; _students = []; _writingDate = null; }),
       ),
       const SizedBox(height: 10),

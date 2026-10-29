@@ -21,13 +21,21 @@ class TestBatchAdminActionsScreen extends StatefulWidget {
 class _TestBatchAdminActionsScreenState extends State<TestBatchAdminActionsScreen>
     with SingleTickerProviderStateMixin {
   final ApiClient _api = ApiClient();
+
+  bool _canAccessTestBatch(String rawId) {
+    final id = rawId.trim().toUpperCase();
+    if (id == 'IG001' || id == 'IG002') return true;
+    if (!id.startsWith('IG') || id.length <= 4) return false;
+    final sequence = int.tryParse(id.substring(2));
+    return sequence != null && sequence >= 3;
+  }
   late final TabController _tabs;
   bool _isAuthorized = false;
 
   @override
   void initState() {
     super.initState();
-    _isAuthorized = const {'IG001', 'IG002'}.contains(widget.adminId.trim().toUpperCase());
+    _isAuthorized = _canAccessTestBatch(widget.adminId);
     final safeInitialIndex = widget.initialTabIndex < 0
         ? 0
         : widget.initialTabIndex > 2

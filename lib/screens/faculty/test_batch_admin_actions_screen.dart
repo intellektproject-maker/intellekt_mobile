@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
 
-/// Mobile Test Batch administration for the privileged IG001 / IG002 accounts.
+/// Mobile Test Batch actions for admins IG001 / IG002 and faculty IG003 onward.
 /// All records are loaded from and saved to the dedicated Test Batch API.
 class TestBatchAdminActionsScreen extends StatefulWidget {
   final String adminId;
@@ -59,7 +59,7 @@ class _TestBatchAdminActionsScreenState extends State<TestBatchAdminActionsScree
     if (!_isAuthorized) {
       return Scaffold(
         appBar: AppBar(title: const Text('Test Batch Administration')),
-        body: const Center(child: Text('Access denied. This screen is for IG001 and IG002 only.')),
+        body: const Center(child: Text('Access denied. This screen is for IG001, IG002, and faculty IG003 onward.')),
       );
     }
     return Scaffold(

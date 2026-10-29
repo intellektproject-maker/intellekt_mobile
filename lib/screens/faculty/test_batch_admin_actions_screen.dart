@@ -273,7 +273,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     final explicit = (test['class'] ?? test['class_name'] ?? test['class_level'] ?? '').toString().trim();
     if (explicit.isNotEmpty) return explicit;
     final code = (test['test_code'] ?? '').toString().toUpperCase();
-    final match = RegExp(r'^[SCI](\\d{2})[MP]').firstMatch(code);
+    final match = RegExp(r'^[SCI](\d{2})[MP]').firstMatch(code);
     return match?.group(1) ?? 'Other';
   }
 
@@ -281,7 +281,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     final explicit = (test['subject_name'] ?? test['subject'] ?? '').toString().trim();
     if (explicit.isNotEmpty) return explicit;
     final code = (test['test_code'] ?? '').toString().toUpperCase();
-    final match = RegExp(r'^[SCI]\\d{2}([MP])').firstMatch(code);
+    final match = RegExp(r'^[SCI]\d{2}([MP])').firstMatch(code);
     if (match?.group(1) == 'M') return 'Mathematics';
     if (match?.group(1) == 'P') return 'Physics';
     return 'Other';

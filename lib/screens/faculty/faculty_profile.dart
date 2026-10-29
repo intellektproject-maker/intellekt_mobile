@@ -39,6 +39,7 @@ class _FacultyProfileState extends State<FacultyProfile> {
   bool _dailyLoading = false;
 
   String _activeSection = '';
+  String _selectedAdminBatch = 'Regular Batch';
   String _myFilter = 'All';
   String _allFilter = 'All';
   String _dailyFilter = 'All';
@@ -462,6 +463,11 @@ class _FacultyProfileState extends State<FacultyProfile> {
               ],
             ),
             const SizedBox(height: 24),
+            if (_isAdmin) ...[
+              _buildAdminBatchToggle(),
+              const SizedBox(height: 20),
+            ],
+            if (!_isAdmin || _selectedAdminBatch == 'Regular Batch') ...[
             const Text(
               'Teaching Tools',
               style: TextStyle(
@@ -631,9 +637,95 @@ class _FacultyProfileState extends State<FacultyProfile> {
               const SizedBox(height: 16),
               _AssignmentCard(onAssign: _showAssignmentForm),
             ],
+            ],
+            if (_isAdmin && _selectedAdminBatch == 'Test Batch') ...[
+              const Text(
+                'Test Batch Features',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildTestBatchTools(),
+            ],
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAdminBatchToggle() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF8B2CF5),
+        borderRadius: BorderRadius.circular(40),
+      ),
+      child: Row(
+        children: [
+          _batchToggleOption('Regular Batch'),
+          _batchToggleOption('Test Batch'),
+        ],
+      ),
+    );
+  }
+
+  Widget _batchToggleOption(String label) {
+    final selected = _selectedAdminBatch == label;
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(36),
+        onTap: () => setState(() {
+          _selectedAdminBatch = label;
+          _activeSection = '';
+        }),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 8),
+          decoration: BoxDecoration(
+            color: selected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(36),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: selected ? const Color(0xFF8B2CF5) : Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTestBatchTools() {
+    return Row(
+      children: [
+        Expanded(
+          child: _TeachingToolCard(
+            icon: Icons.groups_2_outlined,
+            title: 'Test Batch Registration Status',
+            subtitle: 'Registered, completed and lapsed students',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => TestBatchStudentStatusScreen(adminId: _id),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _TeachingToolCard(
+            icon: Icons.fact_check_outlined,
+            title: 'Test Batch Administration',
+            subtitle: 'Post tests, enter marks and attendance',
+            onTap: () => context.push(AppRoutes.testBatchAdminActions),
+          ),
+        ),
+      ],
     );
   }
 
@@ -711,28 +803,6 @@ class _FacultyProfileState extends State<FacultyProfile> {
         ),
       );
 
-      boxes.add(
-        _TaskBox(
-          title: 'Test Batch Registration Status',
-          description: 'View Test Batch students by registration status.',
-          active: false,
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => TestBatchStudentStatusScreen(adminId: _id),
-            ),
-          ),
-        ),
-      );
-
-      boxes.add(
-        _TaskBox(
-          title: 'Test Batch Admin Actions',
-          description:
-              'Post tests, enter marks and record Test Batch attendance.',
-          active: false,
-          onTap: () => context.push(AppRoutes.testBatchAdminActions),
-        ),
-      );
     }
 
     boxes.add(

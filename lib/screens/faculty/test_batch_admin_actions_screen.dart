@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
 import 'test_batch_edit_requests_screen.dart';
+import 'test_batch_students_screen.dart';
 
 /// Mobile Test Batch actions for admins IG001 / IG002 and faculty IG003 onward.
 /// All records are loaded from and saved to the dedicated Test Batch API.
@@ -32,6 +33,7 @@ class _TestBatchAdminActionsScreenState extends State<TestBatchAdminActionsScree
   }
   late final TabController _tabs;
   bool _isAuthorized = false;
+  bool get _isAdmin => const {'IG001', 'IG002'}.contains(widget.adminId.trim().toUpperCase());
 
   @override
   void initState() {
@@ -43,7 +45,7 @@ class _TestBatchAdminActionsScreenState extends State<TestBatchAdminActionsScree
             ? 2
             : widget.initialTabIndex;
     _tabs = TabController(
-      length: 4,
+      length: _isAdmin ? 5 : 4,
       vsync: this,
       initialIndex: safeInitialIndex,
     );
@@ -80,11 +82,12 @@ class _TestBatchAdminActionsScreenState extends State<TestBatchAdminActionsScree
           dividerColor: Colors.transparent,
           labelStyle: const TextStyle(fontWeight: FontWeight.w700),
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
-          tabs: const [
-            Tab(icon: Icon(Icons.post_add_outlined), text: 'Post Test'),
-            Tab(icon: Icon(Icons.edit_note_outlined), text: 'Enter Marks'),
-            Tab(icon: Icon(Icons.fact_check_outlined), text: 'Attendance'),
-            Tab(icon: Icon(Icons.rule_outlined), text: 'Edit Requests'),
+          tabs: [
+            const Tab(icon: Icon(Icons.post_add_outlined), text: 'Post Test'),
+            const Tab(icon: Icon(Icons.edit_note_outlined), text: 'Enter Marks'),
+            const Tab(icon: Icon(Icons.fact_check_outlined), text: 'Attendance'),
+            const Tab(icon: Icon(Icons.rule_outlined), text: 'Edit Requests'),
+            if (_isAdmin) const Tab(icon: Icon(Icons.people_alt_outlined), text: 'Students'),
           ],
         ),
       ),
@@ -95,6 +98,7 @@ class _TestBatchAdminActionsScreenState extends State<TestBatchAdminActionsScree
           _EnterMarksTab(api: _api, adminId: widget.adminId),
           _AttendanceTab(api: _api, adminId: widget.adminId),
           TestBatchEditRequestsScreen(userId: widget.adminId),
+          if (_isAdmin) TestBatchStudentsScreen(adminId: widget.adminId),
         ],
       ),
     );

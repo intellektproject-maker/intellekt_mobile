@@ -69,18 +69,32 @@ class _FacultyManageAttendanceScreenState extends State<FacultyManageAttendanceS
     if (selected == null || selected == current) return;
     final dateText = (row['attendance_date'] ?? '').toString().split('T').first;
     try {
-      await _api.put('/attendance', data: {
-        'records': [{'roll_no': row['roll_no'], 'status': selected}],
-        'subject': row['subject_id'],
-        'facultyId': widget.facultyId,
-        'date': dateText,
-      });
-      if (!mounted) return;
-      setState(() {
-        final i = _rows.indexWhere((r) => (r['roll_no'] ?? '') == (row['roll_no'] ?? '') && (r['attendance_date'] ?? '') == (row['attendance_date'] ?? '') && (r['subject_id'] ?? '') == (row['subject_id'] ?? ''));
-        if (i >= 0) _rows[i]['status'] = selected;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Attendance updated.')));
+      final facultyId = widget.facultyId.trim().toUpperCase();
+      if (facultyId == 'IG001' || facultyId == 'IG002') {
+        await _api.put('/attendance', data: {
+          'records': [{'roll_no': row['roll_no'], 'status': selected}],
+          'subject': row['subject_id'],
+          'facultyId': facultyId,
+          'date': dateText,
+        });
+        if (!mounted) return;
+        setState(() {
+          final i = _rows.indexWhere((r) => (r['roll_no'] ?? '') == (row['roll_no'] ?? '') && (r['attendance_date'] ?? '') == (row['attendance_date'] ?? '') && (r['subject_id'] ?? '') == (row['subject_id'] ?? ''));
+          if (i >= 0) _rows[i]['status'] = selected;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Attendance updated.')));
+      } else {
+        await _api.post('/record-edit-requests', data: {
+          'facultyId': facultyId,
+          'recordType': 'attendance',
+          'roll_no': (row['roll_no'] ?? '').toString(),
+          'subject_id': row['subject_id'],
+          'attendance_date': dateText,
+          'requested_value': selected,
+        });
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Edit permission request sent to IG001 and IG002.')));
+      }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update failed: ${e.toString().replaceFirst('Exception: ', '')}')));
     }

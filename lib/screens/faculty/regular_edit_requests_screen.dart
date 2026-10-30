@@ -44,14 +44,41 @@ class _RegularEditRequestsScreenState extends State<RegularEditRequestsScreen> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final response = await _api.get(
-        _isAdmin ? '/record-edit-requests' : '/record-edit-requests/approved',
-        queryParameters: _isAdmin ? {'adminId': _id} : {'facultyId': _id},
-      );
-      _requests = response.data is List
-          ? (response.data as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
-          : [];
-      _requests = _requests.where((r) => r['status'] != 'Applied').toList();
+      // Keep Regular Student and Test Batch requests together in this one screen.
+      final responses = await Future.wait([
+        _api.get(
+          _isAdmin ? '/record-edit-requests' : '/record-edit-requests/approved',
+          queryParameters: _isAdmin ? {'adminId': _id} : {'facultyId': _id},
+        ),
+        _api.get(
+          _isAdmin
+              ? '/test-batch/record-edit-requests'
+              : '/test-batch/record-edit-requests/approved',
+          queryParameters: _isAdmin ? {'adminId': _id} : {'facultyId': _id},
+        ),
+      ]);
+      List<Map<String, dynamic>> rows(dynamic data, String source) {
+        if (data is! List) return [];
+        return data
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e)..['_source'] = source)
+            .where((r) => r['status'] != 'Applied')
+            .toList();
+      }
+      _requests = [
+        ...rows(responses[0].data, 'regular'),
+        ...rows(responses[1].data, 'test_batch'),
+      ];
+      _requests.sort((a, b) {
+        if (_isAdmin) {
+          final pendingOrder = (a['status'] == 'Pending' ? 0 : 1) -
+              (b['status'] == 'Pending' ? 0 : 1);
+          if (pendingOrder != 0) return pendingOrder;
+        }
+        return DateTime.tryParse((b['created_at'] ?? '').toString())
+                ?.compareTo(DateTime.tryParse((a['created_at'] ?? '').toString()) ?? DateTime.fromMillisecondsSinceEpoch(0)) ??
+            0;
+      });
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
     } finally {
@@ -107,7 +134,8 @@ class _RegularEditRequestsScreenState extends State<RegularEditRequestsScreen> {
     );
     if (confirmed != true) return;
     try {
-      await _api.put('/record-edit-requests/${request['id']}/review', data: {'adminId': _id, 'decision': decision});
+      final source = request['_source'] == 'test_batch' ? 'test-batch/record-edit-requests' : 'record-edit-requests';
+      await _api.put('/$source/${request['id']}/review', data: {'adminId': _id, 'decision': decision});
       await _load();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
@@ -115,6 +143,25 @@ class _RegularEditRequestsScreenState extends State<RegularEditRequestsScreen> {
   }
 
   Future<void> _apply(Map<String, dynamic> request) async {
+    if (request['_source'] == 'test_batch') {
+      try {
+        await _api.post(
+          '/test-batch/record-edit-requests/${request['id']}/apply',
+          data: {'facultyId': _id},
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Approved Test Batch edit applied successfully.')),
+          );
+        }
+        await _load();
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+      return;
+    }
     final controller = TextEditingController();
     final type = (request['record_type'] ?? '').toString();
     final value = await showDialog<String>(
@@ -222,7 +269,9 @@ class _RegularEditRequestsScreenState extends State<RegularEditRequestsScreen> {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(student, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                   const SizedBox(height: 4),
-                  Text('Request #${r['id']} • $record'),
+                  Text('${r['_source'] == 'test_batch' ? 'Test Batch' : 'Regular Student'} • Request #${r['id']}'),
+                  const SizedBox(height: 4),
+                  Text(record),
                   const SizedBox(height: 6),
                   Text('Faculty: ${r['requested_by_name'] ?? r['requested_by'] ?? '-'}'),
                   const SizedBox(height: 6),

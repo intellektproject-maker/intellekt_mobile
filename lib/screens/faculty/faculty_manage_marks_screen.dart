@@ -3,7 +3,8 @@ import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
 
 class FacultyManageMarksScreen extends StatefulWidget {
-  const FacultyManageMarksScreen({super.key});
+  final String facultyId;
+  const FacultyManageMarksScreen({super.key, required this.facultyId});
 
   @override
   State<FacultyManageMarksScreen> createState() => _FacultyManageMarksScreenState();
@@ -54,11 +55,19 @@ class _FacultyManageMarksScreenState extends State<FacultyManageMarksScreen> {
     ));
     if (confirmed != true) return;
     try {
-      await _api.put('/marks/${Uri.encodeComponent((row['roll_no'] ?? '').toString())}/${Uri.encodeComponent((row['test_code'] ?? '').toString())}', data: {'marks': value});
-      if (!mounted) return;
-      setState(() => _editingIndex = null);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Marks updated successfully.')));
-      await _load();
+      final facultyId = widget.facultyId.trim().toUpperCase();
+      if (facultyId == 'IG001' || facultyId == 'IG002') {
+        await _api.put('/marks/${Uri.encodeComponent((row['roll_no'] ?? '').toString())}/${Uri.encodeComponent((row['test_code'] ?? '').toString())}', data: {'marks': value});
+        if (!mounted) return;
+        setState(() => _editingIndex = null);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Marks updated successfully.')));
+        await _load();
+      } else {
+        await _api.post('/record-edit-requests', data: {'facultyId': facultyId, 'recordType': 'marks', 'roll_no': (row['roll_no'] ?? '').toString(), 'test_code': (row['test_code'] ?? '').toString(), 'requested_value': value.toString()});
+        if (!mounted) return;
+        setState(() => _editingIndex = null);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Edit permission request sent to IG001 and IG002.')));
+      }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update failed: ${e.toString().replaceFirst('Exception: ', '')}')));
     }

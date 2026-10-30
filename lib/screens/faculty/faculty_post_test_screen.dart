@@ -16,7 +16,8 @@ class _FacultyPostTestScreenState extends State<FacultyPostTestScreen> {
   final _code = TextEditingController();
   final _marks = TextEditingController();
   final _portion = TextEditingController();
-  final _duration = TextEditingController(text: '60');
+  final _chapter = TextEditingController();
+  final _duration = TextEditingController(text: '90');
   List<Map<String, dynamic>> _classes = [];
   List<Map<String, dynamic>> _tests = [];
   String _subject = '1';
@@ -41,6 +42,7 @@ class _FacultyPostTestScreenState extends State<FacultyPostTestScreen> {
     _code.dispose();
     _marks.dispose();
     _portion.dispose();
+    _chapter.dispose();
     _duration.dispose();
     super.dispose();
   }
@@ -106,7 +108,9 @@ class _FacultyPostTestScreenState extends State<FacultyPostTestScreen> {
       _code.text = _editingCode!;
       _marks.text = (test['total_marks'] ?? '').toString();
       _portion.text = (test['portion'] ?? '').toString();
-      _duration.text = (test['duration_minutes'] ?? 60).toString();
+      _chapter.text = (test['chapter'] ?? '').toString();
+      final savedDuration = (test['duration_minutes'] ?? 90).toString();
+      _duration.text = savedDuration == '180' ? '180' : '90';
       _subject = (test['subject_id'] ?? 1).toString();
       _class = (test['class'] ?? test['class_name'] ?? '').toString();
       _board = (test['board'] ?? '').toString();
@@ -127,7 +131,8 @@ class _FacultyPostTestScreenState extends State<FacultyPostTestScreen> {
       _code.clear();
       _marks.clear();
       _portion.clear();
-      _duration.text = '60';
+      _chapter.clear();
+      _duration.text = '90';
       _subject = '1';
       _class = '';
       _board = '';
@@ -173,6 +178,7 @@ class _FacultyPostTestScreenState extends State<FacultyPostTestScreen> {
         'test_date': _dateValue(_testDate!),
         'total_marks': num.parse(_marks.text),
         'portion': _portion.text.trim(),
+        'chapter': _chapter.text.trim(),
         'created_by': widget.facultyId,
         'class_name': _class,
         'board': _board,
@@ -380,24 +386,36 @@ class _FacultyPostTestScreenState extends State<FacultyPostTestScreen> {
                                   : null,
                             ),
                             const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _duration,
-                              keyboardType: TextInputType.number,
+                            DropdownButtonFormField<String>(
+                              value: _duration.text == '180' ? '180' : '90',
                               decoration: const InputDecoration(
-                                labelText: 'Duration (minutes)',
+                                labelText: 'Duration',
                                 border: OutlineInputBorder(),
                               ),
-                              validator: (v) =>
-                                  int.tryParse(v ?? '') == null ||
-                                      int.parse(v!) <= 0
-                                  ? 'Enter duration'
-                                  : null,
+                              items: const [
+                                DropdownMenuItem(value: '90', child: Text('90 minutes')),
+                                DropdownMenuItem(value: '180', child: Text('180 minutes')),
+                              ],
+                              onChanged: (value) => setState(() {
+                                _duration.text = value ?? '90';
+                              }),
                             ),
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _portion,
                               decoration: const InputDecoration(
-                                labelText: 'Portion / syllabus (optional)',
+                                labelText: 'Portion (optional)',
+                                hintText: 'Enter portion separately',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _chapter,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Chapter (optional)',
+                                hintText: 'Enter number',
                                 border: OutlineInputBorder(),
                               ),
                             ),

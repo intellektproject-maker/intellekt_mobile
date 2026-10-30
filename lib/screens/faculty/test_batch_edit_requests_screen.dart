@@ -70,8 +70,24 @@ class _TestBatchEditRequestsScreenState
               : <dynamic>[];
       if (!mounted) return;
       setState(() {
-        _requests = rows.whereType<Map>()
-            .map((row) => Map<String, dynamic>.from(row)).toList();
+        _requests = rows
+            .whereType<Map>()
+            .map((row) => Map<String, dynamic>.from(row))
+            // This mobile screen is only for individual marks and attendance
+            // edit approvals. Keep schedule and whole-test bulk requests out.
+            .where((request) {
+              final type = (request['record_type'] ?? '')
+                  .toString()
+                  .trim()
+                  .toLowerCase();
+              final rollNo = (request['roll_no'] ?? '')
+                  .toString()
+                  .trim()
+                  .toUpperCase();
+              return (type == 'marks' || type == 'attendance') &&
+                  rollNo != '*';
+            })
+            .toList();
         _loading = false;
       });
     } catch (error) {

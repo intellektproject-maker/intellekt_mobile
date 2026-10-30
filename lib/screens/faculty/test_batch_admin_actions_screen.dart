@@ -79,10 +79,10 @@ class _TestBatchAdminActionsScreenState extends State<TestBatchAdminActionsScree
           dividerColor: Colors.transparent,
           labelStyle: const TextStyle(fontWeight: FontWeight.w700),
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
-          tabs: const [
-            Tab(icon: Icon(Icons.post_add_outlined), text: 'Post Test'),
-            Tab(icon: Icon(Icons.edit_note_outlined), text: 'Enter Marks'),
-            Tab(icon: Icon(Icons.fact_check_outlined), text: 'Attendance'),
+          tabs: [
+            const Tab(icon: Icon(Icons.post_add_outlined), text: 'Post Test'),
+            const Tab(icon: Icon(Icons.edit_note_outlined), text: 'Enter Marks'),
+            const Tab(icon: Icon(Icons.fact_check_outlined), text: 'Attendance'),
           ],
         ),
       ),

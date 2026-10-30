@@ -9,6 +9,8 @@ import '../../repositories/faculty_task_repository.dart';
 import 'task_assignment_screen.dart';
 import 'test_batch_student_status_screen.dart';
 import 'test_batch_admin_actions_screen.dart';
+import 'test_batch_edit_requests_screen.dart';
+import 'test_batch_students_screen.dart';
 import '../../routes/app_routes.dart';
 
 class FacultyProfile extends StatefulWidget {
@@ -735,6 +737,22 @@ class _FacultyProfileState extends State<FacultyProfile> {
       );
     }
 
+    Widget standaloneCard({
+      required IconData icon,
+      required String title,
+      required String subtitle,
+      required Widget screen,
+    }) {
+      return _TeachingToolCard(
+        icon: icon,
+        title: title,
+        subtitle: subtitle,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => screen),
+        ),
+      );
+    }
+
     return Column(
       children: [
         Row(
@@ -782,6 +800,31 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 title: 'Attendance',
                 subtitle: 'Mark attendance by writing date',
                 tabIndex: 2,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: standaloneCard(
+                icon: Icons.rule_outlined,
+                title: 'Edit Requests',
+                subtitle: _isAdmin
+                    ? 'Review faculty edit requests'
+                    : 'Request permission to edit records',
+                screen: TestBatchEditRequestsScreen(userId: _id),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: standaloneCard(
+                icon: Icons.people_alt_outlined,
+                title: 'Students',
+                subtitle: 'View and manage Test Batch students',
+                screen: TestBatchStudentsScreen(adminId: _id),
               ),
             ),
           ],

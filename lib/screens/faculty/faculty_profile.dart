@@ -375,6 +375,7 @@ class _FacultyProfileState extends State<FacultyProfile> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      drawer: _showRegularBatchTools ? _buildRegularBatchDrawer() : null,
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.primary,
@@ -477,112 +478,6 @@ class _FacultyProfileState extends State<FacultyProfile> {
             ],
             if (!_canAccessTestBatch || _selectedAdminBatch == 'Regular Batch') ...[
             const Text(
-              'Teaching Tools',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _TeachingToolCard(
-                    icon: Icons.groups_2_outlined,
-                    title: 'Registered Students',
-                    subtitle: 'Browse registrations',
-                    onTap: () =>
-                        context.push(AppRoutes.facultyRegisteredStudents),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _TeachingToolCard(
-                    icon: Icons.edit_note_outlined,
-                    title: 'Manage Marks',
-                    subtitle: 'Review and correct marks',
-                    onTap: () => context.push(AppRoutes.facultyManageMarks),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _TeachingToolCard(
-                    icon: Icons.edit_note_outlined,
-                    title: 'Enter Marks',
-                    subtitle: 'Record test results',
-                    onTap: () => context.push(AppRoutes.facultyEnterMarks),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _TeachingToolCard(
-                    icon: Icons.assignment_outlined,
-                    title: 'Post Test',
-                    subtitle: 'Create or edit tests',
-                    onTap: () => context.push(AppRoutes.facultyPostTest),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _TeachingToolCard(
-                    icon: Icons.fact_check_outlined,
-                    title: 'Enter Attendance',
-                    subtitle: 'Record class attendance',
-                    onTap: () => context.push(AppRoutes.facultyEnterAttendance),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _TeachingToolCard(
-                    icon: Icons.calendar_month_outlined,
-                    title: 'Manage Attendance',
-                    subtitle: 'Review and correct records',
-                    onTap: () =>
-                        context.push(AppRoutes.facultyManageAttendance),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (_isAdmin) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: _TeachingToolCard(
-                      icon: Icons.mark_email_unread_outlined,
-                      title: 'Enquiries & Requests',
-                      subtitle: 'Review enquiries and requests',
-                      onTap: () =>
-                          context.push(AppRoutes.facultyEnquiriesRequests),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-            ],
-            Row(
-              children: [
-                Expanded(
-                  child: _TeachingToolCard(
-                    icon: Icons.analytics_outlined,
-                    title: 'Student Records',
-                    subtitle: 'View marks and attendance',
-                    onTap: () => context.push(AppRoutes.facultyStudentRecords),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 28),
-            const Text(
               'Task Management',
               style: TextStyle(
                 color: AppColors.primary,
@@ -660,6 +555,113 @@ class _FacultyProfileState extends State<FacultyProfile> {
               const SizedBox(height: 12),
               _buildTestBatchTools(),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool get _showRegularBatchTools =>
+      !_canAccessTestBatch || _selectedAdminBatch == 'Regular Batch';
+
+  Widget _buildRegularBatchDrawer() {
+    Widget destination({
+      required IconData icon,
+      required String title,
+      required String route,
+    }) {
+      return ListTile(
+        leading: Icon(icon, color: AppColors.primary),
+        title: Text(title),
+        onTap: () {
+          Navigator.of(context).pop();
+          context.push(route);
+        },
+      );
+    }
+
+    return Drawer(
+      child: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+              color: AppColors.primary,
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.menu_book_rounded, color: Colors.white, size: 32),
+                  SizedBox(height: 12),
+                  Text(
+                    'Teaching Tools',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Regular Batch',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+            ExpansionTile(
+              leading: const Icon(Icons.assignment_outlined, color: AppColors.primary),
+              title: const Text('Test'),
+              children: [
+                destination(
+                  icon: Icons.edit_note_outlined,
+                  title: 'Enter Marks',
+                  route: AppRoutes.facultyEnterMarks,
+                ),
+                destination(
+                  icon: Icons.fact_check_outlined,
+                  title: 'Manage Marks',
+                  route: AppRoutes.facultyManageMarks,
+                ),
+                destination(
+                  icon: Icons.post_add_outlined,
+                  title: 'Post Test',
+                  route: AppRoutes.facultyPostTest,
+                ),
+                destination(
+                  icon: Icons.groups_2_outlined,
+                  title: 'Registered Students',
+                  route: AppRoutes.facultyRegisteredStudents,
+                ),
+              ],
+            ),
+            ExpansionTile(
+              leading: const Icon(Icons.calendar_month_outlined, color: AppColors.primary),
+              title: const Text('Attendance'),
+              children: [
+                destination(
+                  icon: Icons.fact_check_outlined,
+                  title: 'Enter Attendance',
+                  route: AppRoutes.facultyEnterAttendance,
+                ),
+                destination(
+                  icon: Icons.edit_calendar_outlined,
+                  title: 'Manage Attendance',
+                  route: AppRoutes.facultyManageAttendance,
+                ),
+              ],
+            ),
+            if (_isAdmin)
+              destination(
+                icon: Icons.mark_email_unread_outlined,
+                title: 'Enquiries & Requests',
+                route: AppRoutes.facultyEnquiriesRequests,
+              ),
+            destination(
+              icon: Icons.analytics_outlined,
+              title: 'Student Records',
+              route: AppRoutes.facultyStudentRecords,
+            ),
           ],
         ),
       ),

@@ -9,6 +9,8 @@ import '../../repositories/faculty_task_repository.dart';
 import 'task_assignment_screen.dart';
 import 'test_batch_student_status_screen.dart';
 import 'test_batch_admin_actions_screen.dart';
+import 'test_batch_edit_requests_screen.dart';
+import 'test_batch_students_screen.dart';
 import '../../routes/app_routes.dart';
 
 class FacultyProfile extends StatefulWidget {

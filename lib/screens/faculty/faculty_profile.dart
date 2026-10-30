@@ -9,7 +9,6 @@ import '../../repositories/faculty_task_repository.dart';
 import 'task_assignment_screen.dart';
 import 'test_batch_student_status_screen.dart';
 import 'test_batch_admin_actions_screen.dart';
-import 'test_batch_edit_requests_screen.dart';
 import 'test_batch_students_screen.dart';
 import 'regular_edit_requests_screen.dart';
 import '../../routes/app_routes.dart';
@@ -731,7 +730,6 @@ class _FacultyProfileState extends State<FacultyProfile> {
       required IconData icon,
       required String title,
       required String subtitle,
-      required int tabIndex,
     }) {
       return _TeachingToolCard(
         icon: icon,
@@ -741,7 +739,7 @@ class _FacultyProfileState extends State<FacultyProfile> {
           MaterialPageRoute(
             builder: (_) => TestBatchAdminActionsScreen(
               adminId: _id,
-              initialTabIndex: tabIndex,
+              initialTabIndex: 0,
             ),
           ),
         ),
@@ -784,10 +782,9 @@ class _FacultyProfileState extends State<FacultyProfile> {
             const SizedBox(width: 12),
             Expanded(
               child: actionCard(
-                icon: Icons.post_add_outlined,
-                title: 'Post Test',
-                subtitle: 'Create or edit Test Batch tests',
-                tabIndex: 0,
+                icon: Icons.dashboard_customize_outlined,
+                title: 'Test & Class Management',
+                subtitle: 'Post tests, enter marks and manage attendance',
               ),
             ),
           ],
@@ -796,40 +793,6 @@ class _FacultyProfileState extends State<FacultyProfile> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: actionCard(
-                icon: Icons.edit_note_outlined,
-                title: 'Enter Marks',
-                subtitle: 'Record marks for registered students',
-                tabIndex: 1,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: actionCard(
-                icon: Icons.fact_check_outlined,
-                title: 'Attendance',
-                subtitle: 'Mark attendance by writing date',
-                tabIndex: 2,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: standaloneCard(
-                icon: Icons.rule_outlined,
-                title: 'Edit Requests',
-                subtitle: _isAdmin
-                    ? 'Review faculty edit requests'
-                    : 'Request permission to edit records',
-                screen: TestBatchEditRequestsScreen(userId: _id),
-              ),
-            ),
-            const SizedBox(width: 12),
             Expanded(
               child: standaloneCard(
                 icon: Icons.people_alt_outlined,
@@ -838,6 +801,8 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 screen: TestBatchStudentsScreen(adminId: _id),
               ),
             ),
+            const SizedBox(width: 12),
+            const Expanded(child: SizedBox.shrink()),
           ],
         ),
       ],
@@ -1331,9 +1296,12 @@ class _TaskBox extends StatelessWidget {
                       Expanded(
                         child: Text(
                           title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: AppColors.primary,
-                            fontSize: 18,
+                            fontSize: 15,
+                            height: 1.15,
                             fontWeight: FontWeight.w800,
                           ),
                         ),

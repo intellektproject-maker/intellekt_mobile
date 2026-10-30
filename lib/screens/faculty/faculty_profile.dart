@@ -11,6 +11,7 @@ import 'test_batch_student_status_screen.dart';
 import 'test_batch_admin_actions_screen.dart';
 import 'test_batch_edit_requests_screen.dart';
 import 'test_batch_students_screen.dart';
+import 'regular_edit_requests_screen.dart';
 import '../../routes/app_routes.dart';
 
 class FacultyProfile extends StatefulWidget {
@@ -653,6 +654,16 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 ),
               ],
             ),
+            ListTile(
+              leading: const Icon(Icons.rule_outlined, color: AppColors.primary),
+              title: const Text('Edit Requests'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => RegularEditRequestsScreen(userId: _id),
+                ));
+              },
+            ),
             if (_isAdmin)
               destination(
                 icon: Icons.mark_email_unread_outlined,
@@ -909,6 +920,36 @@ class _FacultyProfileState extends State<FacultyProfile> {
 
     }
 
+    if (!_isAdmin) {
+      boxes.add(
+        _TaskBox(
+          title: 'Edit Requests',
+          description: 'Request permission to edit marks or attendance.',
+          active: false,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => RegularEditRequestsScreen(userId: _id)),
+          ),
+        ),
+      );
+      boxes.add(
+        _TaskBox(
+          title: 'Student Records',
+          description: 'View student academic records.',
+          active: false,
+          onTap: () => context.push(AppRoutes.facultyStudentRecords),
+        ),
+      );
+      boxes.add(
+        _TaskBox(
+          title: 'Notifications',
+          description: 'View faculty notifications and updates.',
+          notification: _notifications.isNotEmpty,
+          active: false,
+          onTap: () => context.push(AppRoutes.facultyNotifications),
+        ),
+      );
+    }
+
     boxes.add(
       _TaskBox(
         title: 'My Task Checklist',
@@ -938,13 +979,14 @@ class _FacultyProfileState extends State<FacultyProfile> {
       ),
     );
 
-    return Column(
-      children: boxes
-          .map(
-            (box) =>
-                Padding(padding: const EdgeInsets.only(bottom: 12), child: box),
-          )
-          .toList(),
+    return GridView.count(
+      crossAxisCount: 2,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: 1.12,
+      children: boxes,
     );
   }
 

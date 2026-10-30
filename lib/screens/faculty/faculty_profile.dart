@@ -733,6 +733,22 @@ class _FacultyProfileState extends State<FacultyProfile> {
       );
     }
 
+    Widget standaloneCard({
+      required IconData icon,
+      required String title,
+      required String subtitle,
+      required Widget screen,
+    }) {
+      return _TeachingToolCard(
+        icon: icon,
+        title: title,
+        subtitle: subtitle,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => screen),
+        ),
+      );
+    }
+
     return Column(
       children: [
         Row(
@@ -782,6 +798,34 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 tabIndex: 2,
               ),
             ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: standaloneCard(
+                icon: Icons.rule_outlined,
+                title: 'Edit Requests',
+                subtitle: _isAdmin
+                    ? 'Review faculty edit requests'
+                    : 'Request permission to edit records',
+                screen: TestBatchEditRequestsScreen(userId: _id),
+              ),
+            ),
+            if (_isAdmin) ...[
+              const SizedBox(width: 12),
+              Expanded(
+                child: standaloneCard(
+                  icon: Icons.people_alt_outlined,
+                  title: 'Students',
+                  subtitle: 'Manage Test Batch students',
+                  screen: TestBatchStudentsScreen(adminId: _id),
+                ),
+              ),
+            ] else
+              const Expanded(child: SizedBox.shrink()),
           ],
         ),
       ],

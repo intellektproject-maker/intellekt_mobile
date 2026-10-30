@@ -816,18 +816,15 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 screen: TestBatchEditRequestsScreen(userId: _id),
               ),
             ),
-            if (_isAdmin) ...[
-              const SizedBox(width: 12),
-              Expanded(
-                child: standaloneCard(
-                  icon: Icons.people_alt_outlined,
-                  title: 'Students',
-                  subtitle: 'Manage Test Batch students',
-                  screen: TestBatchStudentsScreen(adminId: _id),
-                ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: standaloneCard(
+                icon: Icons.people_alt_outlined,
+                title: 'Students',
+                subtitle: 'View and manage Test Batch students',
+                screen: TestBatchStudentsScreen(adminId: _id),
               ),
-            ] else
-              const Expanded(child: SizedBox.shrink()),
+            ),
           ],
         ),
       ],

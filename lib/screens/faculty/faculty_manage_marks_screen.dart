@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
 
 class FacultyManageMarksScreen extends StatefulWidget {
-  final String facultyId;
-  const FacultyManageMarksScreen({super.key, required this.facultyId});
+  const FacultyManageMarksScreen({super.key});
 
   @override
   State<FacultyManageMarksScreen> createState() => _FacultyManageMarksScreenState();
@@ -55,7 +56,7 @@ class _FacultyManageMarksScreenState extends State<FacultyManageMarksScreen> {
     ));
     if (confirmed != true) return;
     try {
-      final facultyId = widget.facultyId.trim().toUpperCase();
+      final facultyId = (Provider.of<AuthProvider>(context, listen: false).user?.id ?? '').trim().toUpperCase();
       if (facultyId == 'IG001' || facultyId == 'IG002') {
         await _api.put('/marks/${Uri.encodeComponent((row['roll_no'] ?? '').toString())}/${Uri.encodeComponent((row['test_code'] ?? '').toString())}', data: {'marks': value});
         if (!mounted) return;

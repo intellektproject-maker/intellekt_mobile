@@ -1300,7 +1300,7 @@ class _TaskBox extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: AppColors.primary,
-                            fontSize: 15,
+                            fontSize: 14,
                             height: 1.15,
                             fontWeight: FontWeight.w800,
                           ),
@@ -1320,7 +1320,13 @@ class _TaskBox extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     description,
-                    style: const TextStyle(color: AppColors.textSecondary),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      height: 1.2,
+                    ),
                   ),
                 ],
               ),

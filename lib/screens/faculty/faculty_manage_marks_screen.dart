@@ -49,10 +49,17 @@ class _FacultyManageMarksScreenState extends State<FacultyManageMarksScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter valid marks within the total marks.')));
       return;
     }
+    final currentFacultyId = (Provider.of<AuthProvider>(context, listen: false).user?.id ?? '').trim().toUpperCase();
+    final isAdmin = currentFacultyId == 'IG001' || currentFacultyId == 'IG002';
     final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
-      title: const Text('Update marks?'),
-      content: Text('Save ${value.toString()} marks for ${row['name'] ?? row['student_name'] ?? row['roll_no']}?'),
-      actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save'))],
+      title: Text(isAdmin ? 'Update marks?' : 'Request edit approval?'),
+      content: Text(isAdmin
+          ? 'Save ${value.toString()} marks for ${row['name'] ?? row['student_name'] ?? row['roll_no']}?'
+          : 'Request permission to edit marks for ${row['name'] ?? row['student_name'] ?? row['roll_no']}?'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(isAdmin ? 'Save' : 'Send request')),
+      ],
     ));
     if (confirmed != true) return;
     try {

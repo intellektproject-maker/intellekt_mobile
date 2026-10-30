@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
 
-/// Admin-only Test Batch student management. Uses isolated /test-batch APIs.
+/// Test Batch student management for authorized Admin and Faculty users.
 class TestBatchStudentsScreen extends StatefulWidget {
   final String adminId;
   const TestBatchStudentsScreen({super.key, required this.adminId});
@@ -119,11 +119,55 @@ class _TestBatchStudentsScreenState extends State<TestBatchStudentsScreen> {
               const SizedBox(height: 10),
               TextField(controller: _name, decoration: const InputDecoration(labelText: 'Student name', border: OutlineInputBorder())),
               const SizedBox(height: 10),
-              TextField(controller: _className, decoration: const InputDecoration(labelText: 'Class', border: OutlineInputBorder())),
+              DropdownButtonFormField<String>(
+                value: const ['11', '12'].contains(_className.text) ? _className.text : null,
+                decoration: const InputDecoration(labelText: 'Class', border: OutlineInputBorder()),
+                items: const [
+                  DropdownMenuItem(value: '11', child: Text('Class 11')),
+                  DropdownMenuItem(value: '12', child: Text('Class 12')),
+                ],
+                validator: (value) => value == null ? 'Select a class' : null,
+                onChanged: (value) {
+                  if (value != null) {
+                    _className.text = value;
+                    setSheetState(() {});
+                  }
+                },
+              ),
               const SizedBox(height: 10),
-              TextField(controller: _board, decoration: const InputDecoration(labelText: 'Board', border: OutlineInputBorder())),
+              DropdownButtonFormField<String>(
+                value: const ['State Board', 'CBSE', 'ICSE', 'ISC'].contains(_board.text)
+                    ? _board.text
+                    : null,
+                decoration: const InputDecoration(labelText: 'Board', border: OutlineInputBorder()),
+                items: const [
+                  DropdownMenuItem(value: 'State Board', child: Text('State Board')),
+                  DropdownMenuItem(value: 'CBSE', child: Text('CBSE')),
+                  DropdownMenuItem(value: 'ICSE', child: Text('ICSE')),
+                  DropdownMenuItem(value: 'ISC', child: Text('ISC')),
+                ],
+                onChanged: (value) {
+                  _board.text = value ?? '';
+                  setSheetState(() {});
+                },
+              ),
               const SizedBox(height: 10),
-              TextField(controller: _subjects, decoration: const InputDecoration(labelText: 'Subjects (Mathematics / Physics / Both)', border: OutlineInputBorder())),
+              DropdownButtonFormField<String>(
+                value: const ['Mathematics', 'Physics', 'Both'].contains(_subjects.text)
+                    ? _subjects.text
+                    : null,
+                decoration: const InputDecoration(labelText: 'Enrolled Subjects', border: OutlineInputBorder()),
+                items: const [
+                  DropdownMenuItem(value: 'Mathematics', child: Text('Mathematics')),
+                  DropdownMenuItem(value: 'Physics', child: Text('Physics')),
+                  DropdownMenuItem(value: 'Both', child: Text('Both')),
+                ],
+                validator: (value) => value == null ? 'Select enrolled subjects' : null,
+                onChanged: (value) {
+                  _subjects.text = value ?? '';
+                  setSheetState(() {});
+                },
+              ),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
                 value: _series.any((s) => s['id'].toString() == _seriesId) ? _seriesId : null,
@@ -139,9 +183,9 @@ class _TestBatchStudentsScreenState extends State<TestBatchStudentsScreen> {
               FilledButton(
                 onPressed: _saving ? null : () async {
                   if (_roll.text.trim().isEmpty || _name.text.trim().isEmpty ||
-                      _className.text.trim().isEmpty || _seriesId == null) {
+                      _className.text.trim().isEmpty || _subjects.text.trim().isEmpty || _seriesId == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Roll, name, class and test series are required.')));
+                      const SnackBar(content: Text('Roll, name, class, subjects and test series are required.')));
                     return;
                   }
                   setSheetState(() {});

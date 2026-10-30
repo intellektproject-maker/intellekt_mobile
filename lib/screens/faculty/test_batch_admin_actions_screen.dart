@@ -31,7 +31,6 @@ class _TestBatchAdminActionsScreenState extends State<TestBatchAdminActionsScree
   }
   late final TabController _tabs;
   bool _isAuthorized = false;
-  bool get _isAdmin => const {'IG001', 'IG002'}.contains(widget.adminId.trim().toUpperCase());
 
   @override
   void initState() {

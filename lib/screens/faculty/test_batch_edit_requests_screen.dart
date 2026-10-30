@@ -133,6 +133,27 @@ class _TestBatchEditRequestsScreenState
     }
   }
 
+  Future<void> _applyApproved(Map<String, dynamic> request) async {
+    final id = request['id'];
+    if (id == null) return;
+    setState(() { _saving = true; _error = null; });
+    try {
+      await _api.post('/test-batch/record-edit-requests/$id/apply', data: {
+        'facultyId': _id,
+      });
+      await _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Approved change applied successfully.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) setState(() => _error = _errorText(error));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   String? _required(String? value) =>
       value == null || value.trim().isEmpty ? 'Required' : null;
 
@@ -263,6 +284,16 @@ class _TestBatchEditRequestsScreenState
             Text(record),
             Text('Faculty: ${request['requested_by_name'] ?? request['requested_by'] ?? '-'}'),
             Text('Change: ${request['original_value'] ?? '-'} → ${request['requested_value'] ?? '-'}'),
+            if (!_isAdmin && status.toLowerCase() == 'approved') ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: _saving ? null : () => _applyApproved(request),
+                  child: const Text('Apply approved change'),
+                ),
+              ),
+            ],
             if (_isAdmin && isPending) ...[
               const SizedBox(height: 10),
               TextField(controller: _note,

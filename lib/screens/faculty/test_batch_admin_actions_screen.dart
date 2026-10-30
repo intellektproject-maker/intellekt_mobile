@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
+import 'test_batch_edit_requests_screen.dart';
 
 /// Mobile Test Batch actions for admins IG001 / IG002 and faculty IG003 onward.
 /// All records are loaded from and saved to the dedicated Test Batch API.
@@ -42,7 +43,7 @@ class _TestBatchAdminActionsScreenState extends State<TestBatchAdminActionsScree
             ? 2
             : widget.initialTabIndex;
     _tabs = TabController(
-      length: 3,
+      length: 4,
       vsync: this,
       initialIndex: safeInitialIndex,
     );
@@ -83,6 +84,7 @@ class _TestBatchAdminActionsScreenState extends State<TestBatchAdminActionsScree
             Tab(icon: Icon(Icons.post_add_outlined), text: 'Post Test'),
             Tab(icon: Icon(Icons.edit_note_outlined), text: 'Enter Marks'),
             Tab(icon: Icon(Icons.fact_check_outlined), text: 'Attendance'),
+            Tab(icon: Icon(Icons.rule_outlined), text: 'Edit Requests'),
           ],
         ),
       ),
@@ -92,6 +94,7 @@ class _TestBatchAdminActionsScreenState extends State<TestBatchAdminActionsScree
           _PostTestTab(api: _api, adminId: widget.adminId),
           _EnterMarksTab(api: _api, adminId: widget.adminId),
           _AttendanceTab(api: _api, adminId: widget.adminId),
+          TestBatchEditRequestsScreen(userId: widget.adminId),
         ],
       ),
     );

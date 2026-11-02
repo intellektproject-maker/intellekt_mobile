@@ -88,6 +88,7 @@ class _FacultyProfileState extends State<FacultyProfile> {
           _id,
         );
         notifications = notificationList
+            .where((item) => item['is_read'] != true)
             .map((item) => item['module_name']?.toString() ?? '')
             .where((item) => item.isNotEmpty)
             .toSet();

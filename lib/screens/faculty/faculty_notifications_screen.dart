@@ -160,6 +160,9 @@ class _FacultyNotificationsScreenState
           duration: const Duration(milliseconds: 260),
         );
       }
+      // Keep the AnimatedList mounted until its collapse/fade transition ends.
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
       setState(() => _busy = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Notifications moved to archive.')),

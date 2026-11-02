@@ -175,6 +175,50 @@ class FacultyTaskRepository {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getArchivedFacultyNotifications(String facultyId) async {
+    try {
+      final response = await _dio.get(
+        '/faculty-notifications/${facultyId.trim().toUpperCase()}/archived',
+      );
+      return _parseNotificationList(response.data);
+    } on DioException catch (e) {
+      throw Exception(_errorMessage(e, 'Unable to load archived notifications.'));
+    }
+  }
+
+  Future<void> markAllFacultyNotificationsRead(String facultyId) async {
+    try {
+      await _dio.put(
+        '/faculty-notifications/read-all/${facultyId.trim().toUpperCase()}',
+      );
+    } on DioException catch (e) {
+      throw Exception(_errorMessage(e, 'Unable to mark notifications as read.'));
+    }
+  }
+
+  Future<void> archiveAllFacultyNotifications(String facultyId) async {
+    try {
+      await _dio.put(
+        '/faculty-notifications/archive-all/${facultyId.trim().toUpperCase()}',
+      );
+    } on DioException catch (e) {
+      throw Exception(_errorMessage(e, 'Unable to archive notifications.'));
+    }
+  }
+
+  Future<void> restoreFacultyNotification({
+    required String facultyId,
+    required int notificationId,
+  }) async {
+    try {
+      await _dio.put(
+        '/faculty-notifications/restore/${facultyId.trim().toUpperCase()}/$notificationId',
+      );
+    } on DioException catch (e) {
+      throw Exception(_errorMessage(e, 'Unable to restore notification.'));
+    }
+  }
+
   Future<void> markSingleNotificationRead({required String facultyId, required int notificationId}) async {
     try {
       await _dio.put('/faculty-notifications/read/${facultyId.trim().toUpperCase()}/$notificationId');

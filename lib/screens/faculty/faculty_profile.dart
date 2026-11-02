@@ -1029,7 +1029,7 @@ class _TaskPanel extends StatelessWidget {
           mainAxisSpacing: 10,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 1.8,
+          childAspectRatio: 1.5,
           children: [
             _StatBox(
               label: 'Pending',

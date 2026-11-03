@@ -101,7 +101,16 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
               (wanted.contains('math') && name.contains('math')) ||
               (wanted.contains('phys') && name.contains('phys'));
         }).map((s) => int.tryParse(s['subject_id'].toString())).whereType<int>().toList();
-        _subjectChoice = _selectedSubjectIds.length > 1 ? 'Both' : _selectedSubjectIds.isEmpty ? null : _subjects.firstWhere((s) => s['subject_id'].toString() == _selectedSubjectIds.first.toString())['subject_name'].toString();
+        final selectedName = _selectedSubjectIds.isEmpty
+            ? ''
+            : _subjects.firstWhere((s) => s['subject_id'].toString() == _selectedSubjectIds.first.toString())['subject_name'].toString().toLowerCase();
+        _subjectChoice = _selectedSubjectIds.length > 1
+            ? 'Both'
+            : selectedName.contains('math')
+                ? 'Mathematics'
+                : selectedName.contains('phys')
+                    ? 'Physics'
+                    : null;
       }
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');

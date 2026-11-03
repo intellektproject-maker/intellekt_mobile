@@ -133,7 +133,7 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
       return;
     }
     final phone = _field('phone').text.trim();
-    if (!RegExp(r'^\d{10}).hasMatch(phone)) {
+    if (!RegExp(r'^\d{10}$').hasMatch(phone)) {
       setState(() => _error = 'Phone number must contain exactly 10 digits.');
       return;
     }

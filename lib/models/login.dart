@@ -65,7 +65,7 @@ class LoginModel {
   bool get isStudent =>
       role.trim().toLowerCase() == 'student' ||
       id.trim().toUpperCase().startsWith('IAT') ||
-      (role.trim().isEmpty && id.trim().toUpperCase().startsWith('IA'));
+      (role.trim().isEmpty && (id.trim().toUpperCase().startsWith('IA') || RegExp(r'^\d{2}IA').hasMatch(id.trim().toUpperCase())));
 
   bool get isFaculty =>
       role.trim().toLowerCase() == 'faculty' ||

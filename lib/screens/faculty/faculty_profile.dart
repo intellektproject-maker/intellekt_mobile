@@ -7,6 +7,7 @@ import '../../models/faculty_task_model.dart';
 import '../../repositories/faculty_repository.dart';
 import '../../repositories/faculty_task_repository.dart';
 import 'task_assignment_screen.dart';
+import 'faculty_tasks_screen.dart';
 import 'test_batch_student_status_screen.dart';
 import 'test_batch_admin_actions_screen.dart';
 import 'test_batch_students_screen.dart';
@@ -811,149 +812,28 @@ class _FacultyProfileState extends State<FacultyProfile> {
   }
 
   Widget _buildTaskBoxes() {
-    final boxes = <Widget>[];
-
     if (_isAdmin) {
-      boxes.add(
-        _TaskBox(
-          title: 'All Faculty Assigned Tasks',
-          description:
-              'View, filter and delete tasks assigned to all faculty members.',
-          notification: _notifications.contains('all-tasks'),
-          active: _activeSection == 'allTasks',
-          onTap: () async {
-            final next = _activeSection == 'allTasks' ? '' : 'allTasks';
-            setState(() {
-              _activeSection = next;
-              _allLoading = next == 'allTasks';
-            });
-
-            if (next == 'allTasks') {
-              await _markNotification('all-tasks');
-              try {
-                final tasks = await _taskRepository.getAllTasks(_id);
-                if (mounted) setState(() => _allTasks = tasks);
-              } catch (e) {
-                _showMessage(e.toString().replaceFirst('Exception: ', ''));
-              } finally {
-                if (mounted) setState(() => _allLoading = false);
-              }
-            }
-          },
-        ),
-      );
-
-      boxes.add(
-        _TaskBox(
-          title: 'All Faculty Daily Task',
-          description: 'View daily repeated tasks for all faculty.',
-          notification: _notifications.contains('daily-tasks'),
-          active: _activeSection == 'dailyTasks',
-          onTap: () async {
-            final next = _activeSection == 'dailyTasks' ? '' : 'dailyTasks';
-            setState(() {
-              _activeSection = next;
-              _dailyLoading = next == 'dailyTasks';
-            });
-
-            if (next == 'dailyTasks') {
-              await _markNotification('daily-tasks');
-              try {
-                final tasks = await _taskRepository.getDailyTasks(_id);
-                if (mounted) setState(() => _dailyTasks = tasks);
-              } catch (e) {
-                _showMessage(e.toString().replaceFirst('Exception: ', ''));
-              } finally {
-                if (mounted) setState(() => _dailyLoading = false);
-              }
-            }
-          },
-        ),
-      );
-
-      boxes.add(
-        _TaskBox(
-          title: 'Task Assignment',
-          description: 'Assign weekly or daily tasks.',
-          active: _activeSection == 'assignTask',
-          onTap: () => setState(
-            () => _activeSection = _activeSection == 'assignTask'
-                ? ''
-                : 'assignTask',
-          ),
-        ),
-      );
-
-    }
-
-    if (!_isAdmin) {
-      boxes.add(
-        _TaskBox(
-          title: 'Edit Requests',
-          description: 'Request permission to edit marks or attendance.',
-          active: false,
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => RegularEditRequestsScreen(userId: _id)),
-          ),
-        ),
-      );
-      boxes.add(
-        _TaskBox(
-          title: 'Student Records',
-          description: 'View student academic records.',
-          active: false,
-          onTap: () => context.push(AppRoutes.facultyStudentRecords),
-        ),
-      );
-      boxes.add(
-        _TaskBox(
-          title: 'Notifications',
-          description: 'View faculty notifications and updates.',
-          notification: _notifications.isNotEmpty,
-          active: false,
-          onTap: () => context.push(AppRoutes.facultyNotifications),
+      return _TaskBox(
+        title: 'Tasks',
+        description: 'View assigned tasks, daily tasks, assign tasks and manage your checklist.',
+        notification: _notifications.isNotEmpty,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => FacultyTasksScreen(facultyId: _id)),
         ),
       );
     }
-
-    boxes.add(
-      _TaskBox(
-        title: 'My Task Checklist',
-        description: 'View, filter and update my assigned tasks.',
+    final boxes = <Widget>[
+      _TaskBox(title: 'Edit Requests', description: 'Request permission to edit marks or attendance.',
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => RegularEditRequestsScreen(userId: _id)))),
+      _TaskBox(title: 'Student Records', description: 'View student academic records.', onTap: () => context.push(AppRoutes.facultyStudentRecords)),
+      _TaskBox(title: 'Notifications', description: 'View faculty notifications and updates.',
+        notification: _notifications.isNotEmpty, onTap: () => context.push(AppRoutes.facultyNotifications)),
+      _TaskBox(title: 'My Task Checklist', description: 'View, filter and update my assigned tasks.',
         notification: _notifications.contains('tasks'),
-        active: _activeSection == 'myChecklist',
-        onTap: () async {
-          final next = _activeSection == 'myChecklist' ? '' : 'myChecklist';
-
-          setState(() {
-            _activeSection = next;
-            _tasksLoading = next == 'myChecklist';
-          });
-
-          if (next == 'myChecklist') {
-            await _markNotification('tasks');
-            try {
-              final tasks = await _taskRepository.getMyTasks(_id);
-              if (mounted) setState(() => _myTasks = tasks);
-            } catch (e) {
-              _showMessage(e.toString().replaceFirst('Exception: ', ''));
-            } finally {
-              if (mounted) setState(() => _tasksLoading = false);
-            }
-          }
-        },
-      ),
-    );
-
-    return GridView.count(
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.12,
-      children: boxes,
-    );
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => FacultyTasksScreen(facultyId: _id, facultyOnly: true)))),
+    ];
+    return GridView.count(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12,
+      shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), childAspectRatio: 1.12, children: boxes);
   }
 
   String _formatDate(DateTime date) {

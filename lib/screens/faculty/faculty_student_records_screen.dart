@@ -148,9 +148,9 @@ class _FacultyStudentRecordsScreenState extends State<FacultyStudentRecordsScree
                 pw.Text('Attendance Trend', style: pw.TextStyle(fontSize: 8, color: blue, fontWeight: pw.FontWeight.bold)),
                 pw.SizedBox(height: 12),
                 pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.end, mainAxisAlignment: pw.MainAxisAlignment.center, children: [
-                  pw.Container(width: 24, height: math.max(4, present / math.max(1, math.max(present,absent)) * 54), color: PdfColors.green),
+                  pw.Container(width: 24, height: math.max(4.0, present / math.max(1, math.max(present, absent)) * 54).toDouble(), color: PdfColors.green),
                   pw.SizedBox(width: 18),
-                  pw.Container(width: 24, height: math.max(4, absent / math.max(1, math.max(present,absent)) * 54), color: PdfColors.red),
+                  pw.Container(width: 24, height: math.max(4.0, absent / math.max(1, math.max(present, absent)) * 54).toDouble(), color: PdfColors.red),
                 ]),
                 pw.SizedBox(height: 4), pw.Text('Present       Absent', style: const pw.TextStyle(fontSize: 7)),
                 pw.SizedBox(height: 10), pw.Text('Total Working Days : $totalDays', style: const pw.TextStyle(fontSize: 7)),

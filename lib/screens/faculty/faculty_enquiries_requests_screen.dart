@@ -92,6 +92,58 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
     }
   }
 
+  Future<void> _rejectEnquiry(Map<String, dynamic> enquiry) async {
+    final id = enquiry['id'];
+    if (id == null) return;
+    final reasonController = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reject enquiry'),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Enter the reason for rejecting ${enquiry['student_name'] ?? 'this enquiry'}.'),
+          const SizedBox(height: 12),
+          TextField(controller: reasonController, autofocus: true, maxLines: 3, decoration: const InputDecoration(labelText: 'Rejection reason', hintText: 'Enter reason', border: OutlineInputBorder())),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(onPressed: () { final value = reasonController.text.trim(); if (value.isEmpty) return; Navigator.pop(ctx, value); }, child: const Text('Reject')),
+        ],
+      ),
+    );
+    reasonController.dispose();
+    if (reason == null || reason.trim().isEmpty || !mounted) return;
+    try {
+      await _api.put('/enquiries/${Uri.encodeComponent(id.toString())}', data: {'status': 'Rejected', 'comment': reason.trim(), 'reason': reason.trim()});
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enquiry rejected.')));
+      await _loadEnquiries();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not reject enquiry: ${e.toString().replaceFirst('Exception: ', '')}')));
+    }
+  }
+
+  Future<void> _deleteEnquiry(Map<String, dynamic> enquiry) async {
+    final id = enquiry['id'];
+    if (id == null) return;
+    final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Delete enquiry?'),
+      content: Text('Permanently delete the enquiry for ${enquiry['student_name'] ?? 'this student'}? This cannot be undone.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(style: FilledButton.styleFrom(backgroundColor: Colors.red), onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+      ],
+    ));
+    if (confirmed != true) return;
+    try {
+      await _api.delete('/enquiries/${Uri.encodeComponent(id.toString())}');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enquiry deleted.')));
+      await _loadEnquiries();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not delete enquiry: ${e.toString().replaceFirst('Exception: ', '')}')));
+    }
+  }
   Future<void> _completeRequest(Map<String, dynamic> request) async {
     final id = request['id'];
     if (id == null) return;
@@ -139,15 +191,29 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
           Text('Status: ${item['status'] ?? 'Pending'}'),
           if ((item['comment'] ?? item['reason'] ?? '').toString().isNotEmpty) Text('Note: ${item['comment'] ?? item['reason']}'),
           const SizedBox(height: 10),
-          if ((item['status'] ?? 'Pending').toString() != 'Admitted')
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () => _startAdmission(item),
-                icon: const Icon(Icons.person_add_alt_1),
-                label: Text((item['status'] ?? 'Pending').toString() == 'Admission In Progress' ? 'Continue Admission' : 'Accept & Enrol'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (!{'Admitted', 'Rejected'}.contains((item['status'] ?? 'Pending').toString()))
+                FilledButton.icon(
+                  onPressed: () => _startAdmission(item),
+                  icon: const Icon(Icons.person_add_alt_1),
+                  label: Text((item['status'] ?? 'Pending').toString() == 'Admission In Progress' ? 'Continue Admission' : 'Accept & Enrol'),
+                ),
+              if (!{'Admitted', 'Rejected'}.contains((item['status'] ?? 'Pending').toString()))
+                OutlinedButton.icon(
+                  onPressed: () => _rejectEnquiry(item),
+                  icon: const Icon(Icons.block, color: Colors.red),
+                  label: const Text('Reject', style: TextStyle(color: Colors.red)),
+                ),
+              OutlinedButton.icon(
+                onPressed: () => _deleteEnquiry(item),
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                label: const Text('Delete', style: TextStyle(color: Colors.red)),
               ),
-            ),
+            ],
+          ),
         ])));
       },
     ));

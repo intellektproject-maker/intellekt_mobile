@@ -1,4 +1,6 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'enquiry_admission_screen.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
 
@@ -42,6 +44,51 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
       _requests = (res.data as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
     } catch (e) { _requestError = e.toString().replaceFirst('Exception: ', ''); }
     finally { if (mounted) setState(() => _loadingRequests = false); }
+  }
+
+  Future<void> _startAdmission(Map<String, dynamic> enquiry) async {
+    final status = (enquiry['status'] ?? 'Pending').toString();
+    if (status == 'Admitted') {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('This enquiry is already enrolled.')));
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Accept enquiry?'),
+        content: Text('Start admission for ${enquiry['student_name'] ?? 'this student'}? You will review and complete the student registration form next.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Accept & Continue')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final token = 'admission-${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
+    try {
+      final id = enquiry['id'];
+      if (id == null) throw Exception('Enquiry ID is missing.');
+      await _api.post('/enquiries/${Uri.encodeComponent(id.toString())}/admission/start',
+          data: {'admission_token': token});
+      if (!mounted) return;
+      final completed = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => EnquiryAdmissionScreen(
+          enquiry: enquiry,
+          admissionToken: token,
+          adminId: 'IG001',
+        )),
+      );
+      if (!mounted) return;
+      if (completed == true) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enquiry converted to an enrolled student.')));
+      }
+      await _loadEnquiries();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not start admission: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+      await _loadEnquiries();
+    }
   }
 
   Future<void> _completeRequest(Map<String, dynamic> request) async {
@@ -90,6 +137,16 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
           Text('Parent: ${item['parent_name'] ?? '-'} • Phone: ${item['mobile_number'] ?? '-'}'),
           Text('Status: ${item['status'] ?? 'Pending'}'),
           if ((item['comment'] ?? item['reason'] ?? '').toString().isNotEmpty) Text('Note: ${item['comment'] ?? item['reason']}'),
+          const SizedBox(height: 10),
+          if ((item['status'] ?? 'Pending').toString() != 'Admitted')
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => _startAdmission(item),
+                icon: const Icon(Icons.person_add_alt_1),
+                label: Text((item['status'] ?? 'Pending').toString() == 'Admission In Progress' ? 'Continue Admission' : 'Accept & Enrol'),
+              ),
+            ),
         ])));
       },
     ));

@@ -136,160 +136,16 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
     }
     final phone = _field('phone').text.trim();
     final secondary = _field('secondary_contact').text.trim();
-    if (!_testBatch && (!RegExp(r'^\d{10}$').hasMatch(secondary) || secondary == phone)) {
+    if (!RegExp(r'^\d{10}$').hasMatch(phone)) {
       setState(() => _error = 'Phone number must contain exactly 10 digits.');
       return;
     }
-    if (!RegExp(r'^\d{10}
-    try {
-      final id = widget.enquiry['id'].toString();
-      final base = {
-        'name': _field('name').text.trim(),
-        'class': _field('class').text.trim(),
-        'board': _field('board').text.trim(),
-        'phone': phone,
-        'email': _field('email').text.trim(),
-        'school_name': _field('school_name').text.trim(),
-        'parent_name': _field('parent_name').text.trim(),
-        'secondary_contact': _field('secondary_contact').text.trim(),
-        'date_of_birth': _field('date_of_birth').text.trim().isEmpty ? _date(widget.enquiry['date_of_birth']) : _field('date_of_birth').text.trim(),
-        'academic_year_from': _field('academic_year_from').text.trim(),
-        'academic_year_to': _field('academic_year_to').text.trim(),
-        'password': _field('password').text.trim().isEmpty ? _field('roll_no').text.trim() : _field('password').text.trim(),
-        'enquiry_id': id,
-        'admission_token': widget.admissionToken,
-      };
-      if (_testBatch) {
-        await _api.post('/test-batch/students', data: {
-          ...base,
-          'adminId': widget.adminId,
-          'roll_no': _field('roll_no').text.trim().toUpperCase(),
-          'reference': (widget.enquiry['reference'] ?? '').toString(),
-          'test_series_id': int.parse(_seriesId!),
-          'subjects': _subjectChoice,
-        });
-      } else {
-        await _api.post('/students', data: {
-          ...base,
-          'roll_no': _field('roll_no').text.trim(),
-          'batch': 'Regular Batch',
-          'reference': '',
-          'subject_ids': _selectedSubjectIds,
-          'total_fee': num.tryParse(_field('total_fee').text) ?? 0,
-          'fee_paid': num.tryParse(_field('fee_paid').text) ?? 0,
-          'next_due': null,
-        });
-      }
-      _cancelled = true;
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student enrolled successfully.')));
-      Navigator.of(context).pop(true);
-    } catch (e) {
-      await _restoreEnquiry();
-      if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
-    } finally {
-      if (mounted) setState(() => _saving = false);
+    if (!_testBatch && (!RegExp(r'^\d{10}$').hasMatch(secondary) || secondary == phone)) {
+      setState(() => _error = 'Enter a different 10-digit secondary contact number.');
+      return;
     }
-  }
-
-  Widget _input(String key, String label, {bool required = false, TextInputType? keyboard, bool obscure = false}) =>
-      Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: TextFormField(
-          controller: _field(key),
-          keyboardType: keyboard,
-          obscureText: obscure,
-          decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-          validator: required ? _required : null,
-        ),
-      );
-
-  @override
-  Widget build(BuildContext context) => PopScope(
-    canPop: false,
-    onPopInvokedWithResult: (didPop, result) { if (!didPop) _close(); },
-    child: Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(_testBatch ? 'Enrol Test Batch Student' : 'Enrol Regular Student'),
-        foregroundColor: AppColors.primary,
-        backgroundColor: AppColors.surface,
-        leading: IconButton(icon: const Icon(Icons.close), onPressed: _saving ? null : _close),
-      ),
-      body: _loading ? const Center(child: CircularProgressIndicator()) : Form(
-        key: _formKey,
-        child: ListView(padding: const EdgeInsets.all(16), children: [
-          Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Enquiry ${widget.enquiry['enq_id'] ?? widget.enquiry['id']}', style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary)),
-            const SizedBox(height: 4),
-            Text('Batch: $_batch • Class: $_board-${_field('class').text}'),
-            const SizedBox(height: 14),
-            _input('roll_no', _testBatch ? 'Test Batch Roll Number (IAT...)' : 'Student Roll Number', required: true),
-            _input('name', 'Student Name', required: true),
-            _input('class', 'Class', required: true, keyboard: TextInputType.number),
-            _input('board', 'Board', required: !_testBatch),
-            _input('phone', 'Phone Number', required: true, keyboard: TextInputType.phone),
-            _input('email', 'Email', required: !_testBatch, keyboard: TextInputType.emailAddress),
-            _input('school_name', 'School Name', required: !_testBatch),
-            _input('parent_name', 'Parent Name'),
-            _input('secondary_contact', 'Secondary Contact', required: !_testBatch, keyboard: TextInputType.phone),
-            if (!_testBatch) _input('date_of_birth', 'Date of Birth (YYYY-MM-DD)', required: true),
-            _input('password', 'Password (leave blank to use roll number)', obscure: true),
-            _input('academic_year_from', 'Academic Year From', keyboard: TextInputType.number),
-            _input('academic_year_to', 'Academic Year To', keyboard: TextInputType.number),
-            if (_testBatch) ...[
-              DropdownButtonFormField<String>(
-                value: _seriesId,
-                decoration: const InputDecoration(labelText: 'Test Series', border: OutlineInputBorder()),
-                items: _series.map((s) => DropdownMenuItem(value: s['id'].toString(), child: Text(s['name']?.toString() ?? 'Series'))).toList(),
-                onChanged: (v) => setState(() => _seriesId = v),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: _subjectChoice,
-                decoration: const InputDecoration(labelText: 'Subjects', border: OutlineInputBorder()),
-                items: const ['Mathematics', 'Physics', 'Both'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                onChanged: (v) => setState(() => _subjectChoice = v),
-              ),
-            ] else ...[
-              DropdownButtonFormField<String>(
-                value: _subjectChoice,
-                decoration: const InputDecoration(labelText: 'Subjects', border: OutlineInputBorder()),
-                items: const ['Mathematics', 'Physics', 'Both'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                onChanged: (v) {
-                  final selected = v == 'Both' ? ['math', 'phys'] : [v?.toLowerCase() ?? ''];
-                  setState(() {
-                    _subjectChoice = v;
-                    _selectedSubjectIds = _subjects.where((s) => selected.any((q) => (s['subject_name'] ?? '').toString().toLowerCase().contains(q))).map((s) => int.tryParse(s['subject_id'].toString())).whereType<int>().toList();
-                  });
-                },
-              ),
-              const SizedBox(height: 12),
-              Row(children: [
-                Expanded(child: _input('total_fee', 'Total Fee', keyboard: TextInputType.number)),
-                const SizedBox(width: 10),
-                Expanded(child: _input('fee_paid', 'Fee Paid', keyboard: TextInputType.number)),
-              ]),
-            ],
-            if (_error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_error!, style: const TextStyle(color: Colors.red))),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: _saving ? null : _save,
-              icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.person_add_alt_1),
-              label: Text(_saving ? 'Enrolling...' : 'Complete Enrolment'),
-            ),
-          ]))),
-        ]),
-      ),
-    ),
-  );
-}
-
-extension _SafeSubstring on String {
-  String substringSafe(int max) => length > max ? substring(0, max) : this;
-}
-).hasMatch(phone)) {
-      setState(() => _error = 'Phone number must contain exactly 10 digits.');
+    if (!_testBatch && _field('date_of_birth').text.trim().isEmpty) {
+      setState(() => _error = 'Date of birth is required.');
       return;
     }
     setState(() { _saving = true; _error = null; });
@@ -303,7 +159,7 @@ extension _SafeSubstring on String {
         'email': _field('email').text.trim(),
         'school_name': _field('school_name').text.trim(),
         'parent_name': _field('parent_name').text.trim(),
-        'secondary_contact': _field('secondary_contact').text.trim(),
+        'secondary_contact': secondary,
         'date_of_birth': _field('date_of_birth').text.trim().isEmpty ? _date(widget.enquiry['date_of_birth']) : _field('date_of_birth').text.trim(),
         'academic_year_from': _field('academic_year_from').text.trim(),
         'academic_year_to': _field('academic_year_to').text.trim(),

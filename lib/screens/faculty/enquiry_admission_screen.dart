@@ -34,7 +34,7 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
   String _board = '', _batch = 'Regular Batch';
 
   static const _fieldNames = [
-    'roll_no', 'name', 'class', 'phone', 'email', 'school_name',
+    'roll_no', 'name', 'class', 'board', 'phone', 'email', 'school_name',
     'parent_name', 'secondary_contact', 'password', 'date_of_birth', 'academic_year_from',
     'academic_year_to', 'total_fee', 'fee_paid'
   ];
@@ -67,6 +67,7 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
       final combined = (enquiry['class_board'] ?? '').toString();
       final split = combined.lastIndexOf('-');
       _board = split >= 0 ? combined.substring(0, split).trim() : '';
+      _field('board').text = _board;
       _field('class').text = split >= 0 ? combined.substring(split + 1).trim() : '';
       _field('name').text = (enquiry['student_name'] ?? '').toString();
       _field('phone').text = _cleanPhone(enquiry['mobile_number']);
@@ -145,7 +146,7 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
       final base = {
         'name': _field('name').text.trim(),
         'class': _field('class').text.trim(),
-        'board': _board,
+        'board': _field('board').text.trim(),
         'phone': phone,
         'email': _field('email').text.trim(),
         'school_name': _field('school_name').text.trim(),
@@ -226,6 +227,7 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
             _input('roll_no', _testBatch ? 'Test Batch Roll Number (IAT...)' : 'Student Roll Number', required: true),
             _input('name', 'Student Name', required: true),
             _input('class', 'Class', required: true, keyboard: TextInputType.number),
+            _input('board', 'Board', required: !_testBatch),
             _input('phone', 'Phone Number', required: true, keyboard: TextInputType.phone),
             _input('email', 'Email', required: !_testBatch, keyboard: TextInputType.emailAddress),
             _input('school_name', 'School Name', required: !_testBatch),

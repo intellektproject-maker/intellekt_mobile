@@ -5,7 +5,8 @@ import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
 
 class FacultyEnquiriesRequestsScreen extends StatefulWidget {
-  const FacultyEnquiriesRequestsScreen({super.key});
+  final String adminId;
+  const FacultyEnquiriesRequestsScreen({super.key, required this.adminId});
 
   @override
   State<FacultyEnquiriesRequestsScreen> createState() => _FacultyEnquiriesRequestsScreenState();
@@ -75,7 +76,7 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
         MaterialPageRoute(builder: (_) => EnquiryAdmissionScreen(
           enquiry: enquiry,
           admissionToken: token,
-          adminId: 'IG001',
+          adminId: widget.adminId,
         )),
       );
       if (!mounted) return;

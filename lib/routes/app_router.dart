@@ -153,7 +153,9 @@ class AppRouter {
             }
             return null;
           },
-          builder: (context, state) => const FacultyEnquiriesRequestsScreen(),
+          builder: (context, state) => FacultyEnquiriesRequestsScreen(
+            adminId: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
         ),
         GoRoute(
           path: AppRoutes.facultyManageAttendance,

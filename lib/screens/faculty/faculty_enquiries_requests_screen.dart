@@ -95,18 +95,49 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
   Future<void> _rejectEnquiry(Map<String, dynamic> enquiry) async {
     final id = enquiry['id'];
     if (id == null) return;
-    final reason = await showDialog<String>(
+
+    // The web dashboard's Reject action deletes the enquiry; it does not
+    // update its status through PUT /enquiries/:id.
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => _RejectEnquiryDialog(studentName: (enquiry['student_name'] ?? 'this enquiry').toString()),
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reject enquiry?'),
+        content: Text(
+          'Reject and remove the enquiry for ${enquiry['student_name'] ?? 'this student'}? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Reject'),
+          ),
+        ],
+      ),
     );
-    if (reason == null || reason.trim().isEmpty || !mounted) return;
+
+    if (confirmed != true || !mounted) return;
+
     try {
-      await _api.put('/enquiries/${Uri.encodeComponent(id.toString())}', data: {'status': 'Rejected', 'comment': reason.trim(), 'reason': reason.trim()});
+      await _api.delete('/enquiries/${Uri.encodeComponent(id.toString())}');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enquiry rejected.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enquiry rejected and removed.')),
+      );
       await _loadEnquiries();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not reject enquiry: ${e.toString().replaceFirst('Exception: ', '')}')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Could not reject enquiry: ${e.toString().replaceFirst('Exception: ', '')}',
+            ),
+          ),
+        );
+      }
     }
   }
 

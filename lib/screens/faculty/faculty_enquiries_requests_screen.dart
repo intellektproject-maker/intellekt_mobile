@@ -95,23 +95,10 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
   Future<void> _rejectEnquiry(Map<String, dynamic> enquiry) async {
     final id = enquiry['id'];
     if (id == null) return;
-    final reasonController = TextEditingController();
     final reason = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Reject enquiry'),
-        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Enter the reason for rejecting ${enquiry['student_name'] ?? 'this enquiry'}.'),
-          const SizedBox(height: 12),
-          TextField(controller: reasonController, autofocus: true, maxLines: 3, decoration: const InputDecoration(labelText: 'Rejection reason', hintText: 'Enter reason', border: OutlineInputBorder())),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(onPressed: () { final value = reasonController.text.trim(); if (value.isEmpty) return; Navigator.pop(ctx, value); }, child: const Text('Reject')),
-        ],
-      ),
+      builder: (_) => _RejectEnquiryDialog(studentName: (enquiry['student_name'] ?? 'this enquiry').toString()),
     );
-    reasonController.dispose();
     if (reason == null || reason.trim().isEmpty || !mounted) return;
     try {
       await _api.put('/enquiries/${Uri.encodeComponent(id.toString())}', data: {'status': 'Rejected', 'comment': reason.trim(), 'reason': reason.trim()});
@@ -233,5 +220,56 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
       _state(loading: _loadingEnquiries, error: _enquiryError, retry: _loadEnquiries, empty: 'No enquiries found.', items: _enquiries, requests: false),
       _state(loading: _loadingRequests, error: _requestError, retry: _loadRequests, empty: 'No answer-sheet requests found.', items: _requests, requests: true),
     ]),
+  );
+}
+
+
+class _RejectEnquiryDialog extends StatefulWidget {
+  final String studentName;
+  const _RejectEnquiryDialog({required this.studentName});
+
+  @override
+  State<_RejectEnquiryDialog> createState() => _RejectEnquiryDialogState();
+}
+
+class _RejectEnquiryDialogState extends State<_RejectEnquiryDialog> {
+  final _reasonController = TextEditingController();
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Reject enquiry'),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Enter the reason for rejecting ${widget.studentName}.'),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _reasonController,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Rejection reason',
+            hintText: 'Enter reason',
+            border: OutlineInputBorder(),
+          ),
+        ),
+      ],
+    ),
+    actions: [
+      TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+      FilledButton(
+        onPressed: () {
+          final value = _reasonController.text.trim();
+          if (value.isNotEmpty) Navigator.pop(context, value);
+        },
+        child: const Text('Reject'),
+      ),
+    ],
   );
 }

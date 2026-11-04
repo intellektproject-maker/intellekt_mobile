@@ -17,6 +17,8 @@ class _RegularEditRequestsScreenState extends State<RegularEditRequestsScreen> {
   final _subjectId = TextEditingController(text: '1');
   final _attendanceDate = TextEditingController();
   String _recordType = 'marks';
+  String _recordScope = 'regular';
+  final _subjectName = TextEditingController();
   String _attendanceValue = 'Present';
   List<Map<String, dynamic>> _requests = [];
   bool _loading = true;
@@ -38,6 +40,7 @@ class _RegularEditRequestsScreenState extends State<RegularEditRequestsScreen> {
     _testCode.dispose();
     _subjectId.dispose();
     _attendanceDate.dispose();
+    _subjectName.dispose();
     super.dispose();
   }
 
@@ -87,37 +90,34 @@ class _RegularEditRequestsScreenState extends State<RegularEditRequestsScreen> {
   }
 
   Future<void> _submitRequest() async {
-    if (_roll.text.trim().isEmpty ||
-        (_recordType == 'marks' && _testCode.text.trim().isEmpty) ||
-        (_recordType == 'attendance' &&
-            (_attendanceDate.text.trim().isEmpty || int.tryParse(_subjectId.text) == null))) {
+    final roll = _roll.text.trim();
+    final testCode = _testCode.text.trim();
+    final subjectName = _subjectName.text.trim();
+    final subjectId = int.tryParse(_subjectId.text.trim());
+    if (roll.isEmpty || (_recordType == 'marks' && testCode.isEmpty) ||
+        (_recordType == 'attendance' && (_attendanceDate.text.trim().isEmpty ||
+         (_recordScope == 'regular' && (subjectId == null || subjectId <= 0))))) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fill in the student roll number and all record details.')));
       return;
     }
     setState(() => _saving = true);
     try {
-      await _api.post('/record-edit-requests', data: {
-        'facultyId': _id,
-        'recordType': _recordType,
-        'roll_no': _roll.text.trim(),
-        if (_recordType == 'marks') 'test_code': _testCode.text.trim(),
-        if (_recordType == 'attendance') 'subject_id': int.parse(_subjectId.text),
+      final isTestBatch = _recordScope == 'test_batch';
+      await _api.post(isTestBatch ? '/test-batch/record-edit-requests' : '/record-edit-requests', data: {
+        'facultyId': _id, 'recordType': _recordType, 'roll_no': roll,
+        if (_recordType == 'marks') 'test_code': testCode,
+        if (_recordType == 'attendance' && !isTestBatch) 'subject_id': subjectId,
+        if (_recordType == 'attendance' && isTestBatch && subjectName.isNotEmpty) 'subject_name': subjectName,
         if (_recordType == 'attendance') 'attendance_date': _attendanceDate.text.trim(),
-        // The backend records this as a permission request; the actual new value
-        // is entered only after an administrator approves it.
         'requested_value': _recordType == 'marks' ? '0' : _attendanceValue,
       });
       if (!mounted) return;
-      _roll.clear();
-      _testCode.clear();
-      _attendanceDate.clear();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Edit permission request sent to IG001 and IG002.')));
+      _roll.clear(); _testCode.clear(); _attendanceDate.clear(); _subjectName.clear();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${isTestBatch ? 'Test Batch' : 'Regular Student'} edit approval request sent.')));
       await _load();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+    } finally { if (mounted) setState(() => _saving = false); }
   }
 
   Future<void> _review(Map<String, dynamic> request, String decision) async {
@@ -217,6 +217,13 @@ class _RegularEditRequestsScreenState extends State<RegularEditRequestsScreen> {
                     const Text('Request permission to edit a record', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.primary)),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
+                      value: _recordScope,
+                      decoration: const InputDecoration(labelText: 'Student batch', border: OutlineInputBorder()),
+                      items: const [DropdownMenuItem(value: 'regular', child: Text('Regular Student')), DropdownMenuItem(value: 'test_batch', child: Text('Test Batch'))],
+                      onChanged: (v) => setState(() => _recordScope = v ?? 'regular'),
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
                       value: _recordType,
                       decoration: const InputDecoration(labelText: 'Record type', border: OutlineInputBorder()),
                       items: const [
@@ -232,13 +239,17 @@ class _RegularEditRequestsScreenState extends State<RegularEditRequestsScreen> {
                       TextField(controller: _testCode, decoration: const InputDecoration(labelText: 'Test code', border: OutlineInputBorder())),
                     ] else ...[
                       const SizedBox(height: 10),
-                      TextField(controller: _subjectId, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Subject ID (1 Maths, 2 Physics)', border: OutlineInputBorder())),
+                      if (_recordScope == 'regular') TextField(controller: _subjectId, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Subject ID (1 Maths, 2 Physics)', border: OutlineInputBorder())) else TextField(controller: _subjectName, decoration: const InputDecoration(labelText: 'Subject name (optional)', border: OutlineInputBorder())),
                       const SizedBox(height: 10),
                       TextField(controller: _attendanceDate, readOnly: true, decoration: const InputDecoration(labelText: 'Attendance date (YYYY-MM-DD)', border: OutlineInputBorder(), suffixIcon: Icon(Icons.calendar_today)), onTap: () async {
                         final now = DateTime.now();
                         final picked = await showDatePicker(context: context, initialDate: now, firstDate: DateTime(now.year - 5), lastDate: DateTime(now.year + 1));
                         if (picked != null && mounted) setState(() => _attendanceDate.text = picked.toIso8601String().split('T').first);
                       }),
+                    ],
+                    if (_recordType == 'attendance') ...[
+                      const SizedBox(height: 10),
+                      DropdownButtonFormField<String>(value: _attendanceValue, decoration: const InputDecoration(labelText: 'Requested attendance status', border: OutlineInputBorder()), items: const [DropdownMenuItem(value: 'Present', child: Text('Present')), DropdownMenuItem(value: 'Absent', child: Text('Absent'))], onChanged: (v) => setState(() => _attendanceValue = v ?? 'Present')),
                     ],
                     const SizedBox(height: 12),
                     FilledButton.icon(

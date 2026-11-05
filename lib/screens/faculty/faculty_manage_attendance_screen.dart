@@ -4,7 +4,8 @@ import '../../core/constants/colors.dart';
 
 class FacultyManageAttendanceScreen extends StatefulWidget {
   final String facultyId;
-  const FacultyManageAttendanceScreen({super.key, required this.facultyId});
+  final bool embedded;
+  const FacultyManageAttendanceScreen({super.key, required this.facultyId, this.embedded = false});
 
   @override
   State<FacultyManageAttendanceScreen> createState() => _FacultyManageAttendanceScreenState();
@@ -102,10 +103,7 @@ class _FacultyManageAttendanceScreenState extends State<FacultyManageAttendanceS
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Manage Attendance'), foregroundColor: AppColors.primary, backgroundColor: AppColors.surface, actions: [IconButton(onPressed: () => _search(), icon: const Icon(Icons.refresh))]),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+    final reportBody = ListView(padding: const EdgeInsets.all(16), children: [
         Card(color: AppColors.surface, elevation: 0, child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           if (_loadingClasses) const LinearProgressIndicator(),
           DropdownButtonFormField<String>(value: _classBoard, isExpanded: true, decoration: const InputDecoration(labelText: 'Class / Board', border: OutlineInputBorder()), items: _classes.map((c) { final b = (c['board'] ?? '').toString(); final cl = (c['class'] ?? c['class_name'] ?? '').toString(); return DropdownMenuItem(value: '$b-$cl', child: Text('$b-$cl')); }).toList(), onChanged: (v) => setState(() => _classBoard = v)),
@@ -125,7 +123,12 @@ class _FacultyManageAttendanceScreenState extends State<FacultyManageAttendanceS
           isThreeLine: true,
           trailing: TextButton(onPressed: () => _edit(r), child: Text((r['status'] ?? '-').toString())),
         ))),
-      ]),
+      ]);
+    if (widget.embedded) return reportBody;
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(title: const Text('Attendance Report'), foregroundColor: AppColors.primary, backgroundColor: AppColors.surface, actions: [IconButton(onPressed: () => _search(), icon: const Icon(Icons.refresh))]),
+      body: reportBody,
     );
   }
 }

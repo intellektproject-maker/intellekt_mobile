@@ -62,6 +62,8 @@ class _FacultyManageAttendanceScreenState extends State<FacultyManageAttendanceS
   }
 
   Future<void> _edit(Map<String, dynamic> row) async {
+    final facultyId = widget.facultyId.trim().toUpperCase();
+    if (facultyId != 'IG001' && facultyId != 'IG002') return;
     final current = (row['status'] ?? 'Present').toString();
     final selected = await showDialog<String>(context: context, builder: (ctx) => SimpleDialog(
       title: Text('Update attendance: ${row['name'] ?? row['student_name'] ?? row['roll_no'] ?? ''}'),
@@ -70,32 +72,18 @@ class _FacultyManageAttendanceScreenState extends State<FacultyManageAttendanceS
     if (selected == null || selected == current) return;
     final dateText = (row['attendance_date'] ?? '').toString().split('T').first;
     try {
-      final facultyId = widget.facultyId.trim().toUpperCase();
-      if (facultyId == 'IG001' || facultyId == 'IG002') {
-        await _api.put('/attendance', data: {
-          'records': [{'roll_no': row['roll_no'], 'status': selected}],
-          'subject': row['subject_id'],
-          'facultyId': facultyId,
-          'date': dateText,
-        });
-        if (!mounted) return;
-        setState(() {
-          final i = _rows.indexWhere((r) => (r['roll_no'] ?? '') == (row['roll_no'] ?? '') && (r['attendance_date'] ?? '') == (row['attendance_date'] ?? '') && (r['subject_id'] ?? '') == (row['subject_id'] ?? ''));
-          if (i >= 0) _rows[i]['status'] = selected;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Attendance updated.')));
-      } else {
-        await _api.post('/record-edit-requests', data: {
-          'facultyId': facultyId,
-          'recordType': 'attendance',
-          'roll_no': (row['roll_no'] ?? '').toString(),
-          'subject_id': row['subject_id'],
-          'attendance_date': dateText,
-          'requested_value': selected,
-        });
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Edit permission request sent to IG001 and IG002.')));
-      }
+      await _api.put('/attendance', data: {
+        'records': [{'roll_no': row['roll_no'], 'status': selected}],
+        'subject': row['subject_id'],
+        'facultyId': facultyId,
+        'date': dateText,
+      });
+      if (!mounted) return;
+      setState(() {
+        final i = _rows.indexWhere((r) => (r['roll_no'] ?? '') == (row['roll_no'] ?? '') && (r['attendance_date'] ?? '') == (row['attendance_date'] ?? '') && (r['subject_id'] ?? '') == (row['subject_id'] ?? ''));
+        if (i >= 0) _rows[i]['status'] = selected;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Attendance updated.')));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update failed: ${e.toString().replaceFirst('Exception: ', '')}')));
     }
@@ -121,7 +109,9 @@ class _FacultyManageAttendanceScreenState extends State<FacultyManageAttendanceS
           title: Text((r['name'] ?? r['student_name'] ?? 'Student').toString(), style: const TextStyle(fontWeight: FontWeight.w700)),
           subtitle: Text('Roll: ${r['roll_no'] ?? '-'} • ${r['attendance_date'] ?? '-'}\nSubject: ${r['subject_name'] ?? r['subject_id'] ?? '-'}'),
           isThreeLine: true,
-          trailing: TextButton(onPressed: () => _edit(r), child: Text((r['status'] ?? '-').toString())),
+          trailing: (widget.facultyId.trim().toUpperCase() == 'IG001' || widget.facultyId.trim().toUpperCase() == 'IG002')
+              ? TextButton(onPressed: () => _edit(r), child: Text((r['status'] ?? '-').toString()))
+              : Text((r['status'] ?? '-').toString()),
         ))),
       ]);
     if (widget.embedded) return reportBody;

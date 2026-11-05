@@ -361,7 +361,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
               Text('Roll No: ' + roll),
               const SizedBox(height: 10),
               if (saved && editing)
-                TextField(key: ValueKey('edit-' + roll), controller: TextEditingController(text: _editDraft), keyboardType: TextInputType.text,
+                TextFormField(key: ValueKey('edit-' + roll), initialValue: _editDraft, keyboardType: TextInputType.text,
                   decoration: const InputDecoration(labelText: 'New marks (or A if absent)', border: OutlineInputBorder()),
                   onChanged: (v) => _editDraft = v)
               else if (saved)

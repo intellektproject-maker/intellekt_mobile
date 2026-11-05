@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
+const registerRecordEditRoutes = require('./record_edit_requests');
 const crypto = require("node:crypto");
 const admin = require('firebase-admin');
 const { createNotificationWorker } = require('./app-notification-worker');
@@ -4560,6 +4561,8 @@ app.get('/attendance-students', async (req, res) => {
     });
   }
 });
+registerRecordEditRoutes(app, pool);
+
 /* =========================================================
 	SERVER START
 	========================================================= */

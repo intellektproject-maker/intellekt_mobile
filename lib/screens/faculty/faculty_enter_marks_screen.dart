@@ -175,7 +175,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       setState(() { _marks[roll] = 'A'; _comments[roll] = 'Absent'; _errors[roll] = ''; }); return;
     }
     final n = num.tryParse(value);
-    if (n == null || n < 0 || n > _totalMarks) {
+    if (n == null || n % 1 != 0 || n < 0 || n > _totalMarks) {
       setState(() => _errors[roll] = 'Enter 0-' + _totalMarks.toString() + ' or A'); return;
     }
     setState(() { _marks[roll] = n.toString(); _comments[roll] = _comment(value); _errors[roll] = ''; });
@@ -226,7 +226,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
     final permission = _overallApproved ? _overallRequest : _requestFor(roll);
     final n = num.tryParse(value);
     if (permission == null || permission['status'] != 'Approved') { _show('Admin approval is required.'); return; }
-    if (value != 'A' && (n == null || n < 0 || n > _totalMarks)) { _show('Enter valid marks or A for absent.'); return; }
+    if (value != 'A' && (n == null || n % 1 != 0 || n < 0 || n > _totalMarks)) { _show('Enter valid marks or A for absent.'); return; }
     setState(() => _busyRoll = roll);
     try {
       await _api.post('/record-edit-requests/' + _str(permission['id']) + '/apply', data: {
@@ -263,7 +263,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       final roll = _str(s['roll_no']).trim(), value = (_marks[_str(s['roll_no']).trim()] ?? '').trim().toUpperCase();
       final n = num.tryParse(value);
       if (value.isEmpty) errors[roll] = 'Required';
-      else if (value != 'A' && (n == null || n < 0 || n > _totalMarks)) errors[roll] = 'Invalid marks';
+      else if (value != 'A' && (n == null || n % 1 != 0 || n < 0 || n > _totalMarks)) errors[roll] = 'Invalid marks';
       else if ((_errors[roll] ?? '').isNotEmpty) errors[roll] = _errors[roll]!;
     }
     if (errors.isNotEmpty) { setState(() => _errors = errors); _show('Correct the highlighted marks first.'); return; }

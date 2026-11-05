@@ -148,7 +148,6 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       }
       if (!mounted) return;
       setState(() { _students = students; _marks = marks; _comments = comments; _saved = saved; });
-      await _loadRequests();
       if (students.isEmpty) _show('No students found for this test, class and board.');
     } catch (e) { if (mounted) setState(() => _error = _err(e)); }
     finally { if (mounted) setState(() => _loadingStudents = false); }
@@ -334,25 +333,12 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
         if (_loadingStudents) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
         if (!_loadingStudents && _students.isEmpty) const Card(child: ListTile(title: Text('Choose a test code and load its students to enter marks.'))),
         if (_students.isNotEmpty) ...[
-          if (_hasSaved) Card(color: Colors.amber.shade50, child: const Padding(padding: EdgeInsets.all(14), child: Text('Previously saved marks are locked. Request admin approval before editing them.'))),
-          if (_hasSaved) Card(color: AppColors.surface, child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text('Overall marks editing • ' + _str(_code), style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary)),
-            const SizedBox(height: 6),
-            Text(_overallRequest?['status'] == 'Pending' ? 'Waiting for admin approval.' : _overallApproved ? 'Approved. You can edit saved marks.' : 'Request one approval to edit all saved marks for this test.'),
-            const SizedBox(height: 8),
-            Wrap(spacing: 8, children: [
-              FilledButton(onPressed: _overallBusy || _overallRequest != null ? null : _requestOverall, child: Text(_overallBusy ? 'Processing...' : _overallRequest?['status'] == 'Pending' ? 'Request pending' : _overallApproved ? 'Edit approved' : 'Request overall edit')),
-              if (_overallApproved) OutlinedButton(onPressed: _overallBusy ? null : _finishOverall, child: const Text('Finish edit')),
-            ]),
-          ]))),
+          if (_hasSaved) Card(color: Colors.amber.shade50, child: const Padding(padding: EdgeInsets.all(14), child: Text('Previously saved marks are locked. Contact an admin if a correction is required.'))),
           ..._students.map((student) {
             final roll = _str(student['roll_no']).trim();
             final name = _str(student['name'] ?? student['student_name'] ?? 'Student');
             final saved = _saved[roll] ?? false;
-            final request = _requestFor(roll);
-            final approved = _overallApproved || request?['status'] == 'Approved';
-            final pending = request?['status'] == 'Pending';
-            final editing = _editingRoll == roll;
+            final editing = false;
             return Card(color: AppColors.surface, elevation: 0, margin: const EdgeInsets.only(bottom: 9), child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
@@ -360,34 +346,20 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
               ]),
               Text('Roll No: ' + roll),
               const SizedBox(height: 10),
-              if (saved && editing)
-                TextFormField(key: ValueKey('edit-' + roll), initialValue: _editDraft, keyboardType: TextInputType.text,
-                  decoration: const InputDecoration(labelText: 'New marks (or A if absent)', border: OutlineInputBorder()),
-                  onChanged: (v) => _editDraft = v)
-              else if (saved)
+              if (saved)
                 Text('Marks: ' + (_marks[roll] ?? '-') + ' / ' + _totalMarks.toString(), style: const TextStyle(fontWeight: FontWeight.w700))
               else
                 TextFormField(key: ValueKey('new-' + roll), initialValue: _marks[roll] ?? '', keyboardType: TextInputType.text,
                   decoration: InputDecoration(labelText: 'Marks (or A if absent)', border: const OutlineInputBorder(), errorText: (_errors[roll] ?? '').isEmpty ? null : _errors[roll]),
                   onChanged: (v) => _changeMark(roll, v)),
               if ((_comments[roll] ?? '').isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text('Comment: ' + (editing ? _comment(_editDraft) : _comments[roll]!))),
-              if (saved) ...[
-                const SizedBox(height: 8),
-                if (editing) Wrap(spacing: 8, children: [
-                  FilledButton(onPressed: _busyRoll == roll ? null : () => _saveApprovedEdit(student), child: Text(_busyRoll == roll ? 'Saving...' : 'Save approved edit')),
-                  TextButton(onPressed: () => setState(() { _editingRoll = ''; _editDraft = ''; }), child: const Text('Cancel')),
-                ]) else OutlinedButton.icon(
-                  onPressed: _busyRoll == roll || _editingRoll.isNotEmpty ? null : () => _requestEdit(student),
-                  icon: const Icon(Icons.lock_open_outlined),
-                  label: Text(_busyRoll == roll ? 'Requesting...' : approved ? 'Edit (Approved)' : pending ? 'Request pending' : 'Request edit'),
-                ),
-              ] else const Padding(padding: EdgeInsets.only(top: 6), child: Text('Enter new mark', style: TextStyle(color: AppColors.textSecondary, fontSize: 12))),
+              if (!saved) const Padding(padding: EdgeInsets.only(top: 6), child: Text('Enter new mark', style: TextStyle(color: AppColors.textSecondary, fontSize: 12))),
             ])));
           }),
           if (_newStudents.isNotEmpty) FilledButton.icon(onPressed: _saving ? null : _saveNewMarks,
             icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined),
             label: Text(_saving ? 'Saving marks...' : 'Save new marks (' + _newStudents.length.toString() + ')')),
-          if (_newStudents.isEmpty) const Padding(padding: EdgeInsets.all(12), child: Text('All marks for this test have been entered. Existing marks can only be changed after admin approval.')),
+          if (_newStudents.isEmpty) const Padding(padding: EdgeInsets.all(12), child: Text('All marks for this test have been entered. Saved marks are read-only in the faculty app.')),
         ],
       ]),
     );

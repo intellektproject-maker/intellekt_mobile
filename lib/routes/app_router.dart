@@ -14,7 +14,6 @@ import '../screens/faculty/registered_students_screen.dart';
 import '../screens/faculty/faculty_post_test_screen.dart';
 import '../screens/faculty/faculty_enter_marks_screen.dart';
 import '../screens/faculty/faculty_enter_attendance_screen.dart';
-import '../screens/faculty/faculty_manage_attendance_screen.dart';
 import '../screens/faculty/faculty_enquiries_requests_screen.dart';
 import '../screens/faculty/faculty_student_records_screen.dart';
 
@@ -74,7 +73,6 @@ class AppRouter {
             location == AppRoutes.facultyPostTest ||
             location == AppRoutes.facultyEnterMarks ||
             location == AppRoutes.facultyEnterAttendance ||
-            location == AppRoutes.facultyManageAttendance ||
             location == AppRoutes.facultyEnquiriesRequests ||
             location == AppRoutes.facultyStudentRecords;
 
@@ -147,7 +145,9 @@ class AppRouter {
             }
             return null;
           },
-          builder: (context, state) => const FacultyStudentRecordsScreen(),
+          builder: (context, state) => FacultyStudentRecordsScreen(
+            facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
         ),
         GoRoute(
           path: AppRoutes.facultyEnquiriesRequests,
@@ -160,12 +160,6 @@ class AppRouter {
           },
           builder: (context, state) => FacultyEnquiriesRequestsScreen(
             adminId: authProvider.user?.id.trim().toUpperCase() ?? '',
-          ),
-        ),
-        GoRoute(
-          path: AppRoutes.facultyManageAttendance,
-          builder: (context, state) => FacultyManageAttendanceScreen(
-            facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
           ),
         ),
         GoRoute(

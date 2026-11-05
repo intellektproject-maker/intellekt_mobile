@@ -672,11 +672,12 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 title: 'Enquiries & Requests',
                 route: AppRoutes.facultyEnquiriesRequests,
               ),
-            destination(
-              icon: Icons.analytics_outlined,
-              title: 'Student Records',
-              route: AppRoutes.facultyStudentRecords,
-            ),
+            if (_isAdmin)
+              destination(
+                icon: Icons.analytics_outlined,
+                title: 'Student Records',
+                route: AppRoutes.facultyStudentRecords,
+              ),
           ],
         ),
       ),
@@ -826,7 +827,7 @@ class _FacultyProfileState extends State<FacultyProfile> {
     final boxes = <Widget>[
       _TaskBox(title: 'Edit Requests', description: 'Request permission to edit marks or attendance.',
         onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => RegularEditRequestsScreen(userId: _id)))),
-      _TaskBox(title: 'Student Records', description: 'View student academic records.', onTap: () => context.push(AppRoutes.facultyStudentRecords)),
+
       _TaskBox(title: 'Notifications', description: 'View faculty notifications and updates.',
         notification: _notifications.isNotEmpty, onTap: () => context.push(AppRoutes.facultyNotifications)),
       _TaskBox(title: 'My Task Checklist', description: 'View, filter and update my assigned tasks.',

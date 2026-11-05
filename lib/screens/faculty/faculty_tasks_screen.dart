@@ -139,11 +139,48 @@ class _FacultyTasksScreenState extends State<FacultyTasksScreen> with SingleTick
     return RefreshIndicator(
       onRefresh: _reloadCurrent,
       child: ListView(padding: const EdgeInsets.all(16), children: [
-        GridView.count(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), crossAxisCount: 2, childAspectRatio: 2.1, crossAxisSpacing: 10, mainAxisSpacing: 10,
-          children: counts.map((c) => Card(color: AppColors.surface, child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(c.$1, style: const TextStyle(color: AppColors.textSecondary)), const Spacer(),
-            Text('${c.$2}', style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800, color: AppColors.primary)),
-          ])))).toList()),
+        LayoutBuilder(builder: (context, constraints) {
+          // Keep the statistic tiles tall enough for both the label and count
+          // on narrow phones and when the system text scale is increased.
+          final tileWidth = (constraints.maxWidth - 10) / 2;
+          final tileHeight = (tileWidth / 1.75).clamp(116.0, 150.0);
+          return GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            childAspectRatio: tileWidth / tileHeight,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            children: counts.map((c) => Card(
+              color: AppColors.surface,
+              margin: EdgeInsets.zero,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      c.$1,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${c.$2}',
+                      style: const TextStyle(
+                        fontSize: 23,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )).toList(),
+          );
+        }),
         const SizedBox(height: 14),
         DropdownButtonFormField<String>(value: filter, decoration: const InputDecoration(labelText: 'Filter tasks', border: OutlineInputBorder()),
           items: const ['All', 'Pending', 'Completed', 'Overdue', 'Due Today'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),

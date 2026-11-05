@@ -90,6 +90,7 @@ class _RegularEditRequestsScreenState extends State<RegularEditRequestsScreen> {
   }
 
   Future<void> _submitRequest() async {
+    if (!_isAdmin) return;
     final roll = _roll.text.trim();
     final testCode = _testCode.text.trim();
     final subjectName = _subjectName.text.trim();
@@ -206,7 +207,7 @@ class _RegularEditRequestsScreenState extends State<RegularEditRequestsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (!_isAdmin)
+          if (false)
             Card(
               color: AppColors.surface,
               child: Padding(

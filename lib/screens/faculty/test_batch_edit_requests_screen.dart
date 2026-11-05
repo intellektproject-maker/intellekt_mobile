@@ -97,6 +97,7 @@ class _TestBatchEditRequestsScreenState
   }
 
   Future<void> _submit() async {
+    if (!_isAdmin) return;
     if (!_formKey.currentState!.validate()) return;
     setState(() { _saving = true; _error = null; });
     try {
@@ -188,7 +189,7 @@ class _TestBatchEditRequestsScreenState
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            if (!_isAdmin) _requestForm(),
+            // Faculty edit-request submission is disabled in the mobile app.
             if (_error != null)
               Card(child: Padding(
                 padding: const EdgeInsets.all(12),

@@ -651,16 +651,17 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 ),
               ],
             ),
-            ListTile(
-              leading: const Icon(Icons.rule_outlined, color: AppColors.primary),
-              title: const Text('Edit Requests'),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => RegularEditRequestsScreen(userId: _id),
-                ));
-              },
-            ),
+            if (_isAdmin)
+              ListTile(
+                leading: const Icon(Icons.rule_outlined, color: AppColors.primary),
+                title: const Text('Edit Requests'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => RegularEditRequestsScreen(userId: _id),
+                  ));
+                },
+              ),
             if (_isAdmin)
               destination(
                 icon: Icons.mark_email_unread_outlined,
@@ -820,9 +821,6 @@ class _FacultyProfileState extends State<FacultyProfile> {
       );
     }
     final boxes = <Widget>[
-      _TaskBox(title: 'Edit Requests', description: 'Request permission to edit marks or attendance.',
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => RegularEditRequestsScreen(userId: _id)))),
-
       _TaskBox(title: 'Notifications', description: 'View faculty notifications and updates.',
         notification: _notifications.isNotEmpty, onTap: () => context.push(AppRoutes.facultyNotifications)),
       _TaskBox(title: 'My Task Checklist', description: 'View, filter and update my assigned tasks.',

@@ -649,11 +649,6 @@ class _FacultyProfileState extends State<FacultyProfile> {
                   title: 'Enter Attendance',
                   route: AppRoutes.facultyEnterAttendance,
                 ),
-                destination(
-                  icon: Icons.edit_calendar_outlined,
-                  title: 'Manage Attendance',
-                  route: AppRoutes.facultyManageAttendance,
-                ),
               ],
             ),
             ListTile(

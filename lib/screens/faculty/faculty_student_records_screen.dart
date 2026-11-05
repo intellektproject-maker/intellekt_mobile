@@ -5,9 +5,11 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
+import 'faculty_manage_attendance_screen.dart';
 
 class FacultyStudentRecordsScreen extends StatefulWidget {
-  const FacultyStudentRecordsScreen({super.key});
+  final String facultyId;
+  const FacultyStudentRecordsScreen({super.key, required this.facultyId});
   @override
   State<FacultyStudentRecordsScreen> createState() => _FacultyStudentRecordsScreenState();
 }
@@ -180,10 +182,23 @@ class _FacultyStudentRecordsScreenState extends State<FacultyStudentRecordsScree
   Widget build(BuildContext context) {
     final query = _search.text.trim().toLowerCase();
     final visible = _students.where((s) => '${s['name'] ?? s['student_name'] ?? ''} ${s['roll_no'] ?? ''}'.toLowerCase().contains(query)).toList();
-    return Scaffold(backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Student Records'), foregroundColor: AppColors.primary, backgroundColor: AppColors.surface,
-        actions: [IconButton(onPressed: _loadStudents, icon: const Icon(Icons.refresh))]),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Student Records'),
+          foregroundColor: AppColors.primary,
+          backgroundColor: AppColors.surface,
+          actions: [IconButton(onPressed: _loadStudents, icon: const Icon(Icons.refresh))],
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Student Records'),
+              Tab(text: 'Attendance Report'),
+            ],
+          ),
+        ),
+        body: TabBarView(children: [
+          ListView(padding: const EdgeInsets.all(16), children: [
         Card(color: AppColors.surface, elevation: 0, child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [
           if (_loadingClasses) const LinearProgressIndicator(),
           DropdownButtonFormField<String>(value: _classKey, isExpanded: true, decoration: const InputDecoration(labelText: 'Select class', border: OutlineInputBorder()),
@@ -205,7 +220,10 @@ class _FacultyStudentRecordsScreenState extends State<FacultyStudentRecordsScree
             label: const Text('PDF', style: TextStyle(color: Colors.white)),
           ),
         ))),
-      ]),
+          ]),
+          FacultyManageAttendanceScreen(facultyId: widget.facultyId, embedded: true),
+        ]),
+      ),
     );
   }
 }

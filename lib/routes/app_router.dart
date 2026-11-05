@@ -12,7 +12,6 @@ import '../screens/faculty/test_batch_admin_tests_screen.dart';
 import '../screens/faculty/test_batch_admin_actions_screen.dart';
 import '../screens/faculty/registered_students_screen.dart';
 import '../screens/faculty/faculty_post_test_screen.dart';
-import '../screens/faculty/faculty_manage_marks_screen.dart';
 import '../screens/faculty/faculty_enter_marks_screen.dart';
 import '../screens/faculty/faculty_enter_attendance_screen.dart';
 import '../screens/faculty/faculty_manage_attendance_screen.dart';
@@ -73,7 +72,6 @@ class AppRouter {
             location == AppRoutes.testBatchAdminActions ||
             location == AppRoutes.facultyRegisteredStudents ||
             location == AppRoutes.facultyPostTest ||
-            location == AppRoutes.facultyManageMarks ||
             location == AppRoutes.facultyEnterMarks ||
             location == AppRoutes.facultyEnterAttendance ||
             location == AppRoutes.facultyManageAttendance ||
@@ -174,10 +172,6 @@ class AppRouter {
           builder: (context, state) => FacultyEnterMarksScreen(
             facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
           ),
-        ),
-        GoRoute(
-          path: AppRoutes.facultyManageMarks,
-          builder: (context, state) => const FacultyManageMarksScreen(),
         ),
         GoRoute(
           path: AppRoutes.facultyPostTest,

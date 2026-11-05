@@ -198,7 +198,12 @@ class _FacultyStudentRecordsScreenState extends State<FacultyStudentRecordsScree
         ...visible.map((s) => Card(color: AppColors.surface, elevation: 0, child: ListTile(
           title: Text((s['name'] ?? s['student_name'] ?? 'Student').toString(), style: const TextStyle(fontWeight: FontWeight.w800)),
           subtitle: Text('Roll No: ${s['roll_no'] ?? '-'} • Phone: ${s['phone'] ?? '-'}'),
-          trailing: FilledButton.tonalIcon(onPressed: () => _downloadReport(s), icon: const Icon(Icons.picture_as_pdf_outlined), label: const Text('PDF')),
+          trailing: FilledButton.tonalIcon(
+            onPressed: () => _downloadReport(s),
+            style: FilledButton.styleFrom(foregroundColor: Colors.white),
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            label: const Text('PDF', style: TextStyle(color: Colors.white)),
+          ),
         ))),
       ]),
     );

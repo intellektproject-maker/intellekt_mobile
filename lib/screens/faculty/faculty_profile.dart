@@ -617,25 +617,26 @@ class _FacultyProfileState extends State<FacultyProfile> {
               leading: const Icon(Icons.assignment_outlined, color: AppColors.primary),
               title: const Text('Test'),
               children: [
-                destination(
-                  icon: Icons.edit_note_outlined,
-                  title: 'Enter Marks',
-                  route: AppRoutes.facultyEnterMarks,
-                ),
-                destination(
-                  icon: Icons.fact_check_outlined,
-                  title: 'Manage Marks',
-                  route: AppRoutes.facultyManageMarks,
-                ),
-                destination(
-                  icon: Icons.post_add_outlined,
-                  title: 'Post Test',
-                  route: AppRoutes.facultyPostTest,
-                ),
-                destination(
-                  icon: Icons.groups_2_outlined,
-                  title: 'Registered Students',
-                  route: AppRoutes.facultyRegisteredStudents,
+                ExpansionTile(
+                  leading: const Icon(Icons.assignment_turned_in_outlined, color: AppColors.primary),
+                  title: const Text('Test Management'),
+                  children: [
+                    destination(
+                      icon: Icons.edit_note_outlined,
+                      title: 'Enter Marks',
+                      route: AppRoutes.facultyEnterMarks,
+                    ),
+                    destination(
+                      icon: Icons.post_add_outlined,
+                      title: 'Post Test',
+                      route: AppRoutes.facultyPostTest,
+                    ),
+                    destination(
+                      icon: Icons.groups_2_outlined,
+                      title: 'Registered Students',
+                      route: AppRoutes.facultyRegisteredStudents,
+                    ),
+                  ],
                 ),
               ],
             ),

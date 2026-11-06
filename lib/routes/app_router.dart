@@ -10,6 +10,7 @@ import '../screens/faculty/faculty_profile_shell.dart';
 import '../screens/faculty/faculty_notifications_screen.dart';
 import '../screens/faculty/faculty_tasks_screen.dart';
 import '../screens/faculty/test_batch_admin_tests_screen.dart';
+import '../screens/faculty/test_batch_student_status_screen.dart';
 import '../screens/faculty/test_batch_admin_actions_screen.dart';
 import '../screens/faculty/registered_students_screen.dart';
 import '../screens/faculty/faculty_post_test_screen.dart';
@@ -70,6 +71,7 @@ class AppRouter {
             location == AppRoutes.facultyNotifications ||
             location == AppRoutes.facultyTasks ||
             location == AppRoutes.testBatchAdminTests ||
+            location == AppRoutes.testBatchStudentStatus ||
             location == AppRoutes.testBatchAdminActions ||
             location == AppRoutes.facultyRegisteredStudents ||
             location == AppRoutes.facultyPostTest ||
@@ -199,6 +201,14 @@ class AppRouter {
           path: AppRoutes.testBatchAdminTests,
           builder: (context, state) => TestBatchAdminTestsScreen(
             adminId: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.testBatchStudentStatus,
+          builder: (context, state) => TestBatchStudentStatusScreen(
+            adminId: authProvider.user?.id.trim().toUpperCase() ?? '',
+            initialCategory: 'Registered',
+            detailOnly: true,
           ),
         ),
         GoRoute(path: AppRoutes.testBatchDashboard, builder: (context, state) => const TestBatchDashboard()),

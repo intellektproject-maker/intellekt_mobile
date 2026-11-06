@@ -462,6 +462,7 @@ class PushNotificationService {
           return AppRoutes.facultyNotifications;
         case 'tasks':
         case 'task':
+          return AppRoutes.facultyTasks;
         case 'attendance':
         case 'marks':
         case 'mark':

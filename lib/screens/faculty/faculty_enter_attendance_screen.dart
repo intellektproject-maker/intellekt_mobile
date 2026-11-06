@@ -53,7 +53,7 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final picked = await showDatePicker(context: context, initialDate: _date.isAfter(today) ? today : _date, firstDate: DateTime(now.year - 1), lastDate: today);
-    if (picked != null && mounted) setState(() => _date = picked);
+    if (picked != null && mounted) setState(() { _date = picked; _students = []; _attendance = {}; _savedAttendance.clear(); _editRequests = []; _editDrafts.clear(); });
   }
 
   Future<void> _loadStudents() async {
@@ -175,14 +175,14 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
               final cls = (c['class'] ?? c['class_name'] ?? '').toString();
               return DropdownMenuItem(value: '$board||$cls', child: Text('$board - $cls'));
             }).toList(),
-            onChanged: (v) => setState(() { _classKey = v; _students = []; _attendance = {}; }),
+            onChanged: (v) => setState(() { _classKey = v; _students = []; _attendance = {}; _savedAttendance.clear(); _editRequests = []; _editDrafts.clear(); }),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             value: _subject,
             decoration: const InputDecoration(labelText: 'Subject', border: OutlineInputBorder()),
             items: const [DropdownMenuItem(value: '1', child: Text('Maths')), DropdownMenuItem(value: '2', child: Text('Physics'))],
-            onChanged: (v) => setState(() { _subject = v ?? '1'; _students = []; _attendance = {}; }),
+            onChanged: (v) => setState(() { _subject = v ?? '1'; _students = []; _attendance = {}; _savedAttendance.clear(); _editRequests = []; _editDrafts.clear(); }),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(onPressed: _pickDate, icon: const Icon(Icons.calendar_month_outlined), label: Text('Attendance date: ${_date.day.toString().padLeft(2, '0')}/${_date.month.toString().padLeft(2, '0')}/${_date.year}')),

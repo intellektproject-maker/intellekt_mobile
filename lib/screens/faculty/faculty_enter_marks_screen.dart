@@ -132,7 +132,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
     try {
       final response = await _api.post('/record-edit-requests', data: {
         'facultyId': _facultyId, 'recordType': 'marks', 'roll_no': roll,
-        'test_code': _testCode, 'requested_value': 'Edit permission requested',
+        'test_code': _testCode, 'requested_value': _marks[roll] ?? '',
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.data is Map ? _value(response.data['message']).isEmpty ? 'Edit request sent to admin.' : _value(response.data['message']) : 'Edit request sent to admin.')));

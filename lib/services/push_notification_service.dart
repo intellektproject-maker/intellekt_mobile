@@ -423,6 +423,20 @@ class PushNotificationService {
         .toString()
         .trim()
         .toLowerCase();
+    final body = (data['body'] ?? data['message'] ?? '')
+        .toString()
+        .trim()
+        .toLowerCase();
+    final isTaskNotification =
+        (module?.contains('task') ?? false) ||
+        title.contains('task') ||
+        body.contains('task');
+
+    // Task notifications may arrive with different module names from older
+    // backend versions. Use the notification content as a safe fallback.
+    if (isTaskNotification && (user.isAdmin || auth.isFaculty)) {
+      return AppRoutes.facultyTasks;
+    }
 
     // Admins (IG001/IG002 or backend role=admin) use admin destinations.
     // Keep this before the faculty branch because admin accounts also use the

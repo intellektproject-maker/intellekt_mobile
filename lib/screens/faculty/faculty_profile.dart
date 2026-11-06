@@ -626,16 +626,6 @@ class _FacultyProfileState extends State<FacultyProfile> {
                       title: 'Enter Marks',
                       route: AppRoutes.facultyEnterMarks,
                     ),
-                    destination(
-                      icon: Icons.post_add_outlined,
-                      title: 'Post Test',
-                      route: AppRoutes.facultyPostTest,
-                    ),
-                    destination(
-                      icon: Icons.groups_2_outlined,
-                      title: 'Registered Students',
-                      route: AppRoutes.facultyRegisteredStudents,
-                    ),
                   ],
                 ),
               ],

@@ -8,6 +8,7 @@ import '../screens/onboarding/welcome_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/faculty/faculty_profile_shell.dart';
 import '../screens/faculty/faculty_notifications_screen.dart';
+import '../screens/faculty/faculty_tasks_screen.dart';
 import '../screens/faculty/test_batch_admin_tests_screen.dart';
 import '../screens/faculty/test_batch_admin_actions_screen.dart';
 import '../screens/faculty/registered_students_screen.dart';
@@ -67,6 +68,7 @@ class AppRouter {
             location == AppRoutes.studentRequestPdf;
         final isFacultyPage = location == AppRoutes.facultyProfile ||
             location == AppRoutes.facultyNotifications ||
+            location == AppRoutes.facultyTasks ||
             location == AppRoutes.testBatchAdminTests ||
             location == AppRoutes.testBatchAdminActions ||
             location == AppRoutes.facultyRegisteredStudents ||
@@ -130,6 +132,13 @@ class AppRouter {
           path: AppRoutes.facultyNotifications,
           builder: (context, state) => FacultyNotificationsScreen(
             facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.facultyTasks,
+          builder: (context, state) => FacultyTasksScreen(
+            facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
+            facultyOnly: true,
           ),
         ),
         GoRoute(

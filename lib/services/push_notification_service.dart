@@ -441,7 +441,7 @@ class PushNotificationService {
         case 'test-schedule':
         case 'posted-test':
         case 'test-reminder':
-          return AppRoutes.testBatchAdminTests;
+          return AppRoutes.testBatchStudentStatus;
         case 'task':
         case 'tasks':
           return AppRoutes.facultyTasks;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/api/api_client.dart';
-import '../../core/constants/colors.dart';
+import '../../lib/core/api/api_client.dart';
+import '../../lib/core/constants/colors.dart';
 
 /// Completes an enquiry-to-student admission. The enquiry is reserved first;
 /// the backend marks it Admitted only when the student record is created.

@@ -287,8 +287,21 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final classes = _unique((c) => _str(c['class'] ?? c['class_name']));
-    final boards = _unique((c) => _str(c['board']));
+    final classes = _classes
+        .where((c) => _boardFilter.isEmpty || _str(c['board']) == _boardFilter)
+        .map((c) => _str(c['class'] ?? c['class_name']))
+        .where((v) => v.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    final boards = _classes
+        .where((c) => _classFilter.isEmpty ||
+            _str(c['class'] ?? c['class_name']) == _classFilter)
+        .map((c) => _str(c['board']))
+        .where((v) => v.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Enter Marks'), foregroundColor: AppColors.primary, backgroundColor: AppColors.surface,
@@ -305,9 +318,20 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
           ),
           const SizedBox(height: 10),
           if (_loadingClasses) const LinearProgressIndicator(),
-          _filter('Choose board', _boardFilter, boards, (v) => setState(() { _boardFilter = v ?? ''; _code = null; _test = null; _reset(); })),
+          _filter('Choose board', _boardFilter, boards, (v) => setState(() {
+            _boardFilter = v ?? '';
+            if (!_classes.any((c) =>
+                _str(c['board']) == _boardFilter &&
+                _str(c['class'] ?? c['class_name']) == _classFilter)) {
+              _classFilter = '';
+            }
+            _code = null; _test = null; _reset();
+          })),
           const SizedBox(height: 10),
-          _filter('Choose class', _classFilter, classes, (v) => setState(() { _classFilter = v ?? ''; _code = null; _test = null; _reset(); })),
+          _filter('Choose class', _classFilter, classes, (v) => setState(() {
+            _classFilter = v ?? '';
+            _code = null; _test = null; _reset();
+          })),
           const SizedBox(height: 10),
           TextField(
             controller: _total,

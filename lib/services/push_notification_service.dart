@@ -53,6 +53,15 @@ class PushNotificationService {
       onDidReceiveNotificationResponse: _handleLocalNotificationTap,
     );
 
+    // Handle a local notification tapped while the app was terminated.
+    final launchDetails =
+        await _localNotifications.getNotificationAppLaunchDetails();
+    final launchResponse = launchDetails?.notificationResponse;
+    if (launchDetails?.didNotificationLaunchApp == true &&
+        launchResponse != null) {
+      _handleLocalNotificationTap(launchResponse);
+    }
+
     await _localNotifications
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
@@ -433,10 +442,11 @@ class PushNotificationService {
         case 'posted-test':
         case 'test-reminder':
           return AppRoutes.testBatchAdminTests;
-        case 'profile':
-        case 'dashboard':
         case 'task':
         case 'tasks':
+          return AppRoutes.facultyTasks;
+        case 'profile':
+        case 'dashboard':
         case 'attendance':
         case 'marks':
         case 'mark':

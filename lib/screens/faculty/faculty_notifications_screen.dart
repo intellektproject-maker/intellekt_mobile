@@ -474,12 +474,26 @@ class _FacultyNotificationsScreenState
                                                 : _archiveAll,
                                             icon: const Icon(
                                               Icons.archive_outlined,
-                                              size: 18,
+                                              size: 17,
                                             ),
-                                            label: const Text('Clear all'),
+                                            label: const FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              child: Text(
+                                                'Clear all',
+                                                maxLines: 1,
+                                                softWrap: false,
+                                              ),
+                                            ),
                                             style: FilledButton.styleFrom(
                                               backgroundColor: AppColors.primary,
                                               foregroundColor: Colors.white,
+                                              minimumSize: const Size(0, 48),
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 10,
+                                              ),
+                                              tapTargetSize:
+                                                  MaterialTapTargetSize.shrinkWrap,
                                             ),
                                           ),
                                         ),

@@ -30,6 +30,7 @@ class AppRoutes {
   // ==============================
   static const facultyProfile = '/faculty/profile';
   static const facultyNotifications = '/faculty/notifications';
+  static const facultyTasks = '/faculty/tasks';
   static const testBatchAdminTests = '/faculty/test-batch/tests';
   static const testBatchAdminActions = '/faculty/test-batch/admin-actions';
   static const facultyRegisteredStudents = '/faculty/registered-students';

@@ -27,6 +27,10 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
   String get _dateKey => _date.toIso8601String().split('T').first;
   String _value(dynamic value) => (value ?? '').toString();
 
+  void _show(String message) {
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Map<String, dynamic>? _requestFor(String roll) {
     for (final request in _editRequests) {
       if (_value(request['record_type']) == 'attendance' &&

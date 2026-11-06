@@ -6,6 +6,7 @@ import '../../../core/constants/colors.dart';
 import '../../../core/widgets/intellekt_wordmark.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/student/marks_provider.dart';
+import '../../../providers/student/attendance_provider.dart';
 import '../../../providers/student/student_provider.dart';
 import '../../../providers/student/test_schedule_provider.dart';
 import '../../../routes/app_routes.dart';
@@ -40,6 +41,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         context.read<StudentProvider>().loadStudent(_rollNo);
         context.read<TestScheduleProvider>().loadTests(_rollNo);
         context.read<MarksProvider>().loadMarks(_rollNo);
+        context.read<AttendanceProvider>().loadAttendance(_rollNo);
       });
     }
   }
@@ -72,6 +74,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   Widget build(BuildContext context) {
     final studentProvider = context.watch<StudentProvider>();
     final marksProvider = context.watch<MarksProvider>();
+    final attendanceProvider = context.watch<AttendanceProvider>();
     final testScheduleProvider = context.watch<TestScheduleProvider>();
 
     return Scaffold(
@@ -81,6 +84,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         child: _buildBody(
           studentProvider,
           marksProvider,
+          attendanceProvider,
           testScheduleProvider,
         ),
       ),
@@ -90,6 +94,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   Widget _buildBody(
       StudentProvider studentProvider,
       MarksProvider marksProvider,
+      AttendanceProvider attendanceProvider,
       TestScheduleProvider testScheduleProvider,
       ) {
     if (studentProvider.isLoading) {
@@ -154,7 +159,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
           _DashboardCard(
             icon: Icons.assignment_turned_in_outlined,
             title: 'Attendance',
-            value: '94%',
+            value: attendanceProvider.isLoading
+                ? 'Loading...'
+                : attendanceProvider.error != null
+                    ? 'Unavailable'
+                    : '${attendanceProvider.attendancePercentage.toStringAsFixed(0)}%',
             subtitle: 'Total Attendance',
             onTap: _openAttendance,
           ),

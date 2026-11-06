@@ -77,7 +77,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       return;
     }
     _totalController.text = total.toString();
-    setState(() { _loadingStudents = true; _students = []; _marks = {}; _comments = {}; _error = null; });
+    setState(() { _loadingStudents = true; _students = []; _marks = {}; _comments = {}; _savedRolls.clear(); _editRequests = []; _editDrafts.clear(); _error = null; });
     try {
       final response = await _api.get('/enter-marks-students', queryParameters: {'className': cls, 'board': board, 'testCode': code});
       if (response.data is! List) throw Exception('Unexpected students response.');
@@ -261,7 +261,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
             items: _tests.map((t) { final code = (t['test_code'] ?? '').toString(); return DropdownMenuItem(value: code, child: Text('$code • ${t['board'] ?? ''}-${t['class'] ?? t['class_name'] ?? ''}')); }).toList(),
             onChanged: (v) {
               final found = _tests.where((t) => (t['test_code'] ?? '').toString() == v).toList();
-              setState(() { _testCode = v; _test = found.isEmpty ? null : found.first; _students = []; _marks = {}; _comments = {}; _totalController.text = found.isEmpty ? '' : (found.first['total_marks'] ?? '').toString(); });
+              setState(() { _testCode = v; _test = found.isEmpty ? null : found.first; _students = []; _marks = {}; _comments = {}; _savedRolls.clear(); _editRequests = []; _editDrafts.clear(); _totalController.text = found.isEmpty ? '' : (found.first['total_marks'] ?? '').toString(); });
             },
           ),
           const SizedBox(height: 12),

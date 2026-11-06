@@ -32,6 +32,7 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
   List<int> _selectedSubjectIds = [];
   String? _subjectChoice, _seriesId;
   String _board = '', _batch = 'Regular Batch';
+  String? _lastRollNumber;
 
   static const _fieldNames = [
     'roll_no', 'name', 'class', 'board', 'phone', 'email', 'school_name',
@@ -90,6 +91,11 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
         final next = await _api.get('/test-batch/students/next-roll', queryParameters: {'adminId': widget.adminId});
         _field('roll_no').text = (next.data is Map ? next.data['roll_no'] : null)?.toString() ?? 'IAT001';
       } else {
+        final lastRollResponse = await _api.get('/students/last-roll-number');
+        final lastRollData = lastRollResponse.data;
+        _lastRollNumber = lastRollData is Map
+            ? lastRollData['last_roll_no']?.toString()
+            : null;
         final subjectsResponse = await _api.get('/subjects');
         _subjects = subjectsResponse.data is List
             ? (subjectsResponse.data as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
@@ -241,6 +247,15 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
             const SizedBox(height: 4),
             Text('Batch: $_batch • Class: $_board-${_field('class').text}'),
             const SizedBox(height: 14),
+            if (!_testBatch) ...[
+              Text(
+                'Last roll number in database: ${_lastRollNumber ?? 'No regular students yet'}',
+                style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary),
+              ),
+              const SizedBox(height: 6),
+              const Text('Enter the next roll number below.'),
+              const SizedBox(height: 8),
+            ],
             _input('roll_no', _testBatch ? 'Test Batch Roll Number (IAT...)' : 'Student Roll Number', required: true),
             _input('name', 'Student Name', required: true),
             _input('class', 'Class', required: true, keyboard: TextInputType.number),

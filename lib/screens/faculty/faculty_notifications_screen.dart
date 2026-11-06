@@ -478,8 +478,8 @@ class _FacultyNotificationsScreenState
                                             ),
                                             label: const Text('Clear all'),
                                             style: FilledButton.styleFrom(
-                                              foregroundColor:
-                                                  AppColors.primary,
+                                              backgroundColor: AppColors.primary,
+                                              foregroundColor: Colors.white,
                                             ),
                                           ),
                                         ),

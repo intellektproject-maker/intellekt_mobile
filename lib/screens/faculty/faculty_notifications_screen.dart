@@ -20,7 +20,7 @@ class FacultyNotificationsScreen extends StatefulWidget {
 class _FacultyNotificationsScreenState
     extends State<FacultyNotificationsScreen> {
   final FacultyTaskRepository _repository = FacultyTaskRepository();
-  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+  GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   List<Map<String, dynamic>> _notifications = [];
   List<Map<String, dynamic>> _archivedNotifications = [];
   bool _loading = true;
@@ -149,31 +149,26 @@ class _FacultyNotificationsScreenState
     setState(() => _busy = true);
     try {
       await _repository.archiveAllFacultyNotifications(widget.facultyId);
-      if (!mounted) return;
-      final removed = List<Map<String, dynamic>>.from(_notifications);
-      for (var index = removed.length - 1; index >= 0; index--) {
-        final item = removed[index];
-        _notifications.removeAt(index);
-        _listKey.currentState?.removeItem(
-          index,
-          (context, animation) => _buildAnimatedCard(item, animation),
-          duration: const Duration(milliseconds: 260),
-        );
-      }
-      // Keep the AnimatedList mounted until its collapse/fade transition ends.
-      await Future.delayed(const Duration(milliseconds: 300));
-      if (!mounted) return;
-      setState(() => _busy = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Notifications moved to archive.')),
-      );
     } catch (_) {
       if (!mounted) return;
       setState(() => _busy = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unable to clear notifications.')),
       );
+      return;
     }
+
+    // The server has confirmed the archive operation. Reset the AnimatedList
+    // rather than running per-item removals that can throw after the API succeeds.
+    if (!mounted) return;
+    setState(() {
+      _notifications.clear();
+      _listKey = GlobalKey<AnimatedListState>();
+      _busy = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Notifications moved to archive.')),
+    );
   }
 
   Future<void> _restoreNotification(Map<String, dynamic> notification) async {
@@ -184,17 +179,21 @@ class _FacultyNotificationsScreenState
         facultyId: widget.facultyId,
         notificationId: id,
       );
-      if (!mounted) return;
-      setState(() => _archivedNotifications.remove(notification));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Notification restored.')),
-      );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unable to restore notification.')),
       );
+      return;
     }
+
+    // Only the restore request is treated as an operation failure. UI updates
+    // happen after it succeeds, outside the request's error handler.
+    if (!mounted) return;
+    setState(() => _archivedNotifications.remove(notification));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Notification restored.')),
+    );
   }
 
   String _message(Map<String, dynamic> item) {

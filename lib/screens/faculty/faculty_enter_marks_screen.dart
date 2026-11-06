@@ -119,7 +119,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
     try {
       final query = {'className': cls, 'board': board};
       final results = await Future.wait([
-        _api.get('/student-records', queryParameters: query),
+        _api.get('/enter-marks-students', queryParameters: {...query, 'testCode': code}),
         _api.get('/marks', queryParameters: {...query, 'testCode': code}),
       ]);
       if (results[0].data is! List) throw Exception('Unexpected students response.');

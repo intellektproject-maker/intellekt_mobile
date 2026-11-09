@@ -205,6 +205,7 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
           const SizedBox(height: 5),
           Text('Enquiry: ${item['enq_id'] ?? '-'} • Class/Board: ${item['class_board'] ?? '-'}'),
           Text('Subjects: ${item['subjects'] ?? '-'}'),
+          Text('School: ${item['school_name'] ?? '-'}'),
           Text('Parent: ${item['parent_name'] ?? '-'} • Phone: ${item['mobile_number'] ?? '-'}'),
           Text('Status: ${item['status'] ?? 'Pending'}'),
           if ((item['comment'] ?? item['reason'] ?? '').toString().isNotEmpty) Text('Note: ${item['comment'] ?? item['reason']}'),

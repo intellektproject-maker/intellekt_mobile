@@ -41,4 +41,5 @@ class AppRoutes {
   static const facultyEnquiriesRequests = '/faculty/enquiries-requests';
   static const facultyStudentRecords = '/faculty/student-records';
   static const manageStudents = '/faculty/manage-students';
+  static const manageFaculty = '/faculty/manage-faculty';
 }

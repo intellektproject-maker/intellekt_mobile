@@ -11,6 +11,7 @@ import 'faculty_tasks_screen.dart';
 import 'test_batch_student_status_screen.dart';
 import 'test_batch_admin_actions_screen.dart';
 import 'test_batch_students_screen.dart';
+import 'manage_students_screen.dart';
 import 'regular_edit_requests_screen.dart';
 import '../../routes/app_routes.dart';
 
@@ -698,6 +699,12 @@ class _FacultyProfileState extends State<FacultyProfile> {
         title: 'Attendance',
         subtitle: 'Enter and manage regular batch attendance',
         onTap: () => context.push(AppRoutes.facultyEnterAttendance),
+      ),
+      _TeachingToolCard(
+        icon: Icons.manage_accounts_outlined,
+        title: 'Manage Students',
+        subtitle: 'Add, edit, search and manage regular student details',
+        onTap: () => context.push(AppRoutes.manageStudents),
       ),
     ];
 

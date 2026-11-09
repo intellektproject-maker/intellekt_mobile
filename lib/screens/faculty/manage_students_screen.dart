@@ -217,8 +217,6 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
         }
         return;
       }
-    } else {
-      controllers['batch']?.text = 'Regular Batch';
     }
 
     if (!mounted) return;

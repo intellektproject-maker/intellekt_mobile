@@ -481,71 +481,16 @@ class _FacultyProfileState extends State<FacultyProfile> {
               const SizedBox(height: 20),
             ],
             if (!_canAccessTestBatch || _selectedAdminBatch == 'Regular Batch') ...[
-            const Text(
-              'Task Management',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
+              const Text(
+                'Regular Batch Features',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-            const SizedBox(height: 14),
-            _buildTaskBoxes(),
-            if (_activeSection == 'myChecklist') ...[
-              const SizedBox(height: 16),
-              _TaskPanel(
-                title: 'My Task Checklist',
-                facultyList: _facultyList,
-                loading: _tasksLoading,
-                tasks: _filtered(_myTasks, _myFilter),
-                filter: _myFilter,
-                onFilter: (value) => setState(() => _myFilter = value),
-                stats: _myTasks,
-                showCheckbox: true,
-                canManage: _isAdmin,
-                onToggle: _toggleTask,
-                onDelete: _deleteTask,
-                onReassign: _reassignTask,
-              ),
-            ],
-            if (_isAdmin && _activeSection == 'allTasks') ...[
-              const SizedBox(height: 16),
-              _TaskPanel(
-                title: 'All Faculty Assigned Tasks',
-                facultyList: _facultyList,
-                loading: _allLoading,
-                tasks: _filtered(_allTasks, _allFilter),
-                filter: _allFilter,
-                onFilter: (value) => setState(() => _allFilter = value),
-                stats: _allTasks,
-                showCheckbox: false,
-                canManage: true,
-                onToggle: _toggleTask,
-                onDelete: _deleteTask,
-                onReassign: _reassignTask,
-              ),
-            ],
-            if (_isAdmin && _activeSection == 'dailyTasks') ...[
-              const SizedBox(height: 16),
-              _TaskPanel(
-                title: 'All Faculty Daily Task',
-                facultyList: _facultyList,
-                loading: _dailyLoading,
-                tasks: _filtered(_dailyTasks, _dailyFilter),
-                filter: _dailyFilter,
-                onFilter: (value) => setState(() => _dailyFilter = value),
-                stats: _dailyTasks,
-                showCheckbox: false,
-                canManage: true,
-                onToggle: _toggleTask,
-                onDelete: _deleteTask,
-                onReassign: _reassignTask,
-              ),
-            ],
-            if (_isAdmin && _activeSection == 'assignTask') ...[
-              const SizedBox(height: 16),
-              _AssignmentCard(onAssign: _showAssignmentForm),
-            ],
+              const SizedBox(height: 12),
+              _buildRegularBatchTools(),
             ],
             if (_canAccessTestBatch && _selectedAdminBatch == 'Test Batch') ...[
               const Text(
@@ -662,6 +607,21 @@ class _FacultyProfileState extends State<FacultyProfile> {
                   ));
                 },
               ),
+            ListTile(
+              leading: const Icon(Icons.checklist_outlined, color: AppColors.primary),
+              title: const Text('Task Management'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => FacultyTasksScreen(
+                      facultyId: _id,
+                      facultyOnly: !_isAdmin,
+                    ),
+                  ),
+                );
+              },
+            ),
             if (_isAdmin)
               destination(
                 icon: Icons.mark_email_unread_outlined,
@@ -720,6 +680,101 @@ class _FacultyProfileState extends State<FacultyProfile> {
               fontWeight: FontWeight.w700,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRegularBatchTools() {
+    final tools = <Widget>[
+      _TeachingToolCard(
+        icon: Icons.assignment_outlined,
+        title: 'Test',
+        subtitle: 'Enter marks, post tests and view registered students',
+        onTap: _showRegularTestOptions,
+      ),
+      _TeachingToolCard(
+        icon: Icons.calendar_month_outlined,
+        title: 'Attendance',
+        subtitle: 'Enter and manage regular batch attendance',
+        onTap: () => context.push(AppRoutes.facultyEnterAttendance),
+      ),
+    ];
+
+    if (_isAdmin) {
+      tools.addAll([
+        _TeachingToolCard(
+          icon: Icons.rule_outlined,
+          title: 'Edit Requests',
+          subtitle: 'Review faculty requests to edit attendance and marks',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => RegularEditRequestsScreen(userId: _id),
+            ),
+          ),
+        ),
+        _TeachingToolCard(
+          icon: Icons.analytics_outlined,
+          title: 'Student Records',
+          subtitle: 'View regular student academic records',
+          onTap: () => context.push(AppRoutes.facultyStudentRecords),
+        ),
+      ]);
+    }
+
+    return GridView.count(
+      crossAxisCount: 2,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: 1.12,
+      children: tools,
+    );
+  }
+
+  Future<void> _showRegularTestOptions() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(
+              title: Text(
+                'Test',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_note_outlined, color: AppColors.primary),
+              title: const Text('Enter Marks'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                context.push(AppRoutes.facultyEnterMarks);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.post_add_outlined, color: AppColors.primary),
+              title: const Text('Post Test'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                context.push(AppRoutes.facultyPostTest);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.groups_2_outlined, color: AppColors.primary),
+              title: const Text('Registered Students'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                context.push(AppRoutes.facultyRegisteredStudents);
+              },
+            ),
+          ],
         ),
       ),
     );

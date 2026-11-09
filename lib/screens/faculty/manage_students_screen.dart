@@ -124,7 +124,12 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
       }
       final students = studentData
           .whereType<Map>()
-          .map((row) => Map<String, dynamic>.from(row))
+          .map((row) {
+            final student = Map<String, dynamic>.from(row);
+            // The legacy list API includes a password field; never retain or display it in the list.
+            student.remove('password');
+            return student;
+          })
           .where(_isRegularStudent)
           .toList();
       final subjects = subjectData

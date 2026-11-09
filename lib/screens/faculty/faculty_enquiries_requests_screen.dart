@@ -288,7 +288,7 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
     }
   }
 
-  Widget _state({required bool loading, required String? error, required Future<void> Function() retry, required String empty, required List<Map<String, dynamic>> items, required bool requests, bool pending = false}) {
+  Widget _state({required bool loading, required String? error, required Future<void> Function() retry, required String empty, required List<Map<String, dynamic>> items, required bool requests}) {
     if (loading) return const Center(child: CircularProgressIndicator());
     if (error != null) return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.cloud_off_outlined, size: 40), const SizedBox(height: 8), Text(error, textAlign: TextAlign.center), const SizedBox(height: 12), OutlinedButton(onPressed: retry, child: const Text('Retry'))])));
     if (items.isEmpty) return Center(child: Text(empty));
@@ -366,7 +366,7 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
         empty: 'No new enquiries awaiting review.',
         items: _enquiries.where((e) {
           final status = (e['status'] ?? 'New').toString();
-          return status == 'New' || (status == 'Pending' && (e['comment'] ?? e['reason'] ?? '').toString().isEmpty);
+          return status == 'New';
         }).toList(),
         requests: false,
       ),
@@ -375,9 +375,8 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
         error: _enquiryError,
         retry: _loadEnquiries,
         empty: 'No enquiries marked as pending.',
-        items: _enquiries.where((e) => (e['status'] ?? '').toString() == 'Pending' && (e['comment'] ?? e['reason'] ?? '').toString().isNotEmpty).toList(),
+        items: _enquiries.where((e) => (e['status'] ?? '').toString() == 'Pending').toList(),
         requests: false,
-        pending: true,
       ),
       _state(loading: _loadingRequests, error: _requestError, retry: _loadRequests, empty: 'No answer-sheet requests found.', items: _requests, requests: true),
     ]),

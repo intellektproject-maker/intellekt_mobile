@@ -418,7 +418,34 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
                           field('roll_no', 'Roll Number', required: true),
                           field('name', 'Student Name', required: true),
                           field('class', 'Class', required: true),
-                          field('board', 'Board', required: true),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: DropdownButtonFormField<String>(
+                              value: const ['State Board', 'CBSE', 'ICSE', 'ISC']
+                                      .contains(controllers['board']!.text)
+                                  ? controllers['board']!.text
+                                  : null,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                labelText: 'Board *',
+                                border: OutlineInputBorder(),
+                                filled: true,
+                                fillColor: AppColors.surface,
+                              ),
+                              items: const [
+                                DropdownMenuItem(value: 'State Board', child: Text('State Board')),
+                                DropdownMenuItem(value: 'CBSE', child: Text('CBSE')),
+                                DropdownMenuItem(value: 'ICSE', child: Text('ICSE')),
+                                DropdownMenuItem(value: 'ISC', child: Text('ISC')),
+                              ],
+                              onChanged: (value) {
+                                if (value != null) {
+                                  controllers['board']!.text = value;
+                                  setSheetState(() {});
+                                }
+                              },
+                            ),
+                          ),
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: const Text('Date of Birth'),
@@ -651,7 +678,14 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
       _text(student['name']),
       _text(student['class']),
       _text(student['board']),
+      _dateOnly(student['date_of_birth']),
+      _text(student['batch']).isEmpty ? 'Regular Batch' : _text(student['batch']),
+      _text(student['academic_year_from']),
+      _text(student['academic_year_to']),
+      _text(student['parent_name']),
       _text(student['phone']),
+      _text(student['secondary_contact']),
+      _text(student['reference']),
       _text(student['email']),
       _text(student['school_name']),
     ]).toList();
@@ -677,7 +711,14 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
               'Name',
               'Class',
               'Board',
+              'DOB',
+              'Batch',
+              'Academic From',
+              'Academic To',
+              'Parent',
               'Phone',
+              'Secondary Contact',
+              'Reference',
               'Email',
               'School',
             ],
@@ -963,12 +1004,18 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
                         const Divider(height: 18),
                         _detail('Class', _text(student['class'])),
                         _detail('Board', _text(student['board'])),
-                        _detail('Phone', _text(student['phone'])),
-                        _detail('Email', _text(student['email'])),
-                        _detail('School', _text(student['school_name'])),
+                        _detail('Date of Birth', _dateOnly(student['date_of_birth'])),
                         _detail('Batch', _text(student['batch']).isEmpty
                             ? 'Regular Batch'
                             : _text(student['batch'])),
+                        _detail('Academic Year From', _text(student['academic_year_from'])),
+                        _detail('Academic Year To', _text(student['academic_year_to'])),
+                        _detail('Parent Name', _text(student['parent_name'])),
+                        _detail('Phone', _text(student['phone'])),
+                        _detail('Secondary Contact', _text(student['secondary_contact'])),
+                        _detail('Reference', _text(student['reference'])),
+                        _detail('Email', _text(student['email'])),
+                        _detail('School', _text(student['school_name'])),
                       ],
                     ),
                   ),

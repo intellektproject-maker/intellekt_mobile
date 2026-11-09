@@ -596,6 +596,11 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 ),
               ],
             ),
+            destination(
+              icon: Icons.manage_accounts_outlined,
+              title: 'Manage Students',
+              route: AppRoutes.manageStudents,
+            ),
             if (_isAdmin)
               ListTile(
                 leading: const Icon(Icons.rule_outlined, color: AppColors.primary),

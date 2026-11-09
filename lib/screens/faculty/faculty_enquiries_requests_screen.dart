@@ -48,28 +48,109 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
     finally { if (mounted) setState(() => _loadingRequests = false); }
   }
 
+  Future<int> _currentClassBoardStudentCount(Map<String, dynamic> enquiry) async {
+    final combined = (enquiry['class_board'] ?? '').toString();
+    final split = combined.lastIndexOf('-');
+    if (split < 0) throw Exception('Could not identify the class and board from this enquiry.');
+    final board = combined.substring(0, split).trim();
+    final className = combined.substring(split + 1).trim();
+    if (board.isEmpty || className.isEmpty) throw Exception('Class or board is missing from this enquiry.');
+
+    if ((enquiry['batch'] ?? '').toString().toLowerCase() == 'test batch') {
+      final response = await _api.get('/test-batch/students', queryParameters: {
+        'adminId': widget.adminId,
+        'class': className,
+      });
+      final data = response.data;
+      final students = data is Map && data['students'] is List
+          ? (data['students'] as List).whereType<Map>().toList()
+          : <Map>[];
+      return students.where((student) =>
+        (student['board'] ?? '').toString().trim().toLowerCase() == board.toLowerCase()
+      ).length;
+    }
+
+    final response = await _api.get('/students', queryParameters: {
+      'class': className,
+      'board': board,
+    });
+    return response.data is List ? (response.data as List).length : 0;
+  }
+
   Future<void> _startAdmission(Map<String, dynamic> enquiry) async {
     final status = (enquiry['status'] ?? 'New').toString();
     if (status == 'Admitted') {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('This enquiry is already enrolled.')));
       return;
     }
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Accept enquiry?'),
-        content: Text('Start admission for ${enquiry['student_name'] ?? 'this student'}? You will review and complete the student registration form next.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Accept & Continue')),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    final token = 'admission-${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
+
     try {
+      final count = await _currentClassBoardStudentCount(enquiry);
+      if (!mounted) return;
+      final combined = (enquiry['class_board'] ?? '').toString();
+      final split = combined.lastIndexOf('-');
+      final board = split >= 0 ? combined.substring(0, split).trim() : '-';
+      final className = split >= 0 ? combined.substring(split + 1).trim() : '-';
+      final decision = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Current Student Count'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Batch: ${enquiry['batch'] ?? 'Regular Batch'}'),
+              Text('Board: $board'),
+              Text('Class: $className'),
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Text('$count', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.primary)),
+                    const Text('Currently enrolled students'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text('Proceed to the student admission form or move this enquiry to Pending.'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'pending'),
+              child: const Text('Pending'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, 'proceed'),
+              child: const Text('Proceed'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || decision == null) return;
+
       final id = enquiry['id'];
       if (id == null) throw Exception('Enquiry ID is missing.');
+      if (decision == 'pending') {
+        await _api.put('/enquiries/${Uri.encodeComponent(id.toString())}', data: {
+          'status': 'Pending',
+          'comment': '',
+          'reason': '',
+        });
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enquiry moved to Pending.')));
+        await _loadEnquiries();
+        return;
+      }
+
+      final token = 'admission-${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
       await _api.post('/enquiries/${Uri.encodeComponent(id.toString())}/admission/start',
           data: {'admission_token': token});
       if (!mounted) return;
@@ -87,7 +168,7 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
       await _loadEnquiries();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not start admission: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text('Could not continue admission: ${e.toString().replaceFirst('Exception: ', '')}')),
       );
       await _loadEnquiries();
     }

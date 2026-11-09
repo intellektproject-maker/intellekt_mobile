@@ -723,7 +723,7 @@ class _ManageFacultyScreenState extends State<ManageFacultyScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '${_faculty.length} faculty members • Admin: ${_id(widget.adminId)}',
+                      '${_faculty.length} faculty members • Signed in: ${_id(widget.adminId)}',
                       style: const TextStyle(color: AppColors.textSecondary),
                     ),
                   ],

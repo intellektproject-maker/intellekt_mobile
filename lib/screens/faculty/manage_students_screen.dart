@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -245,6 +246,12 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
                   keyboardType: keyboard,
                   obscureText: obscure,
                   maxLines: maxLines,
+                  inputFormatters: (key == 'phone' || key == 'secondary_contact')
+                      ? [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(10),
+                        ]
+                      : null,
                   decoration: InputDecoration(
                     labelText: required ? '$label *' : label,
                     hintText: hint,

@@ -81,7 +81,7 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
     ..sort();
 
   int get _totalPages =>
-      (_visibleStudents.length / _pageSize).ceil().clamp(1, 999999);
+      (_visibleStudents.length / _pageSize).ceil().clamp(1, 999999).toInt();
 
   List<Map<String, dynamic>> get _pageStudents {
     final start = (_page - 1) * _pageSize;
@@ -816,7 +816,7 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${_students.length} students',
+                      '${_students.length} students • Signed in: ${widget.userId}',
                       style: const TextStyle(color: AppColors.textSecondary),
                     ),
                     const SizedBox(height: 14),

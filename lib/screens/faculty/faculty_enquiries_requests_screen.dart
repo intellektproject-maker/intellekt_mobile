@@ -65,8 +65,10 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
       final students = data is Map && data['students'] is List
           ? (data['students'] as List).whereType<Map>().toList()
           : <Map>[];
+      String normalizeBoard(dynamic value) =>
+          (value ?? '').toString().toLowerCase().replaceAll(RegExp(r'\\s+'), '');
       return students.where((student) =>
-        (student['board'] ?? '').toString().trim().toLowerCase() == board.toLowerCase()
+        normalizeBoard(student['board']) == normalizeBoard(board)
       ).length;
     }
 

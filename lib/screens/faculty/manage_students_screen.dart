@@ -256,14 +256,14 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
               );
             }
 
-            Future<void> pickDate(String key, String label) async {
+            Future<void> pickDate(String key, String label, {bool allowFuture = true}) async {
               final now = DateTime.now();
               final existing = DateTime.tryParse(controllers[key]!.text);
               final picked = await showDatePicker(
                 context: context,
                 initialDate: existing ?? DateTime(now.year, now.month, now.day),
                 firstDate: DateTime(1950),
-                lastDate: DateTime(now.year + 10),
+                lastDate: allowFuture ? DateTime(now.year + 10) : now,
                 helpText: label,
               );
               if (picked != null) {
@@ -455,7 +455,7 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
                                   : controllers['date_of_birth']!.text,
                             ),
                             trailing: IconButton(
-                              onPressed: () => pickDate('date_of_birth', 'Date of Birth'),
+                              onPressed: () => pickDate('date_of_birth', 'Date of Birth', allowFuture: false),
                               icon: const Icon(Icons.calendar_month_outlined),
                             ),
                           ),

@@ -15,6 +15,7 @@ class FacultyEnquiriesRequestsScreen extends StatefulWidget {
 class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequestsScreen> with SingleTickerProviderStateMixin {
   final _api = ApiClient();
   late final TabController _tabs;
+  int _selectedTab = 0;
   List<Map<String, dynamic>> _enquiries = [];
   List<Map<String, dynamic>> _requests = [];
   bool _loadingEnquiries = true;
@@ -23,7 +24,7 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
   String? _requestError;
 
   @override
-  void initState() { super.initState(); _tabs = TabController(length: 2, vsync: this); _loadEnquiries(); _loadRequests(); }
+  void initState() { super.initState(); _tabs = TabController(length: 3, vsync: this); _loadEnquiries(); _loadRequests(); }
   @override
   void dispose() { _tabs.dispose(); super.dispose(); }
 
@@ -48,7 +49,7 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
   }
 
   Future<void> _startAdmission(Map<String, dynamic> enquiry) async {
-    final status = (enquiry['status'] ?? 'Pending').toString();
+    final status = (enquiry['status'] ?? 'New').toString();
     if (status == 'Admitted') {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('This enquiry is already enrolled.')));
       return;
@@ -141,6 +142,112 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
     }
   }
 
+  Future<void> _markAsPending(Map<String, dynamic> enquiry) async {
+    final id = enquiry['id'];
+    if (id == null) return;
+    try {
+      await _api.put('/enquiries/${Uri.encodeComponent(id.toString())}', data: {
+        'status': 'Pending',
+        'comment': '',
+        'reason': '',
+      });
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enquiry moved to Pending.')),
+      );
+      await _loadEnquiries();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not mark as pending: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+    }
+  }
+
+  Future<void> _showEnquiryReview(Map<String, dynamic> enquiry) async {
+    String value(String key) {
+      final v = enquiry[key];
+      if (v == null || v.toString().trim().isEmpty) return '-';
+      return v.toString();
+    }
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(value('student_name'), style: const TextStyle(fontWeight: FontWeight.w800)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _detail('Enquiry ID', value('enq_id')),
+                _detail('Class / Board', value('class_board')),
+                _detail('Date of Birth', value('date_of_birth')),
+                _detail('Batch', value('batch')),
+                _detail('School', value('school_name')),
+                _detail('Subjects', value('subjects')),
+                _detail('Academic Year', '${value('academic_year_from')} - ${value('academic_year_to')}'),
+                _detail('Parent', value('parent_name')),
+                _detail('Mobile', value('mobile_number')),
+                _detail('Secondary Contact', value('secondary_contact')),
+                _detail('Reference', value('reference')),
+                _detail('Registered Date', _formatRegisteredDate(enquiry['created_at'])),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                FilledButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    _startAdmission(enquiry);
+                  },
+                  child: const Text('Accept & Enrol'),
+                ),
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    _rejectEnquiry(enquiry);
+                  },
+                  child: const Text('Reject'),
+                ),
+                OutlinedButton(
+                  onPressed: () => _markAsPending(enquiry),
+                  child: const Text('Mark as Pending'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detail(String label, String value) => Padding(
+    padding: const EdgeInsets.only(bottom: 9),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 2),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+      ],
+    ),
+  );
+
+  String _formatRegisteredDate(dynamic raw) {
+    if (raw == null) return '-';
+    final date = DateTime.tryParse(raw.toString());
+    if (date == null) return raw.toString();
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
   Future<void> _deleteEnquiry(Map<String, dynamic> enquiry) async {
     final id = enquiry['id'];
     if (id == null) return;
@@ -181,7 +288,7 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
     }
   }
 
-  Widget _state({required bool loading, required String? error, required Future<void> Function() retry, required String empty, required List<Map<String, dynamic>> items, required bool requests}) {
+  Widget _state({required bool loading, required String? error, required Future<void> Function() retry, required String empty, required List<Map<String, dynamic>> items, required bool requests, bool pending = false}) {
     if (loading) return const Center(child: CircularProgressIndicator());
     if (error != null) return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.cloud_off_outlined, size: 40), const SizedBox(height: 8), Text(error, textAlign: TextAlign.center), const SizedBox(height: 12), OutlinedButton(onPressed: retry, child: const Text('Retry'))])));
     if (items.isEmpty) return Center(child: Text(empty));
@@ -200,40 +307,38 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
           ));
         }
         final name = (item['student_name'] ?? 'Student').toString();
-        return Card(color: AppColors.surface, elevation: 0, child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-          const SizedBox(height: 5),
-          Text('Enquiry: ${item['enq_id'] ?? '-'} • Class/Board: ${item['class_board'] ?? '-'}'),
-          Text('Subjects: ${item['subjects'] ?? '-'}'),
-          Text('School: ${item['school_name'] ?? '-'}'),
-          Text('Parent: ${item['parent_name'] ?? '-'} • Phone: ${item['mobile_number'] ?? '-'}'),
-          Text('Status: ${item['status'] ?? 'Pending'}'),
-          if ((item['comment'] ?? item['reason'] ?? '').toString().isNotEmpty) Text('Note: ${item['comment'] ?? item['reason']}'),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              if (!{'Admitted', 'Rejected'}.contains((item['status'] ?? 'Pending').toString()))
-                FilledButton.icon(
-                  onPressed: () => _startAdmission(item),
-                  icon: const Icon(Icons.person_add_alt_1),
-                  label: Text((item['status'] ?? 'Pending').toString() == 'Admission In Progress' ? 'Continue Admission' : 'Accept & Enrol'),
-                ),
-              if (!{'Admitted', 'Rejected'}.contains((item['status'] ?? 'Pending').toString()))
-                OutlinedButton.icon(
-                  onPressed: () => _rejectEnquiry(item),
-                  icon: const Icon(Icons.block, color: Colors.red),
-                  label: const Text('Reject', style: TextStyle(color: Colors.red)),
-                ),
-              OutlinedButton.icon(
-                onPressed: () => _deleteEnquiry(item),
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                label: const Text('Delete', style: TextStyle(color: Colors.red)),
+        return Card(
+          color: AppColors.surface,
+          elevation: 0,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => _showEnquiryReview(item),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                  const SizedBox(height: 5),
+                  Text('Enquiry: ${item['enq_id'] ?? '-'} • Class/Board: ${item['class_board'] ?? '-'}'),
+                  Text('Subjects: ${item['subjects'] ?? '-'}'),
+                  Text('School: ${item['school_name'] ?? '-'}'),
+                  Text('Parent: ${item['parent_name'] ?? '-'} • Phone: ${item['mobile_number'] ?? '-'}'),
+                  Text('Registered: ${_formatRegisteredDate(item['created_at'])}'),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () => _showEnquiryReview(item),
+                      icon: const Icon(Icons.visibility_outlined),
+                      label: const Text('Review'),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ])));
+        );
       },
     ));
   }
@@ -245,11 +350,35 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
       title: const Text('Enquiries & Requests'),
       foregroundColor: AppColors.primary,
       backgroundColor: AppColors.surface,
-      bottom: TabBar(controller: _tabs, labelColor: AppColors.primary, tabs: const [Tab(text: 'Enquiries'), Tab(text: 'Requests')]),
-      actions: [IconButton(onPressed: () { if (_tabs.index == 0) { _loadEnquiries(); } else { _loadRequests(); } }, icon: const Icon(Icons.refresh))],
+      bottom: TabBar(
+        controller: _tabs,
+        labelColor: AppColors.primary,
+        onTap: (index) => setState(() => _selectedTab = index),
+        tabs: const [Tab(text: 'Enquiries'), Tab(text: 'Pending'), Tab(text: 'Requests')],
+      ),
+      actions: [IconButton(onPressed: () { if (_tabs.index < 2) { _loadEnquiries(); } else { _loadRequests(); } }, icon: const Icon(Icons.refresh))],
     ),
     body: TabBarView(controller: _tabs, children: [
-      _state(loading: _loadingEnquiries, error: _enquiryError, retry: _loadEnquiries, empty: 'No enquiries found.', items: _enquiries, requests: false),
+      _state(
+        loading: _loadingEnquiries,
+        error: _enquiryError,
+        retry: _loadEnquiries,
+        empty: 'No new enquiries awaiting review.',
+        items: _enquiries.where((e) {
+          final status = (e['status'] ?? 'New').toString();
+          return status == 'New' || (status == 'Pending' && (e['comment'] ?? e['reason'] ?? '').toString().isEmpty);
+        }).toList(),
+        requests: false,
+      ),
+      _state(
+        loading: _loadingEnquiries,
+        error: _enquiryError,
+        retry: _loadEnquiries,
+        empty: 'No enquiries marked as pending.',
+        items: _enquiries.where((e) => (e['status'] ?? '').toString() == 'Pending' && (e['comment'] ?? e['reason'] ?? '').toString().isNotEmpty).toList(),
+        requests: false,
+        pending: true,
+      ),
       _state(loading: _loadingRequests, error: _requestError, retry: _loadRequests, empty: 'No answer-sheet requests found.', items: _requests, requests: true),
     ]),
   );

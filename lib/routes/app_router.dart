@@ -19,6 +19,7 @@ import '../screens/faculty/faculty_enter_attendance_screen.dart';
 import '../screens/faculty/faculty_enquiries_requests_screen.dart';
 import '../screens/faculty/faculty_student_records_screen.dart';
 import '../screens/faculty/manage_students_screen.dart';
+import '../screens/faculty/manage_faculty_screen.dart';
 
 import '../screens/student/dashboard/student_dashboard.dart';
 import '../screens/student/attendance/attendance_screen.dart'
@@ -80,7 +81,8 @@ class AppRouter {
             location == AppRoutes.facultyEnterAttendance ||
             location == AppRoutes.facultyEnquiriesRequests ||
             location == AppRoutes.facultyStudentRecords ||
-            location == AppRoutes.manageStudents;
+            location == AppRoutes.manageStudents ||
+            location == AppRoutes.manageFaculty;
 
         if (isLoggedIn && isAuthenticationPage) {
           if (authProvider.user!.mustResetPassword) {
@@ -148,6 +150,19 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.facultyRegisteredStudents,
           builder: (context, state) => const RegisteredStudentsScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.manageFaculty,
+          redirect: (context, state) {
+            final userId = authProvider.user?.id.trim().toUpperCase() ?? '';
+            if (!const {'IG001', 'IG002'}.contains(userId)) {
+              return AppRoutes.facultyProfile;
+            }
+            return null;
+          },
+          builder: (context, state) => ManageFacultyScreen(
+            adminId: authProvider.user?.id.trim().toUpperCase() ?? '',
+          ),
         ),
         GoRoute(
           path: AppRoutes.manageStudents,

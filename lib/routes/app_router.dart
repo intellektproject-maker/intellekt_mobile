@@ -153,13 +153,6 @@ class AppRouter {
         ),
         GoRoute(
           path: AppRoutes.manageFaculty,
-          redirect: (context, state) {
-            final userId = authProvider.user?.id.trim().toUpperCase() ?? '';
-            if (!const {'IG001', 'IG002'}.contains(userId)) {
-              return AppRoutes.facultyProfile;
-            }
-            return null;
-          },
           builder: (context, state) => ManageFacultyScreen(
             adminId: authProvider.user?.id.trim().toUpperCase() ?? '',
           ),

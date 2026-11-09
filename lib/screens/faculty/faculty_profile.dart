@@ -1591,16 +1591,14 @@ class _TeachingToolCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
               const SizedBox(height: 4),
-              Expanded(
-                child: Text(
-                  subtitle,
-                  maxLines: 4,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    height: 1.25,
-                    color: AppColors.textSecondary,
-                  ),
+              Text(
+                subtitle,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  height: 1.25,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],

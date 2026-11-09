@@ -602,6 +602,12 @@ class _FacultyProfileState extends State<FacultyProfile> {
               route: AppRoutes.manageStudents,
             ),
             if (_isAdmin)
+              destination(
+                icon: Icons.badge_outlined,
+                title: 'Manage Faculty',
+                route: AppRoutes.manageFaculty,
+              ),
+            if (_isAdmin)
               ListTile(
                 leading: const Icon(Icons.rule_outlined, color: AppColors.primary),
                 title: const Text('Edit Requests'),
@@ -714,6 +720,12 @@ class _FacultyProfileState extends State<FacultyProfile> {
 
     if (_isAdmin) {
       tools.addAll([
+        _TeachingToolCard(
+          icon: Icons.badge_outlined,
+          title: 'Manage Faculty',
+          subtitle: 'Add, edit, search and manage faculty accounts',
+          onTap: () => context.push(AppRoutes.manageFaculty),
+        ),
         _TeachingToolCard(
           icon: Icons.rule_outlined,
           title: 'Edit Requests',

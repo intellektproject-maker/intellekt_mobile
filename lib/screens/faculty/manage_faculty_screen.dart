@@ -147,14 +147,15 @@ class _ManageFacultyScreenState extends State<ManageFacultyScreen> {
   Future<void> _openFacultyForm({Map<String, dynamic>? existing}) async {
     final editing = existing != null;
     final originalId = editing ? _id(existing['faculty_id']) : '';
+    final generatedId = editing ? originalId : _nextFacultyId();
     final controllers = <String, TextEditingController>{
       'faculty_id': TextEditingController(
-        text: editing ? originalId : _nextFacultyId(),
+        text: generatedId,
       ),
       'name': TextEditingController(text: editing ? _value(existing['name']) : ''),
       'phone': TextEditingController(text: editing ? _value(existing['phone']) : ''),
       'email': TextEditingController(text: editing ? _value(existing['email']) : ''),
-      'password': TextEditingController(),
+      'password': TextEditingController(text: editing ? '' : generatedId),
       'date_of_joining': TextEditingController(
         text: editing ? _dateOnly(existing['date_of_joining']) : '',
       ),

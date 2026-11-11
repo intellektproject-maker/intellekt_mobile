@@ -716,6 +716,10 @@ class _ManageFacultyScreenState extends State<ManageFacultyScreen> {
                         ),
                         FilledButton.tonalIcon(
                           onPressed: _showExportOptions,
+                          style: FilledButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: AppColors.primary,
+                          ),
                           icon: const Icon(Icons.file_download_outlined),
                           label: const Text('Export'),
                         ),

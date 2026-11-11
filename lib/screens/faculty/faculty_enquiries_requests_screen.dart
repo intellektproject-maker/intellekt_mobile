@@ -83,45 +83,12 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
     };
   }
 
-  Future<String?> _promptPendingReason() async {
-    final controller = TextEditingController();
-    String? validationError;
-    final reason = await showDialog<String>(
+  Future<String?> _promptPendingReason() {
+    return showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Reason for Pending'),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            maxLines: 3,
-            decoration: InputDecoration(
-              labelText: 'Reason',
-              hintText: 'Enter why this enquiry is being kept pending',
-              border: const OutlineInputBorder(),
-              errorText: validationError,
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
-            FilledButton(
-              onPressed: () {
-                final value = controller.text.trim();
-                if (value.isEmpty) {
-                  setDialogState(() => validationError = 'Reason is required');
-                  return;
-                }
-                Navigator.pop(dialogContext, value);
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      ),
+      builder: (_) => const _PendingReasonDialog(),
     );
-    controller.dispose();
-    return reason;
   }
 
   Widget _subjectCountRow(String label, int count) => Padding(
@@ -594,6 +561,57 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
   );
 }
 
+
+class _PendingReasonDialog extends StatefulWidget {
+  const _PendingReasonDialog({super.key});
+
+  @override
+  State<_PendingReasonDialog> createState() => _PendingReasonDialogState();
+}
+
+class _PendingReasonDialogState extends State<_PendingReasonDialog> {
+  final TextEditingController _controller = TextEditingController();
+  String? _validationError;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Reason for Pending'),
+    content: TextField(
+      controller: _controller,
+      autofocus: true,
+      maxLines: 3,
+      decoration: InputDecoration(
+        labelText: 'Reason',
+        hintText: 'Enter why this enquiry is being kept pending',
+        border: const OutlineInputBorder(),
+        errorText: _validationError,
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(
+        onPressed: () {
+          final value = _controller.text.trim();
+          if (value.isEmpty) {
+            setState(() => _validationError = 'Reason is required');
+            return;
+          }
+          Navigator.of(context).pop(value);
+        },
+        child: const Text('Save'),
+      ),
+    ],
+  );
+}
 
 class _RejectEnquiryDialog extends StatefulWidget {
   final String studentName;

@@ -177,11 +177,6 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
               const SizedBox(height: 12),
               _subjectCountRow('Mathematics Enrolled', counts['mathematics']!),
               _subjectCountRow('Physics Enrolled', counts['physics']!),
-              const Divider(height: 18),
-              _subjectCountRow(
-                'Total Subject Enrollments',
-                counts['mathematics']! + counts['physics']!,
-              ),
               const SizedBox(height: 8),
               const Text('Proceed to the student admission form or move this enquiry to Pending.'),
             ],

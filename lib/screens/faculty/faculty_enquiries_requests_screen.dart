@@ -443,43 +443,17 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
     final pageCount = max(1, (items.length / _pageSize).ceil());
     final safePage = page.clamp(0, pageCount - 1);
     final pageItems = items.skip(safePage * _pageSize).take(_pageSize).toList();
-    return RefreshIndicator(onRefresh: retry, child: ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: pageItems.length + 1,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (context, i) {
-        if (i == pageItems.length) {
-          return Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextButton(
-                  onPressed: safePage > 0 ? () => onPageChanged(safePage - 1) : null,
-                  child: const Text('Previous'),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(border: Border.all(color: AppColors.primary.withOpacity(0.35)), borderRadius: BorderRadius.circular(6)),
-                  child: DropdownButton<int>(
-                    value: safePage + 1,
-                    underline: const SizedBox.shrink(),
-                    isDense: true,
-                    items: List.generate(pageCount, (index) => DropdownMenuItem<int>(value: index + 1, child: Text('${index + 1}'))),
-                    onChanged: (value) { if (value != null) onPageChanged(value - 1); },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: safePage < pageCount - 1 ? () => onPageChanged(safePage + 1) : null,
-                  child: const Text('Next'),
-                ),
-              ],
-            ),
-          );
-        }
-        final item = pageItems[i];
+    return Column(
+      children: [
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: retry,
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              itemCount: pageItems.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, i) {
+                final item = pageItems[i];
         if (requests) {
           return Card(color: AppColors.surface, elevation: 0, child: ListTile(
             title: Text((item['student_name'] ?? item['roll_no'] ?? 'Student').toString(), style: const TextStyle(fontWeight: FontWeight.w800)),
@@ -521,8 +495,59 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
             ),
           ),
         );
-      },
-    ));
+              },
+            ),
+          ),
+        ),
+        Container(
+          width: double.infinity,
+          color: AppColors.background,
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+          child: SafeArea(
+            top: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: safePage > 0 ? () => onPageChanged(safePage - 1) : null,
+                  child: const Text('Previous'),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.primary.withOpacity(0.35)),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: DropdownButton<int>(
+                    value: safePage + 1,
+                    underline: const SizedBox.shrink(),
+                    isDense: true,
+                    items: List.generate(
+                      pageCount,
+                      (index) => DropdownMenuItem<int>(
+                        value: index + 1,
+                        child: Text('${index + 1}'),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      if (value != null) onPageChanged(value - 1);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: safePage < pageCount - 1
+                      ? () => onPageChanged(safePage + 1)
+                      : null,
+                  child: const Text('Next'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override

@@ -79,6 +79,47 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
     return response.data is List ? (response.data as List).length : 0;
   }
 
+  Future<String?> _promptPendingReason() async {
+    final controller = TextEditingController();
+    String? validationError;
+    final reason = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Reason for Pending'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            maxLines: 3,
+            decoration: InputDecoration(
+              labelText: 'Reason',
+              hintText: 'Enter why this enquiry is being kept pending',
+              border: const OutlineInputBorder(),
+              errorText: validationError,
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () {
+                final value = controller.text.trim();
+                if (value.isEmpty) {
+                  setDialogState(() => validationError = 'Reason is required');
+                  return;
+                }
+                Navigator.pop(dialogContext, value);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    controller.dispose();
+    return reason;
+  }
+
   Future<void> _startAdmission(Map<String, dynamic> enquiry) async {
     final status = (enquiry['status'] ?? 'New').toString();
     if (status == 'Admitted') {
@@ -141,10 +182,12 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
       final id = enquiry['id'];
       if (id == null) throw Exception('Enquiry ID is missing.');
       if (decision == 'pending') {
+        final reason = await _promptPendingReason();
+        if (reason == null || !mounted) return;
         await _api.put('/enquiries/${Uri.encodeComponent(id.toString())}', data: {
           'status': 'Pending',
           'comment': '',
-          'reason': '',
+          'reason': reason,
         });
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enquiry moved to Pending.')));
@@ -228,11 +271,13 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
   Future<void> _markAsPending(Map<String, dynamic> enquiry) async {
     final id = enquiry['id'];
     if (id == null) return;
+    final reason = await _promptPendingReason();
+    if (reason == null || !mounted) return;
     try {
       await _api.put('/enquiries/${Uri.encodeComponent(id.toString())}', data: {
         'status': 'Pending',
         'comment': '',
-        'reason': '',
+        'reason': reason,
       });
       if (!mounted) return;
       Navigator.of(context).pop();

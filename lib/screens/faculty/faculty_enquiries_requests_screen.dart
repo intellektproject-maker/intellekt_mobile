@@ -48,7 +48,7 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
     finally { if (mounted) setState(() => _loadingRequests = false); }
   }
 
-  Future<int> _currentClassBoardStudentCount(Map<String, dynamic> enquiry) async {
+  Future<Map<String, int>> _currentClassBoardStudentCounts(Map<String, dynamic> enquiry) async {
     final combined = (enquiry['class_board'] ?? '').toString();
     final split = combined.lastIndexOf('-');
     if (split < 0) throw Exception('Could not identify the class and board from this enquiry.');
@@ -56,27 +56,27 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
     final className = combined.substring(split + 1).trim();
     if (board.isEmpty || className.isEmpty) throw Exception('Class or board is missing from this enquiry.');
 
-    if ((enquiry['batch'] ?? '').toString().toLowerCase() == 'test batch') {
-      final response = await _api.get('/test-batch/students', queryParameters: {
-        'adminId': widget.adminId,
-        'class': className,
-      });
-      final data = response.data;
-      final students = data is Map && data['students'] is List
-          ? (data['students'] as List).whereType<Map>().toList()
-          : <Map>[];
-      String normalizeBoard(dynamic value) =>
-          (value ?? '').toString().toLowerCase().replaceAll(RegExp(r'\s+'), '');
-      return students.where((student) =>
-        normalizeBoard(student['board']) == normalizeBoard(board)
-      ).length;
-    }
-
-    final response = await _api.get('/students', queryParameters: {
+    final batch = (enquiry['batch'] ?? 'Regular Batch').toString().trim();
+    final response = await _api.get('/student-count', queryParameters: {
       'class': className,
       'board': board,
+      'batch': batch,
     });
-    return response.data is List ? (response.data as List).length : 0;
+    if (response.data is! Map) {
+      throw Exception('Unexpected student-count response.');
+    }
+
+    final data = Map<String, dynamic>.from(response.data as Map);
+    final subjectCounts = data['subject_counts'] is Map
+        ? Map<String, dynamic>.from(data['subject_counts'] as Map)
+        : <String, dynamic>{};
+
+    return {
+      'total': (data['count'] as num?)?.toInt() ?? 0,
+      'mathematics': (subjectCounts['mathematics'] as num?)?.toInt() ?? 0,
+      'physics': (subjectCounts['physics'] as num?)?.toInt() ?? 0,
+      'both': (subjectCounts['both'] as num?)?.toInt() ?? 0,
+    };
   }
 
   Future<String?> _promptPendingReason() async {
@@ -120,6 +120,19 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
     return reason;
   }
 
+  Widget _subjectCountRow(String label, int count) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 5),
+    child: Row(
+      children: [
+        Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
+        Text(
+          count.toString(),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.primary),
+        ),
+      ],
+    ),
+  );
+
   Future<void> _startAdmission(Map<String, dynamic> enquiry) async {
     final status = (enquiry['status'] ?? 'New').toString();
     if (status == 'Admitted') {
@@ -128,7 +141,7 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
     }
 
     try {
-      final count = await _currentClassBoardStudentCount(enquiry);
+      final counts = await _currentClassBoardStudentCounts(enquiry);
       if (!mounted) return;
       final combined = (enquiry['class_board'] ?? '').toString();
       final split = combined.lastIndexOf('-');
@@ -156,11 +169,15 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
                 ),
                 child: Column(
                   children: [
-                    Text('$count', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.primary)),
+                    Text('${counts['total']}', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.primary)),
                     const Text('Currently enrolled students'),
                   ],
                 ),
               ),
+              const SizedBox(height: 12),
+              _subjectCountRow('Mathematics', counts['mathematics']!),
+              _subjectCountRow('Physics', counts['physics']!),
+              _subjectCountRow('Both Mathematics & Physics', counts['both']!),
               const SizedBox(height: 8),
               const Text('Proceed to the student admission form or move this enquiry to Pending.'),
             ],

@@ -3008,7 +3008,8 @@ app.post('/students', async (req, res) => {
 			subject_ids,
 			total_fee,
 			fee_paid,
-			next_due
+			next_due,
+			test_writing_day
 		} = req.body;
 
 		if (!name || !className || !board || !mode_of_education || !phone || !email || !school_name) {
@@ -3021,6 +3022,13 @@ app.post('/students', async (req, res) => {
 			return res.status(400).json({
 				error: 'At least one subject must be selected'
 			});
+		}
+
+		const normalizedTestWritingDay = test_writing_day == null || String(test_writing_day).trim() === ''
+			? null
+			: String(test_writing_day).trim();
+		if (normalizedTestWritingDay && !['Sunday', 'Monday', 'Tuesday'].includes(normalizedTestWritingDay)) {
+			return res.status(400).json({ error: 'test_writing_day must be Sunday, Monday, or Tuesday' });
 		}
 
 		await client.query('BEGIN');
@@ -3043,9 +3051,10 @@ app.post('/students', async (req, res) => {
 			phone,
 			email,
 			school_name,
-			password
+			password,
+			test_writing_day
 		)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
 		`,
 			[
 				newRoll,
@@ -3056,7 +3065,8 @@ app.post('/students', async (req, res) => {
 				String(phone).trim(),
 				String(email).trim(),
 				String(school_name).trim(),
-				finalPassword
+				finalPassword,
+				normalizedTestWritingDay
 			]
 		);
 
@@ -3870,6 +3880,15 @@ app.delete('/faculty-tasks/:id', async (req, res) => {
 app.put('/enquiries/:id', async (req, res) => {
 	const { id } = req.params;
 	const { status, comment, reason } = req.body;
+	const normalizedStatus = String(status || '').trim();
+	const normalizedReason = String(reason || '').trim();
+
+	if (normalizedStatus.toLowerCase() === 'pending' && !normalizedReason) {
+		return res.status(400).json({
+			success: false,
+			error: 'A reason is required when marking an enquiry as Pending'
+		});
+	}
 
 	try {
 		const result = await pool.query(
@@ -3881,7 +3900,7 @@ app.put('/enquiries/:id', async (req, res) => {
 		WHERE id = $4
 		RETURNING *
 		`,
-			[ status || 'Pending', comment || null, reason || null, id ]
+			[ normalizedStatus || 'Pending', comment || null, normalizedReason || null, id ]
 		);
 
 		if (result.rowCount === 0) {

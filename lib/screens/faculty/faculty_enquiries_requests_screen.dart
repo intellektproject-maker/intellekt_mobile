@@ -22,6 +22,10 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
   bool _loadingRequests = true;
   String? _enquiryError;
   String? _requestError;
+  static const int _pageSize = 5;
+  int _enquiriesPage = 0;
+  int _pendingPage = 0;
+  int _requestsPage = 0;
 
   @override
   void initState() { super.initState(); _tabs = TabController(length: 3, vsync: this); _loadEnquiries(); _loadRequests(); }
@@ -432,16 +436,50 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
     }
   }
 
-  Widget _state({required bool loading, required String? error, required Future<void> Function() retry, required String empty, required List<Map<String, dynamic>> items, required bool requests}) {
+  Widget _state({required bool loading, required String? error, required Future<void> Function() retry, required String empty, required List<Map<String, dynamic>> items, required bool requests, required int page, required ValueChanged<int> onPageChanged}) {
     if (loading) return const Center(child: CircularProgressIndicator());
     if (error != null) return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.cloud_off_outlined, size: 40), const SizedBox(height: 8), Text(error, textAlign: TextAlign.center), const SizedBox(height: 12), OutlinedButton(onPressed: retry, child: const Text('Retry'))])));
     if (items.isEmpty) return Center(child: Text(empty));
+    final pageCount = max(1, (items.length / _pageSize).ceil());
+    final safePage = page.clamp(0, pageCount - 1);
+    final pageItems = items.skip(safePage * _pageSize).take(_pageSize).toList();
     return RefreshIndicator(onRefresh: retry, child: ListView.separated(
       padding: const EdgeInsets.all(16),
-      itemCount: items.length,
+      itemCount: pageItems.length + 1,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, i) {
-        final item = items[i];
+        if (i == pageItems.length) {
+          return Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: safePage > 0 ? () => onPageChanged(safePage - 1) : null,
+                  child: const Text('Previous'),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(border: Border.all(color: AppColors.primary.withOpacity(0.35)), borderRadius: BorderRadius.circular(6)),
+                  child: DropdownButton<int>(
+                    value: safePage + 1,
+                    underline: const SizedBox.shrink(),
+                    isDense: true,
+                    items: List.generate(pageCount, (index) => DropdownMenuItem<int>(value: index + 1, child: Text('${index + 1}'))),
+                    onChanged: (value) { if (value != null) onPageChanged(value - 1); },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: safePage < pageCount - 1 ? () => onPageChanged(safePage + 1) : null,
+                  child: const Text('Next'),
+                ),
+              ],
+            ),
+          );
+        }
+        final item = pageItems[i];
         if (requests) {
           return Card(color: AppColors.surface, elevation: 0, child: ListTile(
             title: Text((item['student_name'] ?? item['roll_no'] ?? 'Student').toString(), style: const TextStyle(fontWeight: FontWeight.w800)),
@@ -513,6 +551,8 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
           return status == 'New';
         }).toList(),
         requests: false,
+        page: _enquiriesPage,
+        onPageChanged: (value) => setState(() => _enquiriesPage = value),
       ),
       _state(
         loading: _loadingEnquiries,
@@ -521,8 +561,10 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
         empty: 'No enquiries marked as pending.',
         items: _enquiries.where((e) => (e['status'] ?? '').toString() == 'Pending').toList(),
         requests: false,
+        page: _pendingPage,
+        onPageChanged: (value) => setState(() => _pendingPage = value),
       ),
-      _state(loading: _loadingRequests, error: _requestError, retry: _loadRequests, empty: 'No answer-sheet requests found.', items: _requests, requests: true),
+      _state(loading: _loadingRequests, error: _requestError, retry: _loadRequests, empty: 'No answer-sheet requests found.', items: _requests, requests: true, page: _requestsPage, onPageChanged: (value) => setState(() => _requestsPage = value)),
     ]),
   );
 }

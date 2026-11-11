@@ -572,6 +572,9 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
       },
     );
 
+    // Let the bottom-sheet reverse transition finish before disposing
+    // controllers still attached to TextFields in the outgoing route.
+    await Future<void>.delayed(const Duration(milliseconds: 350));
     for (final controller in controllers.values) {
       controller.dispose();
     }

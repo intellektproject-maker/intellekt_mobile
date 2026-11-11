@@ -31,6 +31,7 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
   List<Map<String, dynamic>> _series = [];
   List<int> _selectedSubjectIds = [];
   String? _subjectChoice, _seriesId;
+  String? _testWritingDay;
   String _board = '', _batch = 'Regular Batch';
   String? _lastRollNumber;
 
@@ -149,6 +150,10 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
       setState(() => _error = 'Select at least one subject.');
       return;
     }
+    if (!_testBatch && _testWritingDay == null) {
+      setState(() => _error = 'Select a test writing day.');
+      return;
+    }
     final phone = _field('phone').text.trim();
     final secondary = _field('secondary_contact').text.trim();
     if (!RegExp(r'^\d{10}$').hasMatch(phone)) {
@@ -198,6 +203,7 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
           'batch': 'Regular Batch',
           'reference': '',
           'subject_ids': _selectedSubjectIds,
+          'test_writing_day': _testWritingDay,
           'total_fee': num.tryParse(_field('total_fee').text) ?? 0,
           'fee_paid': num.tryParse(_field('fee_paid').text) ?? 0,
           'next_due': null,
@@ -284,6 +290,15 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
                 onChanged: (v) => setState(() => _subjectChoice = v),
               ),
             ] else ...[
+              DropdownButtonFormField<String>(
+                value: _testWritingDay,
+                decoration: const InputDecoration(labelText: 'Test Writing Day', border: OutlineInputBorder()),
+                items: const ['Sunday', 'Monday', 'Tuesday']
+                    .map((day) => DropdownMenuItem(value: day, child: Text(day)))
+                    .toList(),
+                onChanged: (value) => setState(() => _testWritingDay = value),
+              ),
+              const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: _subjectChoice,
                 decoration: const InputDecoration(labelText: 'Subjects', border: OutlineInputBorder()),

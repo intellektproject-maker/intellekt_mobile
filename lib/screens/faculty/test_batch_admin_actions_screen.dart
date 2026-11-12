@@ -223,7 +223,7 @@ class _PostTestTabState extends State<_PostTestTab> {
           ),
           const SizedBox(height: 10),
           TextFormField(controller: _code, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'Unique test code', border: OutlineInputBorder()), validator: _required, onChanged: (v) {
-            final m = RegExp(r'^([SCI])(\d{2})([MP])(\d{2})').firstMatch(v.trim().toUpperCase());
+            final m = RegExp(r'^([SCI])(\d{2})([MP])(106|140|\d{2})(?!\d)').firstMatch(v.trim().toUpperCase());
             if (m != null) {
               _subject.text = m.group(3) == 'M' ? 'Mathematics' : 'Physics';
               _marks.text = m.group(4)!;

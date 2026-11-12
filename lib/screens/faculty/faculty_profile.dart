@@ -514,21 +514,6 @@ class _FacultyProfileState extends State<FacultyProfile> {
       !_canAccessTestBatch || _selectedAdminBatch == 'Regular Batch';
 
   Widget _buildRegularBatchDrawer() {
-    Widget destination({
-      required IconData icon,
-      required String title,
-      required String route,
-    }) {
-      return ListTile(
-        leading: Icon(icon, color: AppColors.primary),
-        title: Text(title),
-        onTap: () {
-          Navigator.of(context).pop();
-          context.push(route);
-        },
-      );
-    }
-
     return Drawer(
       child: SafeArea(
         child: ListView(
@@ -558,37 +543,30 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 ],
               ),
             ),
-            if (_isAdmin)
-              destination(
-                icon: Icons.mark_email_unread_outlined,
-                title: 'Enquiries & Requests',
-                route: AppRoutes.facultyEnquiriesRequests,
-              ),
-            ExpansionTile(
-              leading: const Icon(
-                Icons.assignment_turned_in_outlined,
-                color: AppColors.primary,
-              ),
-              title: const Text('Testing Management'),
-              children: [
-                destination(
-                  icon: Icons.edit_note_outlined,
-                  title: 'Enter Marks',
-                  route: AppRoutes.facultyEnterMarks,
-                ),
-                destination(
-                  icon: Icons.post_add_outlined,
-                  title: 'Post Test',
-                  route: AppRoutes.facultyPostTest,
-                ),
-                destination(
-                  icon: Icons.groups_2_outlined,
-                  title: 'Registered Students',
-                  route: AppRoutes.facultyRegisteredStudents,
-                ),
-              ],
+            ListTile(
+              leading: const Icon(Icons.checklist_outlined, color: AppColors.primary),
+              title: const Text('Task Management'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => FacultyTasksScreen(
+                      facultyId: _id,
+                      facultyOnly: !_isAdmin,
+                    ),
+                  ),
+                );
+              },
             ),
-
+            if (_isAdmin)
+              ListTile(
+                leading: const Icon(Icons.mark_email_unread_outlined, color: AppColors.primary),
+                title: const Text('Enquiries & Requests'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  context.push(AppRoutes.facultyEnquiriesRequests);
+                },
+              ),
           ],
         ),
       ),

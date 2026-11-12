@@ -559,90 +559,34 @@ class _FacultyProfileState extends State<FacultyProfile> {
               ),
             ),
             ExpansionTile(
-              leading: const Icon(Icons.assignment_outlined, color: AppColors.primary),
-              title: const Text('Test'),
-              children: [
-                ExpansionTile(
-                  leading: const Icon(Icons.assignment_turned_in_outlined, color: AppColors.primary),
-                  title: const Text('Test Management'),
-                  children: [
-                    destination(
-                      icon: Icons.edit_note_outlined,
-                      title: 'Enter Marks',
-                      route: AppRoutes.facultyEnterMarks,
-                    ),
-                    destination(
-                      icon: Icons.post_add_outlined,
-                      title: 'Post Test',
-                      route: AppRoutes.facultyPostTest,
-                    ),
-                    destination(
-                      icon: Icons.groups_2_outlined,
-                      title: 'Registered Students',
-                      route: AppRoutes.facultyRegisteredStudents,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            ExpansionTile(
-              leading: const Icon(Icons.calendar_month_outlined, color: AppColors.primary),
-              title: const Text('Attendance'),
+              leading: const Icon(
+                Icons.assignment_turned_in_outlined,
+                color: AppColors.primary,
+              ),
+              title: const Text('Testing Management'),
               children: [
                 destination(
-                  icon: Icons.fact_check_outlined,
-                  title: 'Enter Attendance',
-                  route: AppRoutes.facultyEnterAttendance,
+                  icon: Icons.edit_note_outlined,
+                  title: 'Enter Marks',
+                  route: AppRoutes.facultyEnterMarks,
+                ),
+                destination(
+                  icon: Icons.post_add_outlined,
+                  title: 'Post Test',
+                  route: AppRoutes.facultyPostTest,
+                ),
+                destination(
+                  icon: Icons.groups_2_outlined,
+                  title: 'Registered Students',
+                  route: AppRoutes.facultyRegisteredStudents,
                 ),
               ],
-            ),
-            destination(
-              icon: Icons.manage_accounts_outlined,
-              title: 'Manage Students',
-              route: AppRoutes.manageStudents,
-            ),
-            destination(
-              icon: Icons.badge_outlined,
-              title: 'Manage Faculty',
-              route: AppRoutes.manageFaculty,
-            ),
-            if (_isAdmin)
-              ListTile(
-                leading: const Icon(Icons.rule_outlined, color: AppColors.primary),
-                title: const Text('Edit Requests'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => RegularEditRequestsScreen(userId: _id),
-                  ));
-                },
-              ),
-            ListTile(
-              leading: const Icon(Icons.checklist_outlined, color: AppColors.primary),
-              title: const Text('Task Management'),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => FacultyTasksScreen(
-                      facultyId: _id,
-                      facultyOnly: !_isAdmin,
-                    ),
-                  ),
-                );
-              },
             ),
             if (_isAdmin)
               destination(
                 icon: Icons.mark_email_unread_outlined,
                 title: 'Enquiries & Requests',
                 route: AppRoutes.facultyEnquiriesRequests,
-              ),
-            if (_isAdmin)
-              destination(
-                icon: Icons.analytics_outlined,
-                title: 'Student Records',
-                route: AppRoutes.facultyStudentRecords,
               ),
           ],
         ),
@@ -711,15 +655,9 @@ class _FacultyProfileState extends State<FacultyProfile> {
       ),
       _TeachingToolCard(
         icon: Icons.manage_accounts_outlined,
-        title: 'Manage Students',
-        subtitle: 'Add, edit, search and manage regular student details',
-        onTap: () => context.push(AppRoutes.manageStudents),
-      ),
-      _TeachingToolCard(
-        icon: Icons.badge_outlined,
-        title: 'Manage Faculty',
-        subtitle: 'Add, edit, search and manage faculty accounts',
-        onTap: () => context.push(AppRoutes.manageFaculty),
+        title: 'Manage',
+        subtitle: 'Manage regular students and faculty accounts',
+        onTap: _showManageOptions,
       ),
     ];
 
@@ -752,6 +690,51 @@ class _FacultyProfileState extends State<FacultyProfile> {
       physics: const NeverScrollableScrollPhysics(),
       childAspectRatio: 0.88,
       children: tools,
+    );
+  }
+
+  Future<void> _showManageOptions() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(
+              title: Text(
+                'Manage',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.manage_accounts_outlined,
+                color: AppColors.primary,
+              ),
+              title: const Text('Students'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                context.push(AppRoutes.manageStudents);
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.badge_outlined,
+                color: AppColors.primary,
+              ),
+              title: const Text('Faculty'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                context.push(AppRoutes.manageFaculty);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 

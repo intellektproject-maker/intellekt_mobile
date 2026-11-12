@@ -8,7 +8,6 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/student/marks_provider.dart';
 import '../../../providers/student/attendance_provider.dart';
 import '../../../providers/student/student_provider.dart';
-import '../../../providers/student/test_schedule_provider.dart';
 import '../../../routes/app_routes.dart';
 
 class StudentDashboard extends StatefulWidget {
@@ -39,7 +38,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
         if (!mounted) return;
 
         context.read<StudentProvider>().loadStudent(_rollNo);
-        context.read<TestScheduleProvider>().loadTests(_rollNo);
         context.read<MarksProvider>().loadMarks(_rollNo);
         context.read<AttendanceProvider>().loadAttendance(_rollNo);
       });
@@ -52,10 +50,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   void _openAttendance() {
     context.push('${AppRoutes.studentAttendance}?roll=$_rollNo');
-  }
-
-  void _openTestSchedule() {
-    context.push('${AppRoutes.studentTestSchedule}?roll=$_rollNo');
   }
 
   void _openFee() {
@@ -75,7 +69,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final studentProvider = context.watch<StudentProvider>();
     final marksProvider = context.watch<MarksProvider>();
     final attendanceProvider = context.watch<AttendanceProvider>();
-    final testScheduleProvider = context.watch<TestScheduleProvider>();
 
     return Scaffold(
       backgroundColor: const Color(0xFFECECEF),
@@ -85,7 +78,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
           studentProvider,
           marksProvider,
           attendanceProvider,
-          testScheduleProvider,
         ),
       ),
     );
@@ -95,7 +87,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
       StudentProvider studentProvider,
       MarksProvider marksProvider,
       AttendanceProvider attendanceProvider,
-      TestScheduleProvider testScheduleProvider,
       ) {
     if (studentProvider.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -179,19 +170,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
             subtitle: 'Maths & Physics Avg',
             showNotification: true,
             onTap: _openMarks,
-          ),
-          const SizedBox(height: 22),
-          _DashboardCard(
-            icon: Icons.calendar_month_outlined,
-            title: 'Test Schedule',
-            value: testScheduleProvider.isLoading
-                ? '...'
-                : testScheduleProvider.hasError
-                ? 'Unavailable'
-                : testScheduleProvider.tests.length.toString(),
-            subtitle: 'Upcoming Tests',
-            showNotification: true,
-            onTap: _openTestSchedule,
           ),
           const SizedBox(height: 22),
           _DashboardCard(

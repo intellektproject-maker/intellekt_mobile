@@ -623,7 +623,7 @@ class _FacultyProfileState extends State<FacultyProfile> {
       _TeachingToolCard(
         icon: Icons.assignment_outlined,
         title: 'Test',
-        subtitle: 'Enter marks, post tests and view registered students',
+        subtitle: 'Enter marks using manually entered test codes',
         onTap: _showRegularTestOptions,
       ),
       _TeachingToolCard(

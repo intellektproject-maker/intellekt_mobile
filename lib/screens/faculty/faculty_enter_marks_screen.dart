@@ -18,9 +18,8 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   Map<String, bool> _saved = {};
   String? _code;
   Map<String, dynamic>? _test;
-  String _classFilter = '', _boardFilter = '', _subjectFilter = '';
   String _editingRoll = '', _editDraft = '', _busyRoll = '';
-  bool _loadingTests = false, _loadingStudents = false, _validatingCode = false, _saving = false, _overallBusy = false;
+  bool _loadingStudents = false, _validatingCode = false, _saving = false, _overallBusy = false;
   String? _error;
 
   String get _facultyId => widget.facultyId.trim().toUpperCase();

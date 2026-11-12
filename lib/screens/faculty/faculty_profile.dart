@@ -742,22 +742,6 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 context.push(AppRoutes.facultyEnterMarks);
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.post_add_outlined, color: AppColors.primary),
-              title: const Text('Post Test'),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                context.push(AppRoutes.facultyPostTest);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.groups_2_outlined, color: AppColors.primary),
-              title: const Text('Registered Students'),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                context.push(AppRoutes.facultyRegisteredStudents);
-              },
-            ),
           ],
         ),
       ),

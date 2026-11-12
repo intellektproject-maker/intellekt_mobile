@@ -558,6 +558,12 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 ],
               ),
             ),
+            if (_isAdmin)
+              destination(
+                icon: Icons.mark_email_unread_outlined,
+                title: 'Enquiries & Requests',
+                route: AppRoutes.facultyEnquiriesRequests,
+              ),
             ExpansionTile(
               leading: const Icon(
                 Icons.assignment_turned_in_outlined,
@@ -582,12 +588,7 @@ class _FacultyProfileState extends State<FacultyProfile> {
                 ),
               ],
             ),
-            if (_isAdmin)
-              destination(
-                icon: Icons.mark_email_unread_outlined,
-                title: 'Enquiries & Requests',
-                route: AppRoutes.facultyEnquiriesRequests,
-              ),
+
           ],
         ),
       ),

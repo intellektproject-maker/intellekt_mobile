@@ -24,9 +24,6 @@ class TestBatchMarksScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<TestBatchProvider>();
     final marks = provider.marks;
-    final totalObtained = marks.fold<double>(0, (sum, item) => sum + _number(item['marks_obtained']));
-    final totalMaximum = marks.fold<double>(0, (sum, item) => sum + _number(item['total_marks']));
-    final percentage = totalMaximum > 0 ? (totalObtained / totalMaximum) * 100 : 0.0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFECECEF),
@@ -68,7 +65,6 @@ class TestBatchMarksScreen extends StatelessWidget {
     );
   }
 
-  String _display(double value) => value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(2);
 }
 
 class _SubjectCard extends StatelessWidget {
@@ -84,9 +80,6 @@ class _SubjectCard extends StatelessWidget {
 
   double _number(dynamic value) =>
       double.tryParse(value?.toString() ?? '') ?? 0;
-
-  String _display(double value) =>
-      value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(2);
 
   @override
   Widget build(BuildContext context) {
@@ -266,7 +259,6 @@ class _MarkCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final subject = mark['subject_name']?.toString() ?? 'Subject';
     final code = mark['test_code']?.toString() ?? '-';
     final hasInternal = mark['internal_marks'] != null;
     final hasExternal = mark['external_marks'] != null;

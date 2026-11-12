@@ -25,8 +25,6 @@ class EnterMarksService {
           e.subject == subject;
     }).toList();
 
-    print("Found ${result.length} test codes");
-
     return result;
   }
 

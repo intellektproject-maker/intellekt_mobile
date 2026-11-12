@@ -12,15 +12,15 @@ class FacultyEnterMarksScreen extends StatefulWidget {
 class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   final _api = ApiClient();
   final _total = TextEditingController();
-  final _search = TextEditingController();
-  List<Map<String, dynamic>> _tests = [], _students = [], _requests = [];
+  final _codeInput = TextEditingController();
+  List<Map<String, dynamic>> _students = [], _requests = [];
   Map<String, String> _marks = {}, _comments = {}, _errors = {};
   Map<String, bool> _saved = {};
   String? _code;
   Map<String, dynamic>? _test;
   String _classFilter = '', _boardFilter = '', _subjectFilter = '';
   String _editingRoll = '', _editDraft = '', _busyRoll = '';
-  bool _loadingTests = true, _loadingStudents = false, _saving = false, _overallBusy = false;
+  bool _loadingTests = false, _loadingStudents = false, _validatingCode = false, _saving = false, _overallBusy = false;
   String? _error;
 
   String get _facultyId => widget.facultyId.trim().toUpperCase();
@@ -31,9 +31,9 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   String _err(Object e) => e.toString().replaceFirst('Exception: ', '');
 
   @override
-  void initState() { super.initState(); _loadTests(); }
+  void initState() { super.initState(); }
   @override
-  void dispose() { _total.dispose(); _search.dispose(); super.dispose(); }
+  void dispose() { _total.dispose(); _codeInput.dispose(); super.dispose(); }
 
   void _show(String message) {
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
@@ -50,43 +50,37 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
     )) == true;
   }
 
-  List<String> _unique(String Function(Map<String, dynamic>) getter) {
-    final values = _tests.map(getter).where((v) => v.trim().isNotEmpty).toSet().toList()..sort();
-    return values;
-  }
-
-  List<Map<String, dynamic>> get _filteredTests => _tests.where((t) {
-    final code = _str(t['test_code']).toLowerCase();
-    final cls = _str(t['class'] ?? t['class_name']);
-    final board = _str(t['board']);
-    final subject = _str(t['subject_name'] ?? t['subject']);
-    return (_search.text.trim().isEmpty || code.contains(_search.text.trim().toLowerCase())) &&
-      (_classFilter.isEmpty || cls == _classFilter) &&
-      (_boardFilter.isEmpty || board == _boardFilter) &&
-      (_subjectFilter.isEmpty || subject == _subjectFilter);
-  }).toList();
-
   void _reset() {
     _students = []; _requests = []; _marks = {}; _comments = {}; _saved = {}; _errors = {};
     _editingRoll = ''; _editDraft = '';
   }
 
-  Future<void> _loadTests() async {
-    setState(() { _loadingTests = true; _error = null; });
+  Future<void> _validateTestCode() async {
+    final code = _codeInput.text.trim();
+    if (code.isEmpty) { _show('Enter the test code.'); return; }
+    setState(() { _validatingCode = true; _error = null; _test = null; _code = null; _reset(); });
     try {
-      final res = await _api.get('/tests');
-      _tests = res.data is List ? (res.data as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : [];
-    } catch (e) { _error = _err(e); }
-    finally { if (mounted) setState(() => _loadingTests = false); }
-  }
-
-  void _selectTest(String? value) {
-    final matches = _tests.where((t) => _str(t['test_code']) == value).toList();
-    setState(() {
-      _code = value; _test = matches.isEmpty ? null : matches.first;
-      _total.text = matches.isEmpty ? '' : _str(matches.first['total_marks']);
-      _reset(); _error = null;
-    });
+      final res = await _api.get('/regular-test-code/' + Uri.encodeComponent(code));
+      if (res.data is! Map) throw Exception('Invalid test-code response.');
+      final parsed = Map<String, dynamic>.from(res.data);
+      if (!mounted) return;
+      setState(() {
+        _test = parsed;
+        _code = _str(parsed['canonicalCode']).isEmpty ? code.toUpperCase() : _str(parsed['canonicalCode']);
+        _total.text = _str(parsed['totalMarks']);
+      });
+      if (parsed['duplicate'] == true) {
+        _show(parsed['hasMarks'] == true
+          ? 'This test code already has saved marks. Existing entries will be loaded.'
+          : 'This code already exists as a posted test. Check before proceeding.');
+      } else {
+        _show('Test code verified. You can load the students.');
+      }
+    } catch (e) {
+      if (mounted) setState(() { _test = null; _code = null; _error = _err(e); });
+    } finally {
+      if (mounted) setState(() => _validatingCode = false);
+    }
   }
 
   Future<void> _loadRequests() async {
@@ -121,14 +115,15 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   Future<void> _loadStudents() async {
     final t = _test;
     final code = _str(_code).trim();
-    final cls = _str(t?['class'] ?? t?['class_name']).trim();
+    final cls = _str(t?['className']).trim();
     final board = _str(t?['board']).trim();
-    if (t == null || code.isEmpty || cls.isEmpty || board.isEmpty || _totalMarks <= 0) {
-      _show('Select a test with a valid class, board and total marks.'); return;
+    final subjectId = _str(t?['subjectId']).trim();
+    if (t == null || code.isEmpty || cls.isEmpty || board.isEmpty || subjectId.isEmpty || _totalMarks <= 0) {
+      _show('Verify a valid test code before loading students.'); return;
     }
     setState(() { _loadingStudents = true; _reset(); _error = null; });
     try {
-      final query = {'className': cls, 'board': board, 'testCode': code};
+      final query = {'className': cls, 'board': board, 'testCode': code, 'subjectId': subjectId};
       final results = await Future.wait([
         _api.get('/enter-marks-students', queryParameters: query),
         _api.get('/marks', queryParameters: query),
@@ -275,6 +270,8 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
           'roll_no': roll, 'student_name': s['name'] ?? s['student_name'] ?? '',
           'marks': value == 'A' ? 'A' : num.parse(value), 'comments': _comments[roll] ?? '',
           'test_code': _str(_code).trim().toUpperCase(), 'total_marks': _totalMarks,
+          'subject_id': _test?['subjectId'], 'chapter': _test?['chapter'],
+          'class_name': _test?['className'], 'board': _test?['board'],
         };
       }).toList();
       await _api.post('/marks', data: {'records': records, 'facultyId': _facultyId});
@@ -295,44 +292,52 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final classes = _unique((t) => _str(t['class'] ?? t['class_name']));
-    final boards = _unique((t) => _str(t['board']));
-    final subjects = _unique((t) => _str(t['subject_name'] ?? t['subject']));
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Enter Marks'), foregroundColor: AppColors.primary, backgroundColor: AppColors.surface,
-        actions: [IconButton(onPressed: _loadingTests ? null : _loadTests, icon: const Icon(Icons.refresh))]),
+      appBar: AppBar(title: const Text('Enter Marks'), foregroundColor: AppColors.primary, backgroundColor: AppColors.surface),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         Card(color: AppColors.surface, elevation: 0, child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          const Text('Test selection', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primary)),
+          const Text('Manual test entry', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primary)),
+          const SizedBox(height: 8),
+          const Text('Enter the test code printed on the answer sheet. The app will identify the board, class, subject, maximum marks and chapter.'),
           const SizedBox(height: 12),
-          TextField(controller: _search, decoration: const InputDecoration(labelText: 'Search test code', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()), onChanged: (_) => setState(() {})),
-          const SizedBox(height: 10),
-          _filter('Filter class', _classFilter, classes, (v) => setState(() { _classFilter = v ?? ''; _code = null; _test = null; _reset(); })),
-          const SizedBox(height: 10),
-          _filter('Filter board', _boardFilter, boards, (v) => setState(() { _boardFilter = v ?? ''; _code = null; _test = null; _reset(); })),
-          const SizedBox(height: 10),
-          _filter('Filter subject', _subjectFilter, subjects, (v) => setState(() { _subjectFilter = v ?? ''; _code = null; _test = null; _reset(); })),
-          const SizedBox(height: 10),
-          if (_loadingTests) const LinearProgressIndicator(),
-          DropdownButtonFormField<String>(
-            value: _code, isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Test code', border: OutlineInputBorder()),
-            items: _filteredTests.map((t) {
-              final code = _str(t['test_code']), cls = _str(t['class'] ?? t['class_name']);
-              return DropdownMenuItem(value: code, child: Text(code + ' • ' + _str(t['board']) + ' - ' + cls, overflow: TextOverflow.ellipsis));
-            }).toList(),
-            onChanged: _loadingTests ? null : _selectTest,
+          TextField(
+            controller: _codeInput,
+            textCapitalization: TextCapitalization.characters,
+            decoration: const InputDecoration(labelText: 'Test code', hintText: 'Example: S12M50C11', border: OutlineInputBorder()),
+            onChanged: (_) => setState(() { _test = null; _code = null; _reset(); }),
+            onSubmitted: (_) => _validateTestCode(),
           ),
           const SizedBox(height: 10),
-          TextField(controller: _total, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Total marks', border: OutlineInputBorder())),
-          if (_test != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text('Class: ' + _str(_test!['class'] ?? _test!['class_name']) + ' • Board: ' + _str(_test!['board']))),
-          const SizedBox(height: 12),
-          FilledButton.icon(onPressed: _loadingStudents || _loadingTests ? null : _loadStudents, icon: const Icon(Icons.people_outline), label: Text(_loadingStudents ? 'Loading students...' : 'Load students')),
+          FilledButton.icon(
+            onPressed: _validatingCode ? null : _validateTestCode,
+            icon: const Icon(Icons.verified_outlined),
+            label: Text(_validatingCode ? 'Verifying...' : 'Verify test code'),
+          ),
+          if (_test != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(10)),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Board: ' + _str(_test!['board']) + ' • Class: ' + _str(_test!['className']), style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text('Subject: ' + _str(_test!['subjectName'])),
+                Text('Maximum marks: ' + _str(_test!['totalMarks'])),
+                Text('Chapter: ' + _str(_test!['chapter'])),
+                if (_test!['attempt'] != null) Text('Attempt: Test ' + _str(_test!['attempt'])),
+                if (_test!['duplicate'] == true) Padding(padding: const EdgeInsets.only(top: 6), child: Text(
+                  _test!['hasMarks'] == true ? 'Existing marks found for this code.' : 'This code is already present in posted tests.',
+                  style: const TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.w700),
+                )),
+              ]),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(onPressed: _loadingStudents ? null : _loadStudents, icon: const Icon(Icons.people_outline), label: Text(_loadingStudents ? 'Loading students...' : 'Load students')),
+          ],
         ]))),
         if (_error != null) Card(color: Colors.red.shade50, child: ListTile(leading: const Icon(Icons.error_outline, color: Colors.red), title: const Text('Could not load data'), subtitle: Text(_error!))),
         if (_loadingStudents) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
-        if (!_loadingStudents && _students.isEmpty) const Card(child: ListTile(title: Text('Choose a test code and load its students to enter marks.'))),
+        if (!_loadingStudents && _students.isEmpty) const Card(child: ListTile(title: Text('Verify a test code and load its students to enter marks.'))),
         if (_students.isNotEmpty) ...[
           if (_hasSaved) Card(color: Colors.amber.shade50, child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             const Text('Previously saved marks are locked. Request admin approval before editing.', style: TextStyle(fontWeight: FontWeight.w600)),

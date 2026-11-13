@@ -275,6 +275,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
   String? _selectedClass, _selectedBoard, _selectedSubject, _testCode, _writingDate;
   final Map<String, String> _marks = {}, _remarks = {};
   final Map<String, Map<String, dynamic>> _approvedMarkEdits = {};
+  List<Map<String, dynamic>> _approvedOverallMarkEdits = [];
   bool _loading = false, _saving = false;
   bool get _isFaculty => !const {'IG001', 'IG002'}.contains(widget.adminId.trim().toUpperCase());
 
@@ -286,8 +287,18 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
       if (!mounted) return;
       setState(() {
         _approvedMarkEdits..clear()..addEntries(rows.where((row) => row['record_type'] == 'marks' && row['roll_no'] != '*').map((row) => MapEntry(row['roll_no'].toString().toUpperCase(), row)));
+        _approvedOverallMarkEdits = rows.where((row) => row['record_type'] == 'marks' && row['roll_no'] == '*').toList();
       });
     } catch (_) {}
+  }
+
+  Map<String, dynamic>? get _approvedOverallMarkEdit {
+    if (_testCode == null || _writingDate == null) return null;
+    for (final request in _approvedOverallMarkEdits) {
+      if (String(request['test_code'] ?? '').toUpperCase() == _testCode!.toUpperCase() &&
+          (request['attendance_date']?.toString().split('T').first ?? '') == _writingDate) return request;
+    }
+    return null;
   }
 
   bool _hasSavedMark(Map<String, dynamic> student) {
@@ -315,6 +326,69 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
       await widget.api.post('/test-batch/record-edit-requests', data: {'facultyId': widget.adminId, 'recordType': 'marks', 'roll_no': roll, 'test_code': _testCode, 'subject_name': _subjectFor(test), 'requested_value': value});
       if (mounted) setState(() => _message = 'Edit request sent to the admin.');
     } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
+  }
+
+  Future<void> _requestOverallMarkEdit() async {
+    if (!_isFaculty || _testCode == null || _writingDate == null) return;
+    final selected = _students.where((student) =>
+      _dateOnly(student['registered_writing_date'] ?? student['writing_date']) == _writingDate &&
+      _hasSavedMark(student)
+    ).toList();
+    if (selected.isEmpty) {
+      setState(() => _error = 'There are no saved marks to include in an overall edit request for this writing date.');
+      return;
+    }
+    setState(() { _saving = true; _error = null; _message = null; });
+    try {
+      final test = _tests.firstWhere((item) => item['test_code'] == _testCode, orElse: () => {});
+      final response = await widget.api.post('/test-batch/record-edit-requests/bulk-marks', data: {
+        'facultyId': widget.adminId,
+        'test_code': _testCode,
+        'subject_name': _subjectFor(test),
+        'writing_date': _writingDate,
+        'roll_nos': selected.map((student) => student['roll_no'].toString()).toList(),
+      });
+      if (mounted) setState(() => _message = response.data is Map
+          ? (response.data['message']?.toString() ?? 'Overall edit request sent to the admin.')
+          : 'Overall edit request sent to the admin.');
+    } catch (e) {
+      if (mounted) setState(() => _error = _messageOfError(e));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _applyApprovedOverallMarkEdit() async {
+    final request = _approvedOverallMarkEdit;
+    if (request == null || _testCode == null || _writingDate == null) return;
+    final selected = _students.where((student) =>
+      _dateOnly(student['registered_writing_date'] ?? student['writing_date']) == _writingDate
+    ).toList();
+    final records = selected.where((student) =>
+      _hasSavedMark(student) || (_marks[(student['roll_no'] ?? '').toString()] ?? '').trim().isNotEmpty
+    ).map((student) {
+      final roll = (student['roll_no'] ?? '').toString();
+      return {'roll_no': roll, 'marks_obtained': (_marks[roll] ?? '').trim()};
+    }).toList();
+    if (records.isEmpty || records.any((row) => (row['marks_obtained'] as String).isEmpty)) {
+      setState(() => _error = 'Enter marks for every student included in the overall edit before applying.');
+      return;
+    }
+    setState(() { _saving = true; _error = null; _message = null; });
+    try {
+      final response = await widget.api.post('/test-batch/record-edit-requests/${request['id']}/apply', data: {
+        'facultyId': widget.adminId,
+        'records': records,
+      });
+      if (mounted) setState(() => _message = response.data is Map
+          ? (response.data['message']?.toString() ?? 'Overall approved marks edit applied.')
+          : 'Overall approved marks edit applied.');
+      await _loadStudents();
+    } catch (e) {
+      if (mounted) setState(() => _error = _messageOfError(e));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   Future<void> _applyApprovedMarkEdit(String roll) async {
@@ -359,7 +433,9 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     return 'Other';
   }
 
-  List<String> get _classes => _tests.map(_classFor).toSet().toList()
+  List<String> get _classes => _tests
+    .where((test) => _selectedBoard == null || _boardFor(test) == _selectedBoard)
+    .map(_classFor).toSet().toList()
     ..sort((a, b) => a.compareTo(b));
 
   List<String> get _subjectsForClass => _tests
@@ -478,13 +554,32 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
       const Text('Enter Test Batch marks', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.primary)),
       if (_loading && _tests.isEmpty) const LinearProgressIndicator(),
       DropdownButtonFormField<String>(
+        value: _selectedBoard ?? '',
+        isExpanded: true,
+        decoration: const InputDecoration(labelText: 'Filter by board', border: OutlineInputBorder()),
+        items: const [
+          DropdownMenuItem(value: '', child: Text('All Boards')),
+          DropdownMenuItem(value: 'Stateboard', child: Text('State Board')),
+          DropdownMenuItem(value: 'CBSE', child: Text('CBSE')),
+          DropdownMenuItem(value: 'ISC', child: Text('ISC')),
+        ],
+        onChanged: (v) => setState(() {
+          _selectedBoard = v == null || v.isEmpty ? null : v;
+          _selectedClass = null;
+          _selectedSubject = null;
+          _testCode = null;
+          _students = [];
+          _writingDate = null;
+        }),
+      ),
+      const SizedBox(height: 10),
+      DropdownButtonFormField<String>(
         value: _selectedClass,
         isExpanded: true,
         decoration: const InputDecoration(labelText: 'Filter by class', border: OutlineInputBorder()),
         items: _classes.map((value) => DropdownMenuItem(value: value, child: Text(value == 'Other' ? value : 'Class $value'))).toList(),
         onChanged: (v) => setState(() {
           _selectedClass = v;
-          _selectedBoard = null;
           _selectedSubject = null;
           _testCode = null;
           _students = [];
@@ -492,28 +587,12 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
         }),
       ),
       const SizedBox(height: 10),
-      DropdownButtonFormField<String>(
-        value: _selectedBoard,
-        isExpanded: true,
-        decoration: const InputDecoration(labelText: 'Filter by board', border: OutlineInputBorder()),
-        items: const ['Stateboard', 'CBSE', 'ISC']
-            .map((value) => DropdownMenuItem(value: value, child: Text(value)))
-            .toList(),
-        onChanged: (v) => setState(() {
-          _selectedBoard = v;
-          _selectedSubject = null;
-          _testCode = null;
-          _students = [];
-          _writingDate = null;
-        }),
-      ),
-      const SizedBox(height: 10),
-      DropdownButtonFormField<String>(
+remove old board dropdown      DropdownButtonFormField<String>(
         value: _selectedSubject,
         isExpanded: true,
         decoration: const InputDecoration(labelText: 'Filter by subject', border: OutlineInputBorder()),
         items: _subjectsForClass.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
-        onChanged: _selectedClass == null ? null : (v) => setState(() {
+        onChanged: _selectedClass == null && _selectedBoard == null ? null : (v) => setState(() {
           _selectedSubject = v;
           _testCode = null;
           _students = [];
@@ -546,13 +625,17 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
         onChanged: (v) => setState(() => _writingDate = v),
       ),
       const SizedBox(height: 10),
+      if (_isFaculty && _students.any((student) => _dateOnly(student['registered_writing_date'] ?? student['writing_date']) == _writingDate && _hasSavedMark(student)))
+        OutlinedButton.icon(onPressed: _saving ? null : _requestOverallMarkEdit, icon: const Icon(Icons.edit_note_outlined), label: const Text('Request Edit for Entire Test')),
+      if (_isFaculty && _approvedOverallMarkEdit != null)
+        Padding(padding: const EdgeInsets.only(bottom: 10), child: FilledButton.icon(onPressed: _saving ? null : _applyApprovedOverallMarkEdit, icon: const Icon(Icons.check_circle_outline), label: const Text('Apply Approved Overall Edit'))),
       ..._students.where((s) => _writingDate == null || _dateOnly(s['registered_writing_date'] ?? s['writing_date']) == _writingDate).map((s) {
         final roll = (s['roll_no'] ?? '').toString();
         return Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('${s['name'] ?? s['student_name'] ?? roll}', style: const TextStyle(fontWeight: FontWeight.w800)),
           Text('Roll No: $roll'),
-          TextFormField(initialValue: _marks[roll] ?? '', readOnly: _isFaculty && _hasSavedMark(s), decoration: const InputDecoration(labelText: 'Marks (or A if absent)'), keyboardType: TextInputType.text, onChanged: (v) => _marks[roll] = v.trim()),
-          TextFormField(initialValue: _remarks[roll] ?? '', readOnly: _isFaculty && (s['marks_obtained']?.toString().trim().isNotEmpty ?? false), decoration: const InputDecoration(labelText: 'Remarks (optional)'), onChanged: (v) => _remarks[roll] = v),
+          TextFormField(initialValue: _marks[roll] ?? '', readOnly: _isFaculty && _hasSavedMark(s) && _approvedOverallMarkEdit == null, decoration: const InputDecoration(labelText: 'Marks (or A if absent)'), keyboardType: TextInputType.text, onChanged: (v) => _marks[roll] = v.trim()),
+          TextFormField(initialValue: _remarks[roll] ?? '', readOnly: _isFaculty && (s['marks_obtained']?.toString().trim().isNotEmpty ?? false) && _approvedOverallMarkEdit == null, decoration: const InputDecoration(labelText: 'Remarks (optional)'), onChanged: (v) => _remarks[roll] = v),
           if (_isFaculty && (s['marks_obtained']?.toString().trim().isNotEmpty ?? false))
             Wrap(spacing: 8, children: [
               OutlinedButton.icon(onPressed: () => _requestMarkEdit(roll), icon: const Icon(Icons.edit_outlined), label: const Text('Request Edit')),
@@ -560,7 +643,8 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
             ]),
         ])));
       }),
-      FilledButton.icon(onPressed: _saving ? null : _save, icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined), label: Text(_saving ? 'Saving...' : 'Save entered marks')),
+      if (_approvedOverallMarkEdit == null)
+        FilledButton.icon(onPressed: _saving ? null : _save, icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined), label: Text(_saving ? 'Saving...' : 'Save entered marks')),
     ],
   ]);
 

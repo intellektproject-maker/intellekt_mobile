@@ -118,18 +118,77 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
     final testDate = _testDateInput.text.trim();
 
     Map<String, dynamic> t;
-    try { t = await _validateTestCode(); } catch (_) { return; }
+    try {
+      t = await _validateTestCode();
+    } catch (_) {
+      return;
+    }
+
     final existingMarks = t['hasMarks'] == true;
     if (!existingMarks) {
-      if (chapter.isEmpty || !RegExp(r'^[0-9]+([.][0-9]+)*    try {
-      final query = {'className': cls, 'board': board, 'testCode': code, 'subjectId': subjectId};
+      if (chapter.isEmpty ||
+          !RegExp(r'^[0-9]+([.][0-9]+)*$').hasMatch(chapter)) {
+        _show('Enter only the chapter number (for example, 8 or 8.4).');
+        return;
+      }
+      if (portion.isEmpty) {
+        _show('Enter the test portion.');
+        return;
+      }
+      if (testDate.isEmpty) {
+        _show('Select the test date.');
+        return;
+      }
+    }
+
+    final code = _str(_code).trim();
+    final cls = _selectedClass.trim();
+    final board = _selectedBoard.trim();
+    final subjectId = _str(t['subjectId']).trim();
+    if (code.isEmpty ||
+        cls.isEmpty ||
+        board.isEmpty ||
+        subjectId.isEmpty ||
+        _totalMarks <= 0) {
+      _show('Invalid test code or missing class/board details.');
+      return;
+    }
+    if (t['duplicate'] == true && !existingMarks) {
+      _show('This test code already exists, but no saved marks were found for it.');
+      return;
+    }
+
+    _test = {
+      ...t,
+      'chapter': existingMarks ? _str(t['chapter']) : chapter,
+      'testDate': existingMarks ? _str(t['testDate']) : testDate,
+      'portion': existingMarks ? _str(t['portion']) : portion,
+    };
+    setState(() {
+      _loadingStudents = true;
+      _reset();
+      _error = null;
+    });
+    try {
+      final query = {
+        'className': cls,
+        'board': board,
+        'testCode': code,
+        'subjectId': subjectId,
+      };
       final results = await Future.wait([
         _api.get('/enter-marks-students', queryParameters: query),
         _api.get('/marks', queryParameters: query),
       ]);
-      if (results[0].data is! List) throw Exception('Unexpected students response.');
-      final students = (results[0].data as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-      final marks = <String, String>{}, comments = <String, String>{};
+      if (results[0].data is! List) {
+        throw Exception('Unexpected students response.');
+      }
+      final students = (results[0].data as List)
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+      final marks = <String, String>{};
+      final comments = <String, String>{};
       final saved = <String, bool>{};
       final existing = results[1].data is List ? results[1].data as List : [];
       for (final item in existing.whereType<Map>()) {
@@ -141,11 +200,21 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
         }
       }
       if (!mounted) return;
-      setState(() { _students = students; _marks = marks; _comments = comments; _saved = saved; });
+      setState(() {
+        _students = students;
+        _marks = marks;
+        _comments = comments;
+        _saved = saved;
+      });
       await _loadRequests();
-      if (students.isEmpty) _show('No students found for this test, class and board.');
-    } catch (e) { if (mounted) setState(() => _error = _err(e)); }
-    finally { if (mounted) setState(() => _loadingStudents = false); }
+      if (students.isEmpty) {
+        _show('No students found for this test, class and board.');
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = _err(e));
+    } finally {
+      if (mounted) setState(() => _loadingStudents = false);
+    }
   }
 
   String _comment(String value) {

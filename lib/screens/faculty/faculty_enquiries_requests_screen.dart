@@ -307,6 +307,7 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
                 _detail('Secondary Contact', value('secondary_contact')),
                 _detail('Reference', value('reference')),
                 _detail('Registered Date', _formatRegisteredDate(enquiry['created_at'])),
+                if ((enquiry['status'] ?? '').toString() == 'Pending') _detail('Pending Reason', (enquiry['reason'] ?? enquiry['comment'] ?? '-').toString()),
               ],
             ),
           ),
@@ -448,6 +449,7 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
                   Text('School: ${item['school_name'] ?? '-'}'),
                   Text('Parent: ${item['parent_name'] ?? '-'} • Phone: ${item['mobile_number'] ?? '-'}'),
                   Text('Registered: ${_formatRegisteredDate(item['created_at'])}'),
+                  if ((item['status'] ?? '').toString() == 'Pending' && (item['reason'] ?? '').toString().trim().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Container(width: double.infinity, padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8)), child: Text('Pending reason: ${item['reason']}', style: TextStyle(color: Colors.brown.shade800, fontWeight: FontWeight.w600)))),
                   const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.centerRight,

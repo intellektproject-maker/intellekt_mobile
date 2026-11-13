@@ -295,7 +295,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
   Map<String, dynamic>? get _approvedOverallMarkEdit {
     if (_testCode == null || _writingDate == null) return null;
     for (final request in _approvedOverallMarkEdits) {
-      if (String(request['test_code'] ?? '').toUpperCase() == _testCode!.toUpperCase() &&
+      if ((request['test_code'] ?? '').toString().toUpperCase() == _testCode!.toUpperCase() &&
           (request['attendance_date']?.toString().split('T').first ?? '') == _writingDate) return request;
     }
     return null;
@@ -587,7 +587,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
         }),
       ),
       const SizedBox(height: 10),
-remove old board dropdown      DropdownButtonFormField<String>(
+      DropdownButtonFormField<String>(
         value: _selectedSubject,
         isExpanded: true,
         decoration: const InputDecoration(labelText: 'Filter by subject', border: OutlineInputBorder()),

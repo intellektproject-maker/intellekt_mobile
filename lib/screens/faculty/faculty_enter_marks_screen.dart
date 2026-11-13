@@ -144,7 +144,11 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       if (!mounted) return;
       setState(() { _students = students; _marks = marks; _comments = comments; _saved = saved; });
       await _loadRequests();
-      if (students.isEmpty) _show('No students found for this test, class and board.');
+      if (saved.values.any((value) => value)) {
+        _show('This test code already exists in saved marks. Existing entries have been loaded.');
+      } else if (students.isEmpty) {
+        _show('No students found for this test, class and board.');
+      }
     } catch (e) { if (mounted) setState(() => _error = _err(e)); }
     finally { if (mounted) setState(() => _loadingStudents = false); }
   }

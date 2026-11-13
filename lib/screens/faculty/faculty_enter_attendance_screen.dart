@@ -34,12 +34,25 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
   Map<String, dynamic>? _requestFor(String roll) {
     for (final request in _editRequests) {
       if (_value(request['record_type']) == 'attendance' &&
+          _value(request['roll_no']) != '*' &&
           _value(request['roll_no']).trim().toUpperCase() == roll.trim().toUpperCase() &&
           _value(request['attendance_date']).split('T').first == _dateKey &&
           _value(request['subject_id']) == _subject) return request;
     }
     return null;
   }
+  Map<String, dynamic>? get _overallAttendanceRequest {
+    for (final request in _editRequests) {
+      if (_value(request['record_type']) == 'attendance' &&
+          _value(request['roll_no']) == '*' &&
+          _value(request['attendance_date']).split('T').first == _dateKey &&
+          _value(request['subject_id']) == _subject &&
+          ['Pending', 'Approved'].contains(request['status'])) return request;
+    }
+    return null;
+  }
+  bool get _overallAttendanceApproved => _overallAttendanceRequest?['status'] == 'Approved';
+
   bool _loadingClasses = true;
   bool _loadingStudents = false;
   bool _saving = false;
@@ -105,7 +118,7 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
 
   Future<void> _requestAttendanceEdit(Map<String, dynamic> student) async {
     final roll = _value(student['roll_no']).trim();
-    final request = _requestFor(roll);
+    final request = _requestFor(roll) ?? _overallAttendanceRequest;
     if (request?['status'] == 'Pending') {
       _show('Your edit request is already pending with the admin.');
       return;
@@ -147,13 +160,14 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
 
   Future<void> _applyApprovedAttendanceEdit(Map<String, dynamic> student) async {
     final roll = _value(student['roll_no']).trim();
-    final request = _requestFor(roll);
+    final request = _requestFor(roll) ?? _overallAttendanceRequest;
     final value = _editDrafts[roll] ?? _savedAttendance[roll] ?? '';
     if (request == null || request['status'] != 'Approved' || !['Present', 'Absent'].contains(value)) return;
     setState(() => _busyRoll = roll);
     try {
       await _api.post('/record-edit-requests/' + _value(request['id']) + '/apply', data: {
         'facultyId': _facultyId, 'newValue': value,
+        if (_value(request['roll_no']) == '*') 'roll_no': roll,
       });
       if (!mounted) return;
       setState(() { _savedAttendance[roll] = value; _editDrafts.remove(roll); });
@@ -164,6 +178,57 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
     } finally {
       if (mounted) setState(() => _busyRoll = '');
     }
+  }
+
+  Future<void> _requestOverallAttendanceEdit() async {
+    if (_savedAttendance.isEmpty) { _show('Load existing attendance first.'); return; }
+    final existing = _overallAttendanceRequest;
+    if (existing != null) {
+      _show(existing['status'] == 'Approved' ? 'Overall attendance edit is approved.' : 'An overall attendance edit request is already pending.');
+      return;
+    }
+    final confirm = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Request overall edit access'),
+      content: Text('Request admin approval to edit all saved attendance for the selected class, subject and date ($_dateKey)?'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Send request')),
+      ],
+    ));
+    if (confirm != true) return;
+    setState(() => _busyRoll = '*');
+    try {
+      final response = await _api.post('/record-edit-requests', data: {
+        'facultyId': _facultyId, 'recordType': 'attendance', 'roll_no': '*',
+        'subject_id': int.parse(_subject), 'attendance_date': _dateKey,
+        'requested_value': 'BULK_EDIT',
+      });
+      _show(response.data is Map && _value(response.data['message']).isNotEmpty
+          ? _value(response.data['message']) : 'Overall attendance edit request sent.');
+      await _loadEditRequests();
+    } catch (e) { _show('Could not send overall request: ' + e.toString().replaceFirst('Exception: ', '')); }
+    finally { if (mounted) setState(() => _busyRoll = ''); }
+  }
+
+  Future<void> _finishOverallAttendanceEdit() async {
+    final request = _overallAttendanceRequest;
+    if (!_overallAttendanceApproved || request == null) return;
+    final confirm = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Finish overall edit?'),
+      content: const Text('This will close the overall attendance edit permission. Further changes will need new admin approval.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Finish')),
+      ],
+    ));
+    if (confirm != true) return;
+    setState(() => _busyRoll = '*');
+    try {
+      await _api.post('/record-edit-requests/' + _value(request['id']) + '/finish', data: {'facultyId': _facultyId});
+      _show('Overall attendance edit session completed.');
+      await _loadEditRequests();
+    } catch (e) { _show(e.toString().replaceFirst('Exception: ', '')); }
+    finally { if (mounted) setState(() => _busyRoll = ''); }
   }
 
   Future<void> _save({bool overwrite = false}) async {
@@ -230,6 +295,33 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
         if (_error != null) Card(color: Colors.red.shade50, child: ListTile(leading: const Icon(Icons.error_outline, color: Colors.red), title: const Text('Request failed'), subtitle: Text(_error!))),
         if (_loadingStudents) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
         if (!_loadingStudents && _students.isEmpty) const Card(child: ListTile(title: Text('Select class, subject and date, then load students.'))),
+        if (_savedAttendance.isNotEmpty) Card(
+          color: Colors.amber.shade50,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              const Text('Existing attendance is locked until admin approval.', style: TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 6),
+              Text(_overallAttendanceRequest?['status'] == 'Pending'
+                  ? 'Overall edit request: Pending'
+                  : _overallAttendanceApproved
+                      ? 'Overall edit request: Approved'
+                      : 'Request permission to edit all saved attendance for this date and subject.'),
+              const SizedBox(height: 8),
+              Wrap(spacing: 8, children: [
+                OutlinedButton.icon(
+                  onPressed: _busyRoll == '*' || _overallAttendanceRequest != null ? null : _requestOverallAttendanceEdit,
+                  icon: const Icon(Icons.edit_note),
+                  label: Text(_busyRoll == '*' ? 'Sending...' : _overallAttendanceRequest?['status'] == 'Pending' ? 'Request pending' : _overallAttendanceApproved ? 'Approved' : 'Request overall edit'),
+                ),
+                if (_overallAttendanceApproved) FilledButton(
+                  onPressed: _busyRoll == '*' ? null : _finishOverallAttendanceEdit,
+                  child: const Text('Finish overall edit'),
+                ),
+              ]),
+            ]),
+          ),
+        ),
         if (_students.isNotEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Row(children: [
           Expanded(child: Text('${_students.length} students', style: const TextStyle(fontWeight: FontWeight.w800))),
           TextButton(onPressed: () => setState(() { for (final s in _students) { _attendance[(s['roll_no'] ?? '').toString()] = 'Present'; } }), child: const Text('Mark all present')),
@@ -239,8 +331,8 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
           final name = (s['name'] ?? s['student_name'] ?? 'Student').toString();
           final saved = _savedAttendance.containsKey(roll);
           final request = _requestFor(roll);
-          final pending = request?['status'] == 'Pending';
-          final approved = request?['status'] == 'Approved';
+          final pending = request?['status'] == 'Pending' || _overallAttendanceRequest?['status'] == 'Pending';
+          final approved = request?['status'] == 'Approved' || _overallAttendanceApproved;
           return Card(color: AppColors.surface, elevation: 0, margin: const EdgeInsets.only(bottom: 8), child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

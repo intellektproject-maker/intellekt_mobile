@@ -54,6 +54,15 @@ class ApiRoutes {
   static const String registeredStudents = "/registered-students";
   static const String facultyProfile = "/faculty/profile";
 
+  // ==========================================================
+  // MARK SCAN
+  // ==========================================================
+
+  static const String markScanStatus = "/markscan/status";
+  static const String markScanOptions = "/markscan/options";
+  static const String markScanUpload = "/markscan/upload";
+  static const String markScanApprove = "/markscan/approve";
+
   static String facultyDetails(String facultyId) => "/faculty/$facultyId";
 
   // ==========================================================

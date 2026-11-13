@@ -310,7 +310,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     final request = _approvedMarkEdits[roll];
     if (request == null) return;
     try {
-      await widget.api.post('/test-batch/record-edit-requests/\${request['id']}/apply', data: {'facultyId': widget.adminId, 'newValue': request['requested_value']});
+      await widget.api.post('/test-batch/record-edit-requests/${request['id']}/apply', data: {'facultyId': widget.adminId, 'newValue': request['requested_value']});
       if (mounted) { setState(() { _approvedMarkEdits.remove(roll); _message = 'Approved marks edit applied for $roll.'; }); await _loadStudents(); }
     } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
   }
@@ -570,7 +570,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     final request = _approvedAttendanceEdits[roll];
     if (request == null) return;
     try {
-      await widget.api.post('/test-batch/record-edit-requests/\${request['id']}/apply', data: {'facultyId': widget.adminId});
+      await widget.api.post('/test-batch/record-edit-requests/${request['id']}/apply', data: {'facultyId': widget.adminId});
       if (mounted) { setState(() { _approvedAttendanceEdits.remove(roll); _message = 'Approved attendance edit applied for $roll.'; }); await _load(); }
     } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
   }

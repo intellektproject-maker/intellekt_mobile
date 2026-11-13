@@ -66,7 +66,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       final res = await _api.get('/regular-test-code/' + Uri.encodeComponent(code));
       if (res.data is! Map) throw Exception('Invalid test-code response.');
       final parsed = Map<String, dynamic>.from(res.data);
-      if (!mounted) return;
+      if (!mounted) return parsed;
       setState(() {
         _test = parsed;
         _code = _str(parsed['canonicalCode']).isEmpty ? code.toUpperCase() : _str(parsed['canonicalCode']);
@@ -332,37 +332,6 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
           TextField(controller: _chapterInput, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Chapter', hintText: 'Enter only chapter no. (e.g. 8.4)', border: OutlineInputBorder())),
           const SizedBox(height: 12),
           TextField(controller: _portionInput, maxLines: 2, decoration: const InputDecoration(labelText: 'Portion', hintText: 'Enter test portion', border: OutlineInputBorder())),
-          if (_test != null) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(10)),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Subject: ' + _str(_test!['subjectName'])),
-                Text('Maximum marks: ' + _str(_test!['totalMarks'])),
-                Text('Chapter: ' + _str(_test!['chapter'])),
-                if (_test!['attempt'] != null) Text('Attempt: Test ' + _str(_test!['attempt'])),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: _selectedClass,
-                  decoration: const InputDecoration(labelText: 'Select class', border: OutlineInputBorder()),
-                  items: ['7', '8', '9', '10', '11', '12'].map((v) => DropdownMenuItem(value: v, child: Text('Class $v'))).toList(),
-                  onChanged: (v) => setState(() { _selectedClass = v ?? ''; _reset(); }),
-                ),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<String>(
-                  value: _selectedBoard,
-                  decoration: const InputDecoration(labelText: 'Select board', border: OutlineInputBorder()),
-                  items: ['State Board', 'CBSE', 'ISC'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-                  onChanged: (v) => setState(() { _selectedBoard = v ?? ''; _reset(); }),
-                ),
-                if (_test!['duplicate'] == true) Padding(padding: const EdgeInsets.only(top: 6), child: Text(
-                  _test!['hasMarks'] == true ? 'Existing marks found for this code.' : 'This code is already present in posted tests.',
-                  style: const TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.w700),
-                )),
-              ]),
-            ),
-          ],
           FilledButton.icon(onPressed: _loadingStudents || _validatingCode ? null : _loadStudents, icon: const Icon(Icons.people_outline), label: Text(_loadingStudents || _validatingCode ? 'Checking and loading...' : 'Load students')),
         ]))),
         if (_error != null) Card(color: Colors.red.shade50, child: ListTile(leading: const Icon(Icons.error_outline, color: Colors.red), title: const Text('Could not load data'), subtitle: Text(_error!))),

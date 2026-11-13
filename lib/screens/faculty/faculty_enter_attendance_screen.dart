@@ -25,6 +25,8 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
 
   String get _facultyId => widget.facultyId.trim().toUpperCase();
   String get _dateKey => _date.toIso8601String().split('T').first;
+  String get _selectedBoard => (_classKey ?? '').split('||').first;
+  String get _selectedClass => (_classKey ?? '').split('||').length > 1 ? (_classKey ?? '').split('||')[1] : '';
   String _value(dynamic value) => (value ?? '').toString();
 
   void _show(String message) {
@@ -201,6 +203,7 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
       final response = await _api.post('/record-edit-requests', data: {
         'facultyId': _facultyId, 'recordType': 'attendance', 'roll_no': '*',
         'subject_id': int.parse(_subject), 'attendance_date': _dateKey,
+        'class_name': _selectedClass, 'board': _selectedBoard,
         'requested_value': 'BULK_EDIT',
       });
       _show(response.data is Map && _value(response.data['message']).isNotEmpty

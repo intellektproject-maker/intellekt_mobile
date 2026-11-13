@@ -340,7 +340,10 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
         _writingDate = dateOptions.isNotEmpty ? dateOptions.first : null;
         for (final s in merged) {
           final roll = (s['roll_no'] ?? '').toString();
-          _marks[roll] = s['marks_obtained']?.toString() ?? '';
+          final attendanceStatus = (s['attendance_status'] ?? '').toString();
+          _marks[roll] = attendanceStatus == 'Absent'
+              ? 'A'
+              : (s['marks_obtained']?.toString() ?? '');
           _remarks[roll] = s['remarks']?.toString() ?? '';
         }
       });
@@ -361,9 +364,25 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     if (_testCode == null || _writingDate == null) { setState(() => _error = 'Choose a test and writing date first.'); return; }
     final test = _tests.firstWhere((t) => t['test_code'] == _testCode, orElse: () => {});
     final total = num.tryParse(test['total_marks']?.toString() ?? '');
-    final records = _students.where((s) => (_marks[(s['roll_no'] ?? '').toString()] ?? '').trim().isNotEmpty).map((s) {
+    // Submit only students belonging to the selected writing date. The
+    // backend validates each mark against that exact date's registration.
+    // Absent attendance always overrides any previously typed numeric mark.
+    final selectedStudents = _students.where((s) =>
+      _dateOnly(s['registered_writing_date'] ?? s['writing_date']) == _writingDate
+    ).toList();
+    final records = selectedStudents.where((s) {
+      final attendanceStatus = (s['attendance_status'] ?? '').toString();
       final roll = (s['roll_no'] ?? '').toString();
-      return {'roll_no': roll, 'marks_obtained': _marks[roll]!.trim(), 'remarks': _remarks[roll] ?? ''};
+      return attendanceStatus == 'Absent' ||
+          (_marks[roll] ?? '').trim().isNotEmpty;
+    }).map((s) {
+      final roll = (s['roll_no'] ?? '').toString();
+      final attendanceStatus = (s['attendance_status'] ?? '').toString();
+      return {
+        'roll_no': roll,
+        'marks_obtained': attendanceStatus == 'Absent' ? 'A' : _marks[roll]!.trim(),
+        'remarks': _remarks[roll] ?? '',
+      };
     }).toList();
     if (records.isEmpty) { setState(() => _error = 'Enter marks for at least one student who completed the test.'); return; }
     for (final r in records) {

@@ -13,6 +13,9 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   final _api = ApiClient();
   final _total = TextEditingController();
   final _codeInput = TextEditingController();
+  final _testDateInput = TextEditingController();
+  final _chapterInput = TextEditingController();
+  final _portionInput = TextEditingController();
   final _chapterInput = TextEditingController();
   final _portionInput = TextEditingController();
   final _testDateInput = TextEditingController();
@@ -124,6 +127,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       _show('Invalid test code or missing class/board details.'); return;
     }
     if (t['duplicate'] == true) { _show('This test code already exists. Please use a new test code.'); return; }
+    _test = {...t, 'chapter': chapter, 'testDate': testDate, 'portion': portion};
     setState(() { _loadingStudents = true; _reset(); _error = null; });
     try {
       final query = {'className': cls, 'board': board, 'testCode': code, 'subjectId': subjectId};
@@ -279,6 +283,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
           'test_code': _str(_code).trim().toUpperCase(), 'total_marks': _totalMarks,
           'subject_id': _test?['subjectId'], 'chapter': _chapterInput.text.trim(), 'portion': _portionInput.text.trim(), 'test_date': _testDateInput.text.trim(),
           'class_name': _test?['className'], 'board': _test?['board'], 'batch': 'Regular Batch',
+          'test_date': _test?['testDate'], 'portion': _test?['portion'],
         };
       }).toList();
       await _api.post('/marks', data: {'records': records, 'facultyId': _facultyId});
@@ -438,7 +443,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
     final board = _selectedBoard.trim();
     final subjectId = _str(t?['subjectId']).trim();
     if (t == null || code.isEmpty || cls.isEmpty || board.isEmpty || subjectId.isEmpty || _totalMarks <= 0) {
-      _show('Verify a valid test code before loading students.'); return;
+      _show('Enter a valid test code before loading students.'); return;
     }
     setState(() { _loadingStudents = true; _reset(); _error = null; });
     try {
@@ -620,54 +625,23 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       appBar: AppBar(title: const Text('Enter Marks'), foregroundColor: AppColors.primary, backgroundColor: AppColors.surface),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         Card(color: AppColors.surface, elevation: 0, child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          const Text('Manual test entry', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primary)),
-          const SizedBox(height: 8),
-          const Text('Enter the test code printed on the answer sheet. The app will identify the board, class, subject, maximum marks and chapter.'),
+          TextField(controller: _codeInput, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'Test code', hintText: 'Example: S12M50C11', border: OutlineInputBorder()), onChanged: (_) => setState(() { _test = null; _code = null; _reset(); })),
           const SizedBox(height: 12),
-          TextField(
-            controller: _codeInput,
-            textCapitalization: TextCapitalization.characters,
-            decoration: const InputDecoration(labelText: 'Test code', hintText: 'Example: S12M50C11', border: OutlineInputBorder()),
-            onChanged: (_) => setState(() { _test = null; _code = null; _reset(); }),
-            onSubmitted: (_) => _validateTestCode(),
-          ),
-          if (_test != null) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(10)),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Subject: ' + _str(_test!['subjectName'])),
-                Text('Maximum marks: ' + _str(_test!['totalMarks'])),
-                Text('Chapter: ' + _str(_test!['chapter'])),
-                if (_test!['attempt'] != null) Text('Attempt: Test ' + _str(_test!['attempt'])),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: _selectedClass,
-                  decoration: const InputDecoration(labelText: 'Select class', border: OutlineInputBorder()),
-                  items: ['7', '8', '9', '10', '11', '12'].map((v) => DropdownMenuItem(value: v, child: Text('Class $v'))).toList(),
-                  onChanged: (v) => setState(() { _selectedClass = v ?? ''; _reset(); }),
-                ),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<String>(
-                  value: _selectedBoard,
-                  decoration: const InputDecoration(labelText: 'Select board', border: OutlineInputBorder()),
-                  items: ['State Board', 'CBSE', 'ISC'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-                  onChanged: (v) => setState(() { _selectedBoard = v ?? ''; _reset(); }),
-                ),
-                if (_test!['duplicate'] == true) Padding(padding: const EdgeInsets.only(top: 6), child: Text(
-                  _test!['hasMarks'] == true ? 'Existing marks found for this code.' : 'This code is already present in posted tests.',
-                  style: const TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.w700),
-                )),
-              ]),
-            ),
-            const SizedBox(height: 12),
-            FilledButton.icon(onPressed: _loadingStudents ? null : _loadStudents, icon: const Icon(Icons.people_outline), label: Text(_loadingStudents ? 'Loading students...' : 'Load students')),
-          ],
+          TextField(controller: _testDateInput, readOnly: true, decoration: const InputDecoration(labelText: 'Test date', hintText: 'Select test date', border: OutlineInputBorder(), suffixIcon: Icon(Icons.calendar_today)), onTap: () async {
+            final now = DateTime.now();
+            final picked = await showDatePicker(context: context, initialDate: now, firstDate: DateTime(now.year - 5), lastDate: DateTime(now.year + 2));
+            if (picked != null) setState(() => _testDateInput.text = picked.toIso8601String().split('T').first);
+          }),
+          const SizedBox(height: 12),
+          TextField(controller: _chapterInput, keyboardType: TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Chapter', hintText: 'Enter only chapter no. (e.g. 8 or 8.4)', border: OutlineInputBorder())),
+          const SizedBox(height: 12),
+          TextField(controller: _portionInput, minLines: 1, maxLines: 3, decoration: const InputDecoration(labelText: 'Portion', hintText: 'Enter test portion', border: OutlineInputBorder())),
+          const SizedBox(height: 14),
+          FilledButton.icon(onPressed: _loadingStudents || _validatingCode ? null : _loadStudents, icon: _loadingStudents || _validatingCode ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.people_outline), label: Text(_loadingStudents || _validatingCode ? 'Loading students...' : 'Load students')),
         ]))),
         if (_error != null) Card(color: Colors.red.shade50, child: ListTile(leading: const Icon(Icons.error_outline, color: Colors.red), title: const Text('Could not load data'), subtitle: Text(_error!))),
         if (_loadingStudents) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
-        if (!_loadingStudents && _students.isEmpty) const Card(child: ListTile(title: Text('Verify a test code and load its students to enter marks.'))),
+        if (!_loadingStudents && _students.isEmpty) const SizedBox.shrink(),
         if (_students.isNotEmpty) ...[
           if (_hasSaved) Card(color: Colors.amber.shade50, child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             const Text('Previously saved marks are locked. Request admin approval before editing.', style: TextStyle(fontWeight: FontWeight.w600)),

@@ -272,7 +272,7 @@ class _EnterMarksTab extends StatefulWidget {
 
 class _EnterMarksTabState extends State<_EnterMarksTab> {
   List<Map<String, dynamic>> _tests = [], _students = [];
-  String? _selectedClass, _selectedSubject, _testCode, _writingDate;
+  String? _selectedClass, _selectedBoard, _selectedSubject, _testCode, _writingDate;
   final Map<String, String> _marks = {}, _remarks = {};
   final Map<String, Map<String, dynamic>> _approvedMarkEdits = {};
   bool _loading = false, _saving = false;
@@ -335,11 +335,25 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     return match?.group(1) ?? 'Other';
   }
 
+  String _boardFor(Map<String, dynamic> test) {
+    final explicit = (test['board'] ?? test['board_name'] ?? '').toString().trim().toLowerCase();
+    if (explicit.contains('state')) return 'Stateboard';
+    if (explicit.contains('cbse')) return 'CBSE';
+    if (explicit.contains('isc')) return 'ISC';
+    final code = (test['test_code'] ?? '').toString().toUpperCase();
+    switch (code.isNotEmpty ? code[0] : '') {
+      case 'S': return 'Stateboard';
+      case 'C': return 'CBSE';
+      case 'I': return 'ISC';
+      default: return 'Other';
+    }
+  }
+
   String _subjectFor(Map<String, dynamic> test) {
     final explicit = (test['subject_name'] ?? test['subject'] ?? '').toString().trim();
     if (explicit.isNotEmpty) return explicit;
     final code = (test['test_code'] ?? '').toString().toUpperCase();
-    final match = RegExp(r'^[SCI]\d{2}([MP])').firstMatch(code);
+    final match = RegExp(r'^[SCI]\\d{2}([MP])').firstMatch(code);
     if (match?.group(1) == 'M') return 'Mathematics';
     if (match?.group(1) == 'P') return 'Physics';
     return 'Other';
@@ -349,12 +363,15 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     ..sort((a, b) => a.compareTo(b));
 
   List<String> get _subjectsForClass => _tests
-    .where((t) => _selectedClass == null || _classFor(t) == _selectedClass)
+    .where((t) =>
+      (_selectedClass == null || _classFor(t) == _selectedClass) &&
+      (_selectedBoard == null || _boardFor(t) == _selectedBoard))
     .map(_subjectFor).toSet().toList()
     ..sort();
 
   List<Map<String, dynamic>> get _filteredTests => _tests.where((t) =>
     (_selectedClass == null || _classFor(t) == _selectedClass) &&
+    (_selectedBoard == null || _boardFor(t) == _selectedBoard) &&
     (_selectedSubject == null || _subjectFor(t) == _selectedSubject)
   ).toList();
 
@@ -467,6 +484,23 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
         items: _classes.map((value) => DropdownMenuItem(value: value, child: Text(value == 'Other' ? value : 'Class $value'))).toList(),
         onChanged: (v) => setState(() {
           _selectedClass = v;
+          _selectedBoard = null;
+          _selectedSubject = null;
+          _testCode = null;
+          _students = [];
+          _writingDate = null;
+        }),
+      ),
+      const SizedBox(height: 10),
+      DropdownButtonFormField<String>(
+        value: _selectedBoard,
+        isExpanded: true,
+        decoration: const InputDecoration(labelText: 'Filter by board', border: OutlineInputBorder()),
+        items: const ['Stateboard', 'CBSE', 'ISC']
+            .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+            .toList(),
+        onChanged: (v) => setState(() {
+          _selectedBoard = v;
           _selectedSubject = null;
           _testCode = null;
           _students = [];

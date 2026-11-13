@@ -385,9 +385,9 @@ class _FacultyProfileState extends State<FacultyProfile> {
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.primary,
         elevation: 0,
-        title: const Text(
-          'Faculty Profile',
-          style: TextStyle(
+        title: Text(
+          _isAdmin ? 'Admin Profile' : 'Faculty Profile',
+          style: const TextStyle(
             color: AppColors.primary,
             fontWeight: FontWeight.w800,
           ),

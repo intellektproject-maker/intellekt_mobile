@@ -274,7 +274,46 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
   List<Map<String, dynamic>> _tests = [], _students = [];
   String? _selectedClass, _selectedSubject, _testCode, _writingDate;
   final Map<String, String> _marks = {}, _remarks = {};
+  final Map<String, Map<String, dynamic>> _approvedMarkEdits = {};
   bool _loading = false, _saving = false;
+  bool get _isFaculty => !const {'IG001', 'IG002'}.contains(widget.adminId.trim().toUpperCase());
+
+  Future<void> _loadApprovedMarkEdits() async {
+    if (!_isFaculty) return;
+    try {
+      final response = await widget.api.get('/test-batch/record-edit-requests/approved', queryParameters: {'facultyId': widget.adminId});
+      final rows = response.data is List ? (response.data as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : <Map<String, dynamic>>[];
+      if (!mounted) return;
+      setState(() {
+        _approvedMarkEdits..clear()..addEntries(rows.where((row) => row['record_type'] == 'marks' && row['roll_no'] != '*').map((row) => MapEntry(row['roll_no'].toString().toUpperCase(), row)));
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _requestMarkEdit(String roll) async {
+    final controller = TextEditingController(text: _marks[roll] ?? '');
+    final value = await showDialog<String>(context: context, builder: (dialogContext) => AlertDialog(
+      title: Text('Request marks edit - $roll'),
+      content: TextField(controller: controller, decoration: const InputDecoration(labelText: 'New marks (or A)')),
+      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim()), child: const Text('Send request'))],
+    ));
+    if (value == null || value.isEmpty) { controller.dispose(); return; }
+    try {
+      final test = _tests.firstWhere((t) => t['test_code'] == _testCode, orElse: () => {});
+      await widget.api.post('/test-batch/record-edit-requests', data: {'facultyId': widget.adminId, 'recordType': 'marks', 'roll_no': roll, 'test_code': _testCode, 'subject_name': _subjectFor(test), 'requested_value': value});
+      if (mounted) setState(() => _message = 'Edit request sent to the admin.');
+    } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
+    controller.dispose();
+  }
+
+  Future<void> _applyApprovedMarkEdit(String roll) async {
+    final request = _approvedMarkEdits[roll];
+    if (request == null) return;
+    try {
+      await widget.api.post('/test-batch/record-edit-requests/\${request['id']}/apply', data: {'facultyId': widget.adminId, 'newValue': request['requested_value']});
+      if (mounted) { setState(() { _approvedMarkEdits.remove(roll); _message = 'Approved marks edit applied for $roll.'; }); await _loadStudents(); }
+    } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
+  }
   String? _error, _message;
 
   String _classFor(Map<String, dynamic> test) {
@@ -330,6 +369,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
       final data = registered.data;
       final base = data is Map && data['students'] is List ? (data['students'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : <Map<String, dynamic>>[];
       final entry = await widget.api.get('/test-batch/tests/${Uri.encodeComponent(_testCode!)}/mark-entry', queryParameters: {'adminId': widget.adminId});
+      await _loadApprovedMarkEdits();
       final ed = entry.data;
       final existing = ed is Map && ed['students'] is List ? (ed['students'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : <Map<String, dynamic>>[];
       final byRoll = {for (final s in existing) (s['roll_no'] ?? '').toString().toUpperCase(): s};
@@ -373,8 +413,8 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     final records = selectedStudents.where((s) {
       final attendanceStatus = (s['attendance_status'] ?? '').toString();
       final roll = (s['roll_no'] ?? '').toString();
-      return attendanceStatus == 'Absent' ||
-          (_marks[roll] ?? '').trim().isNotEmpty;
+      if (_isFaculty && (s['marks_obtained']?.toString().trim().isNotEmpty ?? false)) return false;
+      return attendanceStatus == 'Absent' || (_marks[roll] ?? '').trim().isNotEmpty;
     }).map((s) {
       final roll = (s['roll_no'] ?? '').toString();
       final attendanceStatus = (s['attendance_status'] ?? '').toString();
@@ -466,8 +506,13 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
         return Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('${s['name'] ?? s['student_name'] ?? roll}', style: const TextStyle(fontWeight: FontWeight.w800)),
           Text('Roll No: $roll'),
-          TextFormField(initialValue: _marks[roll] ?? '', decoration: const InputDecoration(labelText: 'Marks (or A if absent)'), keyboardType: TextInputType.text, onChanged: (v) => _marks[roll] = v.trim()),
-          TextFormField(initialValue: _remarks[roll] ?? '', decoration: const InputDecoration(labelText: 'Remarks (optional)'), onChanged: (v) => _remarks[roll] = v),
+          TextFormField(initialValue: _marks[roll] ?? '', readOnly: _isFaculty && (s['marks_obtained']?.toString().trim().isNotEmpty ?? false), decoration: const InputDecoration(labelText: 'Marks (or A if absent)'), keyboardType: TextInputType.text, onChanged: (v) => _marks[roll] = v.trim()),
+          TextFormField(initialValue: _remarks[roll] ?? '', readOnly: _isFaculty && (s['marks_obtained']?.toString().trim().isNotEmpty ?? false), decoration: const InputDecoration(labelText: 'Remarks (optional)'), onChanged: (v) => _remarks[roll] = v),
+          if (_isFaculty && (s['marks_obtained']?.toString().trim().isNotEmpty ?? false))
+            Wrap(spacing: 8, children: [
+              OutlinedButton.icon(onPressed: () => _requestMarkEdit(roll), icon: const Icon(Icons.edit_outlined), label: const Text('Request Edit')),
+              if (_approvedMarkEdits.containsKey(roll)) FilledButton(onPressed: () => _applyApprovedMarkEdit(roll), child: const Text('Apply Approved Edit')),
+            ]),
         ])));
       }),
       FilledButton.icon(onPressed: _saving ? null : _save, icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined), label: Text(_saving ? 'Saving...' : 'Save entered marks')),
@@ -488,7 +533,47 @@ class _AttendanceTabState extends State<_AttendanceTab> {
   DateTime _date = DateTime.now();
   List<Map<String, dynamic>> _students = [];
   final Map<String, String?> _status = {};
+  final Map<String, Map<String, dynamic>> _approvedAttendanceEdits = {};
   bool _loading = false, _saving = false;
+  bool get _isFaculty => !const {'IG001', 'IG002'}.contains(widget.adminId.trim().toUpperCase());
+
+  Future<void> _loadApprovedAttendanceEdits() async {
+    if (!_isFaculty) return;
+    try {
+      final response = await widget.api.get('/test-batch/record-edit-requests/approved', queryParameters: {'facultyId': widget.adminId});
+      final rows = response.data is List ? (response.data as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : <Map<String, dynamic>>[];
+      if (!mounted) return;
+      setState(() {
+        _approvedAttendanceEdits..clear()..addEntries(rows.where((row) => row['record_type'] == 'attendance' && row['roll_no'] != '*').map((row) => MapEntry(row['roll_no'].toString().toUpperCase(), row)));
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _requestAttendanceEdit(String roll, String current) async {
+    final value = await showDialog<String>(context: context, builder: (dialogContext) => AlertDialog(
+      title: Text('Request attendance edit - $roll'),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text('Current status: $current'),
+        ListTile(title: const Text('Present'), onTap: () => Navigator.pop(dialogContext, 'Present')),
+        ListTile(title: const Text('Absent'), onTap: () => Navigator.pop(dialogContext, 'Absent')),
+      ]),
+      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel'))],
+    ));
+    if (value == null) return;
+    try {
+      await widget.api.post('/test-batch/record-edit-requests', data: {'facultyId': widget.adminId, 'recordType': 'attendance', 'roll_no': roll, 'attendance_date': _dateString, 'requested_value': value});
+      if (mounted) setState(() => _message = 'Attendance edit request sent to the admin.');
+    } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
+  }
+
+  Future<void> _applyApprovedAttendanceEdit(String roll) async {
+    final request = _approvedAttendanceEdits[roll];
+    if (request == null) return;
+    try {
+      await widget.api.post('/test-batch/record-edit-requests/\${request['id']}/apply', data: {'facultyId': widget.adminId});
+      if (mounted) { setState(() { _approvedAttendanceEdits.remove(roll); _message = 'Approved attendance edit applied for $roll.'; }); await _load(); }
+    } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
+  }
   String? _error, _message;
 
   String get _dateString => '${_date.year.toString().padLeft(4, '0')}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}';
@@ -499,6 +584,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
       final response = await widget.api.get('/test-batch/attendance', queryParameters: {'adminId': widget.adminId, 'date': _dateString});
       final data = response.data;
       final rows = data is Map && data['attendance'] is List ? (data['attendance'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : <Map<String, dynamic>>[];
+      await _loadApprovedAttendanceEdits();
       if (mounted) setState(() {
         _students = rows;
         _status.clear();
@@ -523,10 +609,15 @@ class _AttendanceTabState extends State<_AttendanceTab> {
             'Select Present or Absent for every student before saving attendance.');
         return;
       }
-      final records = _students.map((s) => {
+      final records = _students.where((s) {
+        final saved = s['status']?.toString();
+        final roll = (s['roll_no'] ?? '').toString();
+        return !_isFaculty || saved == null || _status[roll] == saved;
+      }).map((s) => {
         'roll_no': s['roll_no'],
         'status': _status[(s['roll_no'] ?? '').toString()],
       }).toList();
+      if (records.isEmpty) { setState(() => _message = 'No new attendance entries to save. Use Request Edit for saved records.'); return; }
       await widget.api.post('/test-batch/attendance', data: {'adminId': widget.adminId, 'attendanceDate': _dateString, 'records': records});
       if (mounted) setState(() => _message = 'Attendance saved for ${records.length} student(s).');
       await _load();
@@ -562,8 +653,20 @@ class _AttendanceTabState extends State<_AttendanceTab> {
               : null,
           hint: const Text('Select status'),
           items: const [DropdownMenuItem(value: 'Present', child: Text('Present')), DropdownMenuItem(value: 'Absent', child: Text('Absent'))],
-          onChanged: (v) => setState(() => _status[roll] = v ?? 'Present'),
+          onChanged: (_isFaculty && s['status'] != null) ? null : (v) => setState(() => _status[roll] = v ?? 'Present'),
         ),
+        if (_isFaculty && s['status'] != null)
+          PopupMenuButton<String>(
+            tooltip: 'Edit attendance',
+            onSelected: (action) {
+              if (action == 'request') _requestAttendanceEdit(roll, s['status'].toString());
+              if (action == 'apply') _applyApprovedAttendanceEdit(roll);
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'request', child: Text('Request Edit')),
+              if (_approvedAttendanceEdits.containsKey(roll)) const PopupMenuItem(value: 'apply', child: Text('Apply Approved Edit')),
+            ],
+          ),
       ));
     }),
     if (_students.isNotEmpty) FilledButton.icon(onPressed: _saving ? null : _save, icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined), label: Text(_saving ? 'Saving...' : 'Save attendance')),

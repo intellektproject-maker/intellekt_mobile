@@ -284,7 +284,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
           'roll_no': roll, 'student_name': s['name'] ?? s['student_name'] ?? '',
           'marks': value == 'A' ? 'A' : num.parse(value), 'comments': _comments[roll] ?? '',
           'test_code': _str(_code).trim().toUpperCase(), 'total_marks': _totalMarks,
-          'subject_id': _test?['subjectId'], 'chapter': _chapterInput.text.trim(), 'portion': _portionInput.text.trim(), 'test_date': _testDateInput.text.trim(),
+          'subject_id': _test?['subjectId'], 'chapter': _test?['chapter'],
           'class_name': _test?['className'], 'board': _test?['board'], 'batch': 'Regular Batch',
           'test_date': _test?['testDate'], 'portion': _test?['portion'],
         };

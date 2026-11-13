@@ -115,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     CustomTextField(
                       controller: _idController,
                       label: 'User ID',
-                      hint: 'Enter Student or Faculty ID (e.g. 26IA001)',
+                      hint: 'User ID',
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Enter User ID';

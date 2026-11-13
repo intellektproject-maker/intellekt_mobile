@@ -16,9 +16,6 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   final _testDateInput = TextEditingController();
   final _chapterInput = TextEditingController();
   final _portionInput = TextEditingController();
-  final _chapterInput = TextEditingController();
-  final _portionInput = TextEditingController();
-  final _testDateInput = TextEditingController();
   List<Map<String, dynamic>> _students = [], _requests = [];
   Map<String, String> _marks = {}, _comments = {}, _errors = {};
   Map<String, bool> _saved = {};
@@ -119,14 +116,24 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
     final chapter = _chapterInput.text.trim();
     final portion = _portionInput.text.trim();
     final testDate = _testDateInput.text.trim();
-    if (chapter.isEmpty || !RegExp(r'^\d+(?:\.\d+)?
+    if (chapter.isEmpty || !RegExp(r'^[0-9]+([.][0-9]+)*$').hasMatch(chapter)) {
+      _show('Enter only the chapter number (for example, 8 or 8.4).'); return;
+    }
+    if (portion.isEmpty) { _show('Enter the test portion.'); return; }
+    if (testDate.isEmpty) { _show('Select the test date.'); return; }
+
+    Map<String, dynamic> t;
+    try { t = await _validateTestCode(); } catch (_) { return; }
+    final code = _str(_code).trim();
     final cls = _selectedClass.trim();
     final board = _selectedBoard.trim();
-    final subjectId = _str(t?['subjectId']).trim();
-    if (t == null || code.isEmpty || cls.isEmpty || board.isEmpty || subjectId.isEmpty || _totalMarks <= 0) {
+    final subjectId = _str(t['subjectId']).trim();
+    if (code.isEmpty || cls.isEmpty || board.isEmpty || subjectId.isEmpty || _totalMarks <= 0) {
       _show('Invalid test code or missing class/board details.'); return;
     }
-    if (t['duplicate'] == true) { _show('This test code already exists. Please use a new test code.'); return; }
+    if (t['duplicate'] == true) {
+      _show('This test code already exists. Please use a new test code.'); return;
+    }
     _test = {...t, 'chapter': chapter, 'testDate': testDate, 'portion': portion};
     setState(() { _loadingStudents = true; _reset(); _error = null; });
     try {
@@ -151,11 +158,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       if (!mounted) return;
       setState(() { _students = students; _marks = marks; _comments = comments; _saved = saved; });
       await _loadRequests();
-      if (saved.values.any((value) => value)) {
-        _show('This test code already exists in saved marks. Existing entries have been loaded.');
-      } else if (students.isEmpty) {
-        _show('No students found for this test, class and board.');
-      }
+      if (students.isEmpty) _show('No students found for this test, class and board.');
     } catch (e) { if (mounted) setState(() => _error = _err(e)); }
     finally { if (mounted) setState(() => _loadingStudents = false); }
   }

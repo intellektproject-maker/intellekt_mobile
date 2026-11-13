@@ -290,6 +290,11 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     } catch (_) {}
   }
 
+  bool _hasSavedMark(Map<String, dynamic> student) {
+    final value = student['marks_obtained'] ?? student['marks'];
+    return value != null && value.toString().trim().isNotEmpty;
+  }
+
   Future<void> _requestMarkEdit(String roll) async {
     final controller = TextEditingController(text: _marks[roll] ?? '');
     final value = await showDialog<String>(context: context, builder: (dialogContext) => AlertDialog(
@@ -413,7 +418,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     final records = selectedStudents.where((s) {
       final attendanceStatus = (s['attendance_status'] ?? '').toString();
       final roll = (s['roll_no'] ?? '').toString();
-      if (_isFaculty && (s['marks_obtained']?.toString().trim().isNotEmpty ?? false)) return false;
+      if (_isFaculty && _hasSavedMark(s)) return false;
       return attendanceStatus == 'Absent' || (_marks[roll] ?? '').trim().isNotEmpty;
     }).map((s) {
       final roll = (s['roll_no'] ?? '').toString();
@@ -506,7 +511,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
         return Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('${s['name'] ?? s['student_name'] ?? roll}', style: const TextStyle(fontWeight: FontWeight.w800)),
           Text('Roll No: $roll'),
-          TextFormField(initialValue: _marks[roll] ?? '', readOnly: _isFaculty && (s['marks_obtained']?.toString().trim().isNotEmpty ?? false), decoration: const InputDecoration(labelText: 'Marks (or A if absent)'), keyboardType: TextInputType.text, onChanged: (v) => _marks[roll] = v.trim()),
+          TextFormField(initialValue: _marks[roll] ?? '', readOnly: _isFaculty && _hasSavedMark(s), decoration: const InputDecoration(labelText: 'Marks (or A if absent)'), keyboardType: TextInputType.text, onChanged: (v) => _marks[roll] = v.trim()),
           TextFormField(initialValue: _remarks[roll] ?? '', readOnly: _isFaculty && (s['marks_obtained']?.toString().trim().isNotEmpty ?? false), decoration: const InputDecoration(labelText: 'Remarks (optional)'), onChanged: (v) => _remarks[roll] = v),
           if (_isFaculty && (s['marks_obtained']?.toString().trim().isNotEmpty ?? false))
             Wrap(spacing: 8, children: [
@@ -549,6 +554,11 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     } catch (_) {}
   }
 
+  String? _savedAttendanceStatus(Map<String, dynamic> student) {
+    final value = (student['status'] ?? student['attendance_status'])?.toString();
+    return const {'Present', 'Absent'}.contains(value) ? value : null;
+  }
+
   Future<void> _requestAttendanceEdit(String roll, String current) async {
     final value = await showDialog<String>(context: context, builder: (dialogContext) => AlertDialog(
       title: Text('Request attendance edit - $roll'),
@@ -589,7 +599,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
         _students = rows;
         _status.clear();
         for (final s in rows) {
-          final savedStatus = s['status']?.toString();
+          final savedStatus = _savedAttendanceStatus(s);
           _status[(s['roll_no'] ?? '').toString()] =
               const {'Present', 'Absent'}.contains(savedStatus) ? savedStatus : null;
         }
@@ -612,7 +622,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
       final records = _students.where((s) {
         final saved = s['status']?.toString();
         final roll = (s['roll_no'] ?? '').toString();
-        return !_isFaculty || saved == null || _status[roll] == saved;
+        return !_isFaculty || _savedAttendanceStatus(s) == null || _status[roll] == _savedAttendanceStatus(s);
       }).map((s) => {
         'roll_no': s['roll_no'],
         'status': _status[(s['roll_no'] ?? '').toString()],
@@ -652,13 +662,13 @@ class _AttendanceTabState extends State<_AttendanceTab> {
             value: const {'Present', 'Absent'}.contains(_status[roll]) ? _status[roll] : null,
             hint: const Text('Select status'),
             items: const [DropdownMenuItem(value: 'Present', child: Text('Present')), DropdownMenuItem(value: 'Absent', child: Text('Absent'))],
-            onChanged: (_isFaculty && s['status'] != null) ? null : (v) => setState(() => _status[roll] = v ?? 'Present'),
+            onChanged: (_isFaculty && _savedAttendanceStatus(s) != null) ? null : (v) => setState(() => _status[roll] = v ?? 'Present'),
           ),
-          if (_isFaculty && s['status'] != null)
+          if (_isFaculty && _savedAttendanceStatus(s) != null)
             PopupMenuButton<String>(
               tooltip: 'Edit attendance',
               onSelected: (action) {
-                if (action == 'request') _requestAttendanceEdit(roll, s['status'].toString());
+                if (action == 'request') _requestAttendanceEdit(roll, _savedAttendanceStatus(s)!);
                 if (action == 'apply') _applyApprovedAttendanceEdit(roll);
               },
               itemBuilder: (_) => [

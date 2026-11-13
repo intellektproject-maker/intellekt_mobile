@@ -296,19 +296,25 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
   }
 
   Future<void> _requestMarkEdit(String roll) async {
-    final controller = TextEditingController(text: _marks[roll] ?? '');
+    var requestedValue = _marks[roll] ?? '';
     final value = await showDialog<String>(context: context, builder: (dialogContext) => AlertDialog(
       title: Text('Request marks edit - $roll'),
-      content: TextField(controller: controller, decoration: const InputDecoration(labelText: 'New marks (or A)')),
-      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim()), child: const Text('Send request'))],
+      content: TextFormField(
+        initialValue: requestedValue,
+        decoration: const InputDecoration(labelText: 'New marks (or A)'),
+        onChanged: (text) => requestedValue = text,
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.of(dialogContext).pop(requestedValue.trim()), child: const Text('Send request')),
+      ],
     ));
-    if (value == null || value.isEmpty) { controller.dispose(); return; }
+    if (!mounted || value == null || value.isEmpty) return;
     try {
       final test = _tests.firstWhere((t) => t['test_code'] == _testCode, orElse: () => {});
       await widget.api.post('/test-batch/record-edit-requests', data: {'facultyId': widget.adminId, 'recordType': 'marks', 'roll_no': roll, 'test_code': _testCode, 'subject_name': _subjectFor(test), 'requested_value': value});
       if (mounted) setState(() => _message = 'Edit request sent to the admin.');
     } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
-    controller.dispose();
   }
 
   Future<void> _applyApprovedMarkEdit(String roll) async {

@@ -49,6 +49,8 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
           _value(request['roll_no']) == '*' &&
           _value(request['attendance_date']).split('T').first == _dateKey &&
           _value(request['subject_id']) == _subject &&
+          _value(request['class_name']).toUpperCase() == _selectedClass.toUpperCase() &&
+          _value(request['board']).toUpperCase() == _selectedBoard.toUpperCase() &&
           ['Pending', 'Approved'].contains(request['status'])) return request;
     }
     return null;

@@ -116,31 +116,12 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
     final chapter = _chapterInput.text.trim();
     final portion = _portionInput.text.trim();
     final testDate = _testDateInput.text.trim();
+
     Map<String, dynamic> t;
     try { t = await _validateTestCode(); } catch (_) { return; }
     final existingMarks = t['hasMarks'] == true;
     if (!existingMarks) {
-      if (chapter.isEmpty || !RegExp(r'^[0-9]+([.][0-9]+)*
-    final code = _str(_code).trim();
-    final cls = _selectedClass.trim();
-    final board = _selectedBoard.trim();
-    final subjectId = _str(t['subjectId']).trim();
-    if (code.isEmpty || cls.isEmpty || board.isEmpty || subjectId.isEmpty || _totalMarks <= 0) {
-      _show('Invalid test code or missing class/board details.'); return;
-    }
-    if (t['duplicate'] == true && !existingMarks) {
-      _show('This test code already exists, but no saved marks were found for it.'); return;
-    }
-    _test = {...t,
-      'chapter': existingMarks ? _str(t['chapter']) : chapter,
-      'testDate': existingMarks ? _str(t['testDate']) : testDate,
-      'portion': existingMarks ? _str(t['portion']) : portion,
-      'className': _str(t['className']).isEmpty ? cls : t['className'],
-      'board': _str(t['board']).isEmpty ? board : t['board'],
-      'totalMarks': t['totalMarks'] ?? _totalMarks,
-    };
-    setState(() { _loadingStudents = true; _reset(); _error = null; });
-    try {
+      if (chapter.isEmpty || !RegExp(r'^[0-9]+([.][0-9]+)*    try {
       final query = {'className': cls, 'board': board, 'testCode': code, 'subjectId': subjectId};
       final results = await Future.wait([
         _api.get('/enter-marks-students', queryParameters: query),
@@ -342,7 +323,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
         if (_loadingStudents) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
         if (!_loadingStudents && _students.isEmpty) const SizedBox.shrink(),
         if (_students.isNotEmpty) ...[
-          if (_test?['duplicate'] == true && _hasSaved) Card(color: Colors.orange.shade50, child: const ListTile(leading: Icon(Icons.info_outline), title: Text('This test code already exists'), subtitle: Text('Existing marks have been loaded from the database. They are locked until an admin approves an overall edit request.'))),
+          if (_test?['duplicate'] == true && _hasSaved) Card(color: Colors.orange.shade50, child: const ListTile(leading: Icon(Icons.info_outline), title: Text('This test code already exists'), subtitle: Text('Existing marks have been loaded from the database and are locked until admin approval.'))),
           if (_hasSaved) Card(color: Colors.amber.shade50, child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             const Text('Previously saved marks are locked. Request admin approval before editing.', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
@@ -423,10 +404,15 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
     if (code.isEmpty || cls.isEmpty || board.isEmpty || subjectId.isEmpty || _totalMarks <= 0) {
       _show('Invalid test code or missing class/board details.'); return;
     }
-    if (t['duplicate'] == true) {
-      _show('This test code already exists. Please use a new test code.'); return;
+    if (t['duplicate'] == true && !existingMarks) {
+      _show('This test code already exists, but no saved marks were found for it.'); return;
     }
-    _test = {...t, 'chapter': chapter, 'testDate': testDate, 'portion': portion};
+    _test = {
+      ...t,
+      'chapter': existingMarks ? _str(t['chapter']) : chapter,
+      'testDate': existingMarks ? _str(t['testDate']) : testDate,
+      'portion': existingMarks ? _str(t['portion']) : portion,
+    };
     setState(() { _loadingStudents = true; _reset(); _error = null; });
     try {
       final query = {'className': cls, 'board': board, 'testCode': code, 'subjectId': subjectId};

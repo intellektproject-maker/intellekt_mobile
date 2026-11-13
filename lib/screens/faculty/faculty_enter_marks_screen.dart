@@ -275,7 +275,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
           'marks': value == 'A' ? 'A' : num.parse(value), 'comments': _comments[roll] ?? '',
           'test_code': _str(_code).trim().toUpperCase(), 'total_marks': _totalMarks,
           'subject_id': _test?['subjectId'], 'chapter': _test?['chapter'],
-          'class_name': _test?['className'], 'board': _test?['board'],
+          'class_name': _test?['className'], 'board': _test?['board'], 'batch': 'Regular Batch',
         };
       }).toList();
       await _api.post('/marks', data: {'records': records, 'facultyId': _facultyId});

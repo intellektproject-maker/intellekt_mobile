@@ -12,6 +12,7 @@ import 'test_batch_student_status_screen.dart';
 import 'test_batch_admin_actions_screen.dart';
 import 'test_batch_students_screen.dart';
 import 'regular_edit_requests_screen.dart';
+import 'faculty_enquiry_form_screen.dart';
 import '../../routes/app_routes.dart';
 
 class FacultyProfile extends StatefulWidget {
@@ -542,6 +543,16 @@ class _FacultyProfileState extends State<FacultyProfile> {
                   ),
                 ],
               ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.assignment_outlined, color: AppColors.primary),
+              title: const Text('Enquiry Form'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const FacultyEnquiryFormScreen()),
+                );
+              },
             ),
             ListTile(
               leading: const Icon(Icons.checklist_outlined, color: AppColors.primary),

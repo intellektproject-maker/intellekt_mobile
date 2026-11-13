@@ -506,14 +506,6 @@ class _StudentDrawer extends StatelessWidget {
                   _go(context, '${AppRoutes.studentMarks}?roll=$rollNo'),
             ),
             _DrawerItem(
-              icon: Icons.calendar_month_rounded,
-              label: 'Test Schedule',
-              onTap: () => _go(
-                context,
-                '${AppRoutes.studentTestSchedule}?roll=$rollNo',
-              ),
-            ),
-            _DrawerItem(
               icon: Icons.account_balance_wallet_outlined,
               label: 'Fee',
               onTap: () =>

@@ -21,6 +21,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   String _editingRoll = '', _editDraft = '', _busyRoll = '';
   bool _loadingStudents = false, _validatingCode = false, _saving = false, _overallBusy = false;
   String? _error;
+  String _selectedClass = '', _selectedBoard = '';
 
   String get _facultyId => widget.facultyId.trim().toUpperCase();
   num get _totalMarks => num.tryParse(_total.text.trim()) ?? num.tryParse((_test?['total_marks'] ?? '').toString()) ?? 0;
@@ -66,6 +67,8 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       setState(() {
         _test = parsed;
         _code = _str(parsed['canonicalCode']).isEmpty ? code.toUpperCase() : _str(parsed['canonicalCode']);
+        _selectedClass = _str(parsed['className']);
+        _selectedBoard = _str(parsed['board']);
         _total.text = _str(parsed['totalMarks']);
       });
       if (parsed['duplicate'] == true) {
@@ -112,8 +115,8 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   Future<void> _loadStudents() async {
     final t = _test;
     final code = _str(_code).trim();
-    final cls = _str(t?['className']).trim();
-    final board = _str(t?['board']).trim();
+    final cls = _selectedClass.trim();
+    final board = _selectedBoard.trim();
     final subjectId = _str(t?['subjectId']).trim();
     if (t == null || code.isEmpty || cls.isEmpty || board.isEmpty || subjectId.isEmpty || _totalMarks <= 0) {
       _show('Verify a valid test code before loading students.'); return;
@@ -317,11 +320,24 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(10)),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Board: ' + _str(_test!['board']) + ' • Class: ' + _str(_test!['className']), style: const TextStyle(fontWeight: FontWeight.w700)),
                 Text('Subject: ' + _str(_test!['subjectName'])),
                 Text('Maximum marks: ' + _str(_test!['totalMarks'])),
                 Text('Chapter: ' + _str(_test!['chapter'])),
                 if (_test!['attempt'] != null) Text('Attempt: Test ' + _str(_test!['attempt'])),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _selectedClass,
+                  decoration: const InputDecoration(labelText: 'Select class', border: OutlineInputBorder()),
+                  items: ['7', '8', '9', '10', '11', '12'].map((v) => DropdownMenuItem(value: v, child: Text('Class $v'))).toList(),
+                  onChanged: (v) => setState(() { _selectedClass = v ?? ''; _reset(); }),
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: _selectedBoard,
+                  decoration: const InputDecoration(labelText: 'Select board', border: OutlineInputBorder()),
+                  items: ['State Board', 'CBSE', 'ISC'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                  onChanged: (v) => setState(() { _selectedBoard = v ?? ''; _reset(); }),
+                ),
                 if (_test!['duplicate'] == true) Padding(padding: const EdgeInsets.only(top: 6), child: Text(
                   _test!['hasMarks'] == true ? 'Existing marks found for this code.' : 'This code is already present in posted tests.',
                   style: const TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.w700),

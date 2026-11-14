@@ -1533,7 +1533,9 @@ app.get('/student-records', async (req, res) => {
 					TRIM(board) AS board,
 					phone,
 					email,
-					school_name
+					school_name,
+					academic_year_from,
+					academic_year_to
 				FROM students
 				WHERE TRIM(class) = TRIM($1)
 				AND TRIM(board) = TRIM($2)
@@ -1658,6 +1660,8 @@ app.get('/attendance', async (req, res) => {
 						s.name,
 						TRIM(s.class) AS class,
 						TRIM(s.board) AS board,
+						s.academic_year_from,
+						s.academic_year_to,
 						a.subject_id,
 						a.attendance_date,
 						a.attendance_time,
@@ -1700,6 +1704,8 @@ app.get('/attendance', async (req, res) => {
 						s.name,
 						TRIM(s.class) AS class,
 						TRIM(s.board) AS board,
+						s.academic_year_from,
+						s.academic_year_to,
 						a.subject_id,
 						a.attendance_date,
 						a.attendance_time,
@@ -2758,6 +2764,8 @@ app.get('/students', async (req, res) => {
         s.phone,
         s.email,
         s.school_name,
+        s.academic_year_from,
+        s.academic_year_to,
         s.password,
         s.mode_of_education
       FROM students s
@@ -2852,6 +2860,8 @@ app.get('/enter-marks-students', async (req, res) => {
 			SELECT DISTINCT
 				s.roll_no,
 				s.name,
+				s.academic_year_from,
+				s.academic_year_to,
 				m.marks_obtained,
 				m.comments,
 				COALESCE(m.total_marks, t.total_marks) AS total_marks
@@ -4348,10 +4358,14 @@ app.delete('/answer-sheet-requests/:id', async (req, res) => {
 				tr.slot_start,
 				tr.slot_end,
 				tr.duration_minutes,
-				COALESCE(s.subject_name, 'Unknown') AS subject_name
+				COALESCE(s.subject_name, 'Unknown') AS subject_name,
+				st.academic_year_from,
+				st.academic_year_to
 			FROM test_registrations tr
 			LEFT JOIN subjects s
 				ON tr.subject_id = s.subject_id
+			LEFT JOIN students st
+				ON UPPER(TRIM(st.roll_no)) = UPPER(TRIM(tr.roll_no))
 			WHERE 1=1
 		`;
 

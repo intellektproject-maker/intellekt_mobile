@@ -47,7 +47,7 @@ class _FacultyEnquiryFormScreenState extends State<FacultyEnquiryFormScreen> {
     if (int.parse(_to!) <= int.parse(_from!)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Academic Year To must be greater than From.'))); return;
     }
-    if (!RegExp(r'^\\d{10}$').hasMatch(_phone.text.trim()) || !RegExp(r'^\\d{10}$').hasMatch(_secondary.text.trim())) {
+    if (!RegExp(r'^\d{10}$').hasMatch(_phone.text.trim()) || !RegExp(r'^\d{10}$').hasMatch(_secondary.text.trim())) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Both contact numbers must contain exactly 10 digits.'))); return;
     }
     if (_phone.text.trim() == _secondary.text.trim()) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
+import '../../widgets/academic_year_range_filter.dart';
 
 /// Mobile Test Batch actions for admins IG001 / IG002 and faculty IG003 onward.
 /// All records are loaded from and saved to the dedicated Test Batch API.
@@ -277,6 +278,8 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
   final Map<String, Map<String, dynamic>> _approvedMarkEdits = {};
   List<Map<String, dynamic>> _approvedOverallMarkEdits = [];
   bool _loading = false, _saving = false;
+  String _academicYearFrom = '', _academicYearTo = '';
+  List<Map<String, dynamic>> get _visibleStudents => filterStudentsByAcademicYear(_students, fromYear: _academicYearFrom, toYear: _academicYearTo);
   bool get _isFaculty => !const {'IG001', 'IG002'}.contains(widget.adminId.trim().toUpperCase());
 
   Future<void> _loadApprovedMarkEdits() async {
@@ -330,7 +333,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
 
   Future<void> _requestOverallMarkEdit() async {
     if (!_isFaculty || _testCode == null || _writingDate == null) return;
-    final selected = _students.where((student) =>
+    final selected = _visibleStudents.where((student) =>
       _dateOnly(student['registered_writing_date'] ?? student['writing_date']) == _writingDate &&
       _hasSavedMark(student)
     ).toList();
@@ -361,7 +364,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
   Future<void> _applyApprovedOverallMarkEdit() async {
     final request = _approvedOverallMarkEdit;
     if (request == null || _testCode == null || _writingDate == null) return;
-    final selected = _students.where((student) =>
+    final selected = _visibleStudents.where((student) =>
       _dateOnly(student['registered_writing_date'] ?? student['writing_date']) == _writingDate
     ).toList();
     final records = selected.where((student) =>
@@ -511,7 +514,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     // Submit only students belonging to the selected writing date. The
     // backend validates each mark against that exact date's registration.
     // Absent attendance always overrides any previously typed numeric mark.
-    final selectedStudents = _students.where((s) =>
+    final selectedStudents = _visibleStudents.where((s) =>
       _dateOnly(s['registered_writing_date'] ?? s['writing_date']) == _writingDate
     ).toList();
     final records = selectedStudents.where((s) {
@@ -625,11 +628,19 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
         onChanged: (v) => setState(() => _writingDate = v),
       ),
       const SizedBox(height: 10),
-      if (_isFaculty && _students.any((student) => _dateOnly(student['registered_writing_date'] ?? student['writing_date']) == _writingDate && _hasSavedMark(student)))
+      AcademicYearRangeFilter(
+        students: _students,
+        fromYear: _academicYearFrom,
+        toYear: _academicYearTo,
+        onFromChanged: (value) => setState(() => _academicYearFrom = value ?? ''),
+        onToChanged: (value) => setState(() => _academicYearTo = value ?? ''),
+      ),
+      const SizedBox(height: 10),
+      if (_isFaculty && _visibleStudents.any((student) => _dateOnly(student['registered_writing_date'] ?? student['writing_date']) == _writingDate && _hasSavedMark(student)))
         OutlinedButton.icon(onPressed: _saving ? null : _requestOverallMarkEdit, icon: const Icon(Icons.edit_note_outlined), label: const Text('Request Edit for Entire Test')),
       if (_isFaculty && _approvedOverallMarkEdit != null)
         Padding(padding: const EdgeInsets.only(bottom: 10), child: FilledButton.icon(onPressed: _saving ? null : _applyApprovedOverallMarkEdit, icon: const Icon(Icons.check_circle_outline), label: const Text('Apply Approved Overall Edit'))),
-      ..._students.where((s) => _writingDate == null || _dateOnly(s['registered_writing_date'] ?? s['writing_date']) == _writingDate).map((s) {
+      ..._visibleStudents.where((s) => _writingDate == null || _dateOnly(s['registered_writing_date'] ?? s['writing_date']) == _writingDate).map((s) {
         final roll = (s['roll_no'] ?? '').toString();
         return Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('${s['name'] ?? s['student_name'] ?? roll}', style: const TextStyle(fontWeight: FontWeight.w800)),
@@ -661,6 +672,8 @@ class _AttendanceTab extends StatefulWidget {
 class _AttendanceTabState extends State<_AttendanceTab> {
   DateTime _date = DateTime.now();
   List<Map<String, dynamic>> _students = [];
+  String _academicYearFrom = '', _academicYearTo = '';
+  List<Map<String, dynamic>> get _visibleStudents => filterStudentsByAcademicYear(_students, fromYear: _academicYearFrom, toYear: _academicYearTo);
   final Map<String, String?> _status = {};
   final Map<String, Map<String, dynamic>> _approvedAttendanceEdits = {};
   bool _loading = false, _saving = false;
@@ -733,17 +746,17 @@ class _AttendanceTabState extends State<_AttendanceTab> {
   }
 
   Future<void> _save() async {
-    if (_students.isEmpty) { setState(() => _error = 'No registered Test Batch students found for this writing date.'); return; }
+    if (_visibleStudents.isEmpty) { setState(() => _error = 'No registered Test Batch students found for this writing date and academic year.'); return; }
     setState(() { _saving = true; _error = null; _message = null; });
     try {
-      final unmarked = _students.where((s) =>
+      final unmarked = _visibleStudents.where((s) =>
           _status[(s['roll_no'] ?? '').toString()] == null).toList();
       if (unmarked.isNotEmpty) {
         setState(() => _error =
             'Select Present or Absent for every student before saving attendance.');
         return;
       }
-      final records = _students.where((s) {
+      final records = _visibleStudents.where((s) {
         final saved = s['status']?.toString();
         final roll = (s['roll_no'] ?? '').toString();
         return !_isFaculty || _savedAttendanceStatus(s) == null || _status[roll] == _savedAttendanceStatus(s);
@@ -774,8 +787,15 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     if (_error != null) _notice(_error!, true),
     if (_message != null) _notice(_message!, false),
     if (_loading) const Center(child: Padding(padding: EdgeInsets.all(18), child: CircularProgressIndicator())),
-    if (!_loading && _students.isEmpty) const Card(child: ListTile(title: Text('Load students registered for a test on this date.'))),
-    ..._students.map((s) {
+    if (_students.isNotEmpty) AcademicYearRangeFilter(
+      students: _students,
+      fromYear: _academicYearFrom,
+      toYear: _academicYearTo,
+      onFromChanged: (value) => setState(() => _academicYearFrom = value ?? ''),
+      onToChanged: (value) => setState(() => _academicYearTo = value ?? ''),
+    ),
+    if (!_loading && _visibleStudents.isEmpty) const Card(child: ListTile(title: Text('Load students registered for a test on this date.'))),
+    ..._visibleStudents.map((s) {
       final roll = (s['roll_no'] ?? '').toString();
       return Card(child: ListTile(
         title: Text((s['name'] ?? 'Student').toString()),

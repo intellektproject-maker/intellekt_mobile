@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
+import '../../widgets/academic_year_range_filter.dart';
 
 /// Test Batch student management for authorized Admin and Faculty users.
 class TestBatchStudentsScreen extends StatefulWidget {
@@ -29,6 +30,8 @@ class _TestBatchStudentsScreenState extends State<TestBatchStudentsScreen> {
   bool _saving = false;
   String? _error;
   int _page = 0;
+  String _academicYearFrom = '', _academicYearTo = '';
+  List<Map<String, dynamic>> get _visibleStudents => filterStudentsByAcademicYear(_students, fromYear: _academicYearFrom, toYear: _academicYearTo);
   static const int _pageSize = 10;
 
   @override
@@ -252,8 +255,9 @@ class _TestBatchStudentsScreenState extends State<TestBatchStudentsScreen> {
   @override
   Widget build(BuildContext context) {
     final start = _page * _pageSize;
-    final pageRows = _students.skip(start).take(_pageSize).toList();
-    final pages = (_students.length / _pageSize).ceil().clamp(1, 999999);
+    final visibleStudents = _visibleStudents;
+    final pageRows = visibleStudents.skip(start).take(_pageSize).toList();
+    final pages = (visibleStudents.length / _pageSize).ceil().clamp(1, 999999);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -278,12 +282,19 @@ class _TestBatchStudentsScreenState extends State<TestBatchStudentsScreen> {
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(onPressed: _load, icon: const Icon(Icons.search)),
             )),
+          if (_students.isNotEmpty) AcademicYearRangeFilter(
+            students: _students,
+            fromYear: _academicYearFrom,
+            toYear: _academicYearTo,
+            onFromChanged: (value) => setState(() { _academicYearFrom = value ?? ''; _page = 0; }),
+            onToChanged: (value) => setState(() { _academicYearTo = value ?? ''; _page = 0; }),
+          ),
           if (_error != null) Padding(
             padding: const EdgeInsets.only(top: 10),
             child: Text(_error!, style: const TextStyle(color: Colors.red))),
           if (_loading) const Padding(
             padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
-          if (!_loading && _students.isEmpty)
+          if (!_loading && visibleStudents.isEmpty)
             const Card(child: ListTile(title: Text('No Test Batch students found.'))),
           ...pageRows.map((student) => Card(
             child: ListTile(

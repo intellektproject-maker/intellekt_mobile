@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/api_routes.dart';
 import '../../core/constants/colors.dart';
+import '../../widgets/academic_year_range_filter.dart';
 
 class RegisteredStudentsScreen extends StatefulWidget {
   const RegisteredStudentsScreen({super.key});
@@ -19,6 +20,8 @@ class _RegisteredStudentsScreenState extends State<RegisteredStudentsScreen> {
   String _className = '';
   String _board = '';
   DateTime? _date;
+  String _academicYearFrom = '', _academicYearTo = '';
+  List<Map<String, dynamic>> get _visibleStudents => filterStudentsByAcademicYear(_students, fromYear: _academicYearFrom, toYear: _academicYearTo);
 
   @override
   void initState() {
@@ -53,7 +56,7 @@ class _RegisteredStudentsScreenState extends State<RegisteredStudentsScreen> {
   @override
   Widget build(BuildContext context) {
     final query = _search.text.trim().toLowerCase();
-    final rows = _students.where((s) {
+    final rows = _visibleStudents.where((s) {
       final text = '${s['student_name'] ?? s['name'] ?? ''} ${s['roll_no'] ?? ''} ${s['phone'] ?? ''}'.toLowerCase();
       return text.contains(query);
     }).toList();
@@ -78,6 +81,16 @@ class _RegisteredStudentsScreenState extends State<RegisteredStudentsScreen> {
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
               ),
+            ),
+          ),
+          if (_students.isNotEmpty) Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: AcademicYearRangeFilter(
+              students: _students,
+              fromYear: _academicYearFrom,
+              toYear: _academicYearTo,
+              onFromChanged: (value) => setState(() => _academicYearFrom = value ?? ''),
+              onToChanged: (value) => setState(() => _academicYearTo = value ?? ''),
             ),
           ),
           if (_error != null)

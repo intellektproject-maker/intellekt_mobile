@@ -60,7 +60,9 @@ class _FacultyEnquiryFormScreenState extends State<FacultyEnquiryFormScreen> {
 
   String? _schoolNameValidator(String? value) {
     final v = (value ?? '').trim();
-    if (v.isEmpty || !RegExp('^[A-Za-z ]+
+    if (v.isEmpty || !RegExp('^[A-Za-z ]+$').hasMatch(v)) {
+      return 'School name should contain only letters and spaces.';
+    }
     return null;
   }
 

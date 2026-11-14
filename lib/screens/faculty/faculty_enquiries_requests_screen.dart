@@ -361,7 +361,8 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
     if (raw == null) return '-';
     final date = DateTime.tryParse(raw.toString());
     if (date == null) return raw.toString();
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    final ist = date.toUtc().add(const Duration(hours: 5, minutes: 30));
+    return '${ist.day.toString().padLeft(2, '0')}/${ist.month.toString().padLeft(2, '0')}/${ist.year} ${ist.hour.toString().padLeft(2, '0')}:${ist.minute.toString().padLeft(2, '0')} IST';
   }
 
   Future<void> _deleteEnquiry(Map<String, dynamic> enquiry) async {

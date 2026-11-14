@@ -31,8 +31,6 @@ class AcademicYearRangeFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     final fromYears = _years('academic_year_from');
     final toYears = _years('academic_year_to');
-    if (fromYears.isEmpty && toYears.isEmpty) return const SizedBox.shrink();
-
     final validFrom = fromYears.contains(fromYear) ? fromYear : '';
     final validTo = toYears.contains(toYear) ? toYear : '';
 

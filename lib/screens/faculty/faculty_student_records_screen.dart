@@ -5,6 +5,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
+import '../../widgets/academic_year_range_filter.dart';
 import 'faculty_manage_attendance_screen.dart';
 
 class FacultyStudentRecordsScreen extends StatefulWidget {
@@ -19,6 +20,8 @@ class _FacultyStudentRecordsScreenState extends State<FacultyStudentRecordsScree
   final _search = TextEditingController();
   List<Map<String, dynamic>> _classes = [], _students = [];
   String? _classKey;
+  String _academicYearFrom = '', _academicYearTo = '';
+  List<Map<String, dynamic>> get _visibleStudents => filterStudentsByAcademicYear(_students, fromYear: _academicYearFrom, toYear: _academicYearTo);
   bool _loadingClasses = true, _loadingStudents = false;
   String? _error;
   @override
@@ -181,7 +184,7 @@ class _FacultyStudentRecordsScreenState extends State<FacultyStudentRecordsScree
   @override
   Widget build(BuildContext context) {
     final query = _search.text.trim().toLowerCase();
-    final visible = _students.where((s) => '${s['name'] ?? s['student_name'] ?? ''} ${s['roll_no'] ?? ''}'.toLowerCase().contains(query)).toList();
+    final visible = _visibleStudents.where((s) => '${s['name'] ?? s['student_name'] ?? ''} ${s['roll_no'] ?? ''}'.toLowerCase().contains(query)).toList();
     return DefaultTabController(
       length: 2,
       child: Scaffold(backgroundColor: AppColors.background,
@@ -205,6 +208,14 @@ class _FacultyStudentRecordsScreenState extends State<FacultyStudentRecordsScree
             items: _classes.map((c) { final b = (c['board'] ?? '').toString(); final cl = (c['class'] ?? c['class_name'] ?? '').toString(); return DropdownMenuItem(value: '$b||$cl', child: Text('$b-$cl')); }).toList(),
             onChanged: (v) { setState(() { _classKey = v; _students = []; }); if (v != null) _loadStudents(); }),
           const SizedBox(height: 12),
+          if (_students.isNotEmpty) AcademicYearRangeFilter(
+            students: _students,
+            fromYear: _academicYearFrom,
+            toYear: _academicYearTo,
+            onFromChanged: (value) => setState(() => _academicYearFrom = value ?? ''),
+            onToChanged: (value) => setState(() => _academicYearTo = value ?? ''),
+          ),
+          const SizedBox(height: 10),
           TextField(controller: _search, onChanged: (_) => setState(() {}), decoration: const InputDecoration(labelText: 'Search by name or roll number', prefixIcon: Icon(Icons.search), border: OutlineInputBorder())),
         ]))),
         if (_error != null) Card(color: Colors.red.shade50, child: ListTile(title: const Text('Could not load records'), subtitle: Text(_error!))),

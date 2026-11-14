@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
+import '../../widgets/academic_year_range_filter.dart';
 
 class FacultyEnterAttendanceScreen extends StatefulWidget {
   final String facultyId;
@@ -22,6 +23,8 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
   List<Map<String, dynamic>> _editRequests = [];
   final Map<String, String> _editDrafts = {};
   String _busyRoll = '';
+  String _academicYearFrom = '', _academicYearTo = '';
+  List<Map<String, dynamic>> get _visibleStudents => filterStudentsByAcademicYear(_students, fromYear: _academicYearFrom, toYear: _academicYearTo);
 
   String get _facultyId => widget.facultyId.trim().toUpperCase();
   String get _dateKey => _date.toIso8601String().split('T').first;
@@ -240,7 +243,7 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
     if (_students.isEmpty) return;
     setState(() => _saving = true);
     try {
-      final records = _students.where((s) => !_savedAttendance.containsKey((s['roll_no'] ?? '').toString())).map((s) => {'roll_no': s['roll_no'], 'status': _attendance[(s['roll_no'] ?? '').toString()] ?? 'Present'}).toList();
+      final records = _visibleStudents.where((s) => !_savedAttendance.containsKey((s['roll_no'] ?? '').toString())).map((s) => {'roll_no': s['roll_no'], 'status': _attendance[(s['roll_no'] ?? '').toString()] ?? 'Present'}).toList();
       if (records.isEmpty) { _show('There are no new attendance records to save.'); return; }
       await _api.post('/attendance', data: {
         'records': records,
@@ -327,11 +330,18 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
             ]),
           ),
         ),
-        if (_students.isNotEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Row(children: [
-          Expanded(child: Text('${_students.length} students', style: const TextStyle(fontWeight: FontWeight.w800))),
-          TextButton(onPressed: () => setState(() { for (final s in _students) { _attendance[(s['roll_no'] ?? '').toString()] = 'Present'; } }), child: const Text('Mark all present')),
+        if (_visibleStudents.isNotEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Row(children: [
+          Expanded(child: Text('${_visibleStudents.length} students', style: const TextStyle(fontWeight: FontWeight.w800))),
+          TextButton(onPressed: () => setState(() { for (final s in _visibleStudents) { _attendance[(s['roll_no'] ?? '').toString()] = 'Present'; } }), child: const Text('Mark all present')),
         ])),
-        ..._students.map((s) {
+        if (_students.isNotEmpty) AcademicYearRangeFilter(
+          students: _students,
+          fromYear: _academicYearFrom,
+          toYear: _academicYearTo,
+          onFromChanged: (value) => setState(() => _academicYearFrom = value ?? ''),
+          onToChanged: (value) => setState(() => _academicYearTo = value ?? ''),
+        ),
+        ..._visibleStudents.map((s) {
           final roll = (s['roll_no'] ?? '').toString();
           final name = (s['name'] ?? s['student_name'] ?? 'Student').toString();
           final saved = _savedAttendance.containsKey(roll);

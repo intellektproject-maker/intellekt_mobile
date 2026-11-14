@@ -95,8 +95,8 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
         final lastRollResponse = await _api.get('/students/last-roll-number');
         final lastRollData = lastRollResponse.data;
         _lastRollNumber = lastRollData is Map
-            ? lastRollData['last_roll_no']?.toString()
-            : null;
+            ? (lastRollData['last_roll_no'] ?? lastRollData['last_roll_number'] ?? lastRollData['lastRollNumber'] ?? lastRollData['lastRollNo'] ?? lastRollData['roll_no'])?.toString()
+            : lastRollData?.toString();
         final subjectsResponse = await _api.get('/subjects');
         _subjects = subjectsResponse.data is List
             ? (subjectsResponse.data as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()

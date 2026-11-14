@@ -10,6 +10,7 @@ import 'package:printing/printing.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
+import '../../widgets/academic_year_range_filter.dart';
 
 class ManageStudentsScreen extends StatefulWidget {
   final String userId;
@@ -30,6 +31,7 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
   String? _error;
   String _classFilter = '';
   String _boardFilter = '';
+  String _academicYearFrom = '', _academicYearTo = '';
   int _page = 1;
 
   static const int _pageSize = 10;
@@ -58,10 +60,14 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
           _classFilter.isEmpty || _text(student['class']) == _classFilter;
       final matchesBoard =
           _boardFilter.isEmpty || _text(student['board']) == _boardFilter;
+      final matchesAcademicFrom = _academicYearFrom.isEmpty || _text(student['academic_year_from']) == _academicYearFrom;
+      final matchesAcademicTo = _academicYearTo.isEmpty || _text(student['academic_year_to']) == _academicYearTo;
       return _isRegularStudent(student) &&
           matchesSearch &&
           matchesClass &&
-          matchesBoard;
+          matchesBoard &&
+          matchesAcademicFrom &&
+          matchesAcademicTo;
     }).toList();
   }
 
@@ -904,6 +910,14 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
                       }),
                     ),
                     const SizedBox(height: 12),
+                    AcademicYearRangeFilter(
+                      students: _students,
+                      fromYear: _academicYearFrom,
+                      toYear: _academicYearTo,
+                      onFromChanged: (value) => setState(() { _academicYearFrom = value ?? ''; _page = 1; }),
+                      onToChanged: (value) => setState(() { _academicYearTo = value ?? ''; _page = 1; }),
+                    ),
+                    const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -918,6 +932,8 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
                             _search.clear();
                             _classFilter = '';
                             _boardFilter = '';
+                            _academicYearFrom = '';
+                            _academicYearTo = '';
                             _page = 1;
                           }),
                           icon: const Icon(Icons.filter_alt_off_outlined),

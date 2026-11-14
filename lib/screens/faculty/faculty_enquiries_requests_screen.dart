@@ -333,10 +333,11 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
                   },
                   child: const Text('Reject'),
                 ),
-                OutlinedButton(
-                  onPressed: () => _markAsPending(enquiry),
-                  child: const Text('Mark as Pending'),
-                ),
+                if ((enquiry['status'] ?? '').toString() != 'Pending')
+                  OutlinedButton(
+                    onPressed: () => _markAsPending(enquiry),
+                    child: const Text('Mark as Pending'),
+                  ),
               ],
             ),
           ),

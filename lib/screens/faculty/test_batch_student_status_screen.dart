@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/colors.dart';
+import '../../widgets/academic_year_range_filter.dart';
 import '../../services/test_batch/test_batch_student_status_service.dart';
 
 class TestBatchStudentStatusScreen extends StatefulWidget {
@@ -25,6 +26,7 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
   String? _category, _className, _board, _seriesId, _testCode, _writingDate;
   List<String> _classes = [], _boards = [];
   List<Map<String, dynamic>> _series = [], _tests = [], _students = [], _allStudents = [];
+  String _academicYearFrom = '', _academicYearTo = '';
   bool _loading = true, _studentsLoading = false;
   int _filterRequestId = 0;
   String? _error;
@@ -48,7 +50,7 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
       _applyFilters(result['filters']);
       _allStudents = List<Map<String, dynamic>>.from(result['students'] ?? []);
       if (!_writingDateOptions().contains(_writingDate)) _writingDate = null;
-      _students = _filterStudentsByWritingDate();
+      _students = filterStudentsByAcademicYear(_filterStudentsByWritingDate(), fromYear: _academicYearFrom, toYear: _academicYearTo);
       // The available test list may change whenever Class, Board or Series
       // changes. Never keep a test code from an older filter set.
       final availableCodes = _tests
@@ -124,7 +126,7 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
   void _changeWritingDate(String? value) {
     setState(() {
       _writingDate = value;
-      _students = _filterStudentsByWritingDate();
+      _students = filterStudentsByAcademicYear(_filterStudentsByWritingDate(), fromYear: _academicYearFrom, toYear: _academicYearTo);
     });
   }
 
@@ -452,6 +454,20 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
     }
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      AcademicYearRangeFilter(
+        students: _allStudents,
+        fromYear: _academicYearFrom,
+        toYear: _academicYearTo,
+        onFromChanged: (value) => setState(() {
+          _academicYearFrom = value ?? '';
+          _students = filterStudentsByAcademicYear(_filterStudentsByWritingDate(), fromYear: _academicYearFrom, toYear: _academicYearTo);
+        }),
+        onToChanged: (value) => setState(() {
+          _academicYearTo = value ?? '';
+          _students = filterStudentsByAcademicYear(_filterStudentsByWritingDate(), fromYear: _academicYearFrom, toYear: _academicYearTo);
+        }),
+      ),
+      const SizedBox(height: 10),
       Text('Students (' + _students.length.toString() + ')',
         style: const TextStyle(color: AppColors.primary, fontSize: 20, fontWeight: FontWeight.w800)),
       const SizedBox(height: 10),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
+import '../../widgets/academic_year_range_filter.dart';
 
 class FacultyEnterMarksScreen extends StatefulWidget {
   final String facultyId;
@@ -25,11 +26,13 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   bool _loadingStudents = false, _validatingCode = false, _saving = false, _overallBusy = false;
   String? _error;
   String _selectedClass = '', _selectedBoard = '';
+  String _academicYearFrom = '', _academicYearTo = '';
+  List<Map<String, dynamic>> get _visibleStudents => filterStudentsByAcademicYear(_students, fromYear: _academicYearFrom, toYear: _academicYearTo);
 
   String get _facultyId => widget.facultyId.trim().toUpperCase();
   num get _totalMarks => num.tryParse(_total.text.trim()) ?? num.tryParse((_test?['total_marks'] ?? '').toString()) ?? 0;
   bool get _hasSaved => _saved.values.any((v) => v);
-  List<Map<String, dynamic>> get _newStudents => _students.where((s) => !(_saved[(s['roll_no'] ?? '').toString().trim()] ?? false)).toList();
+  List<Map<String, dynamic>> get _newStudents => _visibleStudents.where((s) => !(_saved[(s['roll_no'] ?? '').toString().trim()] ?? false)).toList();
   String _str(dynamic value) => (value ?? '').toString();
   String _err(Object e) => e.toString().replaceFirst('Exception: ', '');
 
@@ -407,7 +410,14 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
               if (_overallApproved) OutlinedButton(onPressed: _overallBusy ? null : _finishOverall, child: const Text('Finish overall edit')),
             ]),
           ]))),
-          ..._students.map((student) {
+          if (_students.isNotEmpty) AcademicYearRangeFilter(
+            students: _students,
+            fromYear: _academicYearFrom,
+            toYear: _academicYearTo,
+            onFromChanged: (value) => setState(() => _academicYearFrom = value ?? ''),
+            onToChanged: (value) => setState(() => _academicYearTo = value ?? ''),
+          ),
+          ..._visibleStudents.map((student) {
             final roll = _str(student['roll_no']).trim();
             final name = _str(student['name'] ?? student['student_name'] ?? 'Student');
             final saved = _saved[roll] ?? false;

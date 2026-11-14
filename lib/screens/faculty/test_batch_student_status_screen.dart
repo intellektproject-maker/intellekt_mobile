@@ -165,7 +165,11 @@ class _TestBatchStudentStatusScreenState extends State<TestBatchStudentStatusScr
       setState(() {
         _allStudents = List<Map<String, dynamic>>.from(result['students'] ?? []);
         if (!_writingDateOptions().contains(_writingDate)) _writingDate = null;
-        _students = _filterStudentsByWritingDate();
+        _students = filterStudentsByAcademicYear(
+          _filterStudentsByWritingDate(),
+          fromYear: _academicYearFrom,
+          toYear: _academicYearTo,
+        );
         _studentsLoading = false;
       });
     } catch (e) {

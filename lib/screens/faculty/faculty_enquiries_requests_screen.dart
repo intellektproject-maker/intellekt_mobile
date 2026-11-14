@@ -360,8 +360,9 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
 
   String _formatDateOfBirth(dynamic raw) {
     if (raw == null || raw.toString().trim().isEmpty) return '-';
-    final date = DateTime.tryParse(raw.toString());
-    if (date == null) return raw.toString().split('T').first;
+    final datePart = raw.toString().trim().split('T').first.split(' ').first;
+    final date = DateTime.tryParse(datePart);
+    if (date == null) return datePart;
     return '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
   }
 

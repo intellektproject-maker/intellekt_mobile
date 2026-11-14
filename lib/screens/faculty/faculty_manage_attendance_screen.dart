@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
+import '../../widgets/academic_year_range_filter.dart';
 
 class FacultyManageAttendanceScreen extends StatefulWidget {
   final String facultyId;
@@ -22,6 +23,8 @@ class _FacultyManageAttendanceScreenState extends State<FacultyManageAttendanceS
   bool _loadingClasses = true;
   bool _loading = false;
   String? _error;
+  String _academicYearFrom = '', _academicYearTo = '';
+  List<Map<String, dynamic>> get _visibleRows => filterStudentsByAcademicYear(_rows, fromYear: _academicYearFrom, toYear: _academicYearTo);
 
   @override
   void initState() { super.initState(); _loadClasses(); }
@@ -102,10 +105,17 @@ class _FacultyManageAttendanceScreenState extends State<FacultyManageAttendanceS
           FilledButton.icon(onPressed: _loading ? null : () => _search(), icon: const Icon(Icons.search), label: const Text('View attendance report')),
           OutlinedButton.icon(onPressed: _loading || _subject.isEmpty ? null : () => _search(todayOnly: true), icon: const Icon(Icons.today_outlined), label: const Text('View attendance marked today')),
         ]))),
+        if (_rows.isNotEmpty) AcademicYearRangeFilter(
+          students: _rows,
+          fromYear: _academicYearFrom,
+          toYear: _academicYearTo,
+          onFromChanged: (value) => setState(() => _academicYearFrom = value ?? ''),
+          onToChanged: (value) => setState(() => _academicYearTo = value ?? ''),
+        ),
         if (_error != null) Card(color: Colors.red.shade50, child: ListTile(title: const Text('Could not load attendance'), subtitle: Text(_error!))),
         if (_loading) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
-        if (!_loading && _rows.isEmpty) const Card(child: ListTile(title: Text('No attendance records loaded.'))),
-        ..._rows.map((r) => Card(color: AppColors.surface, elevation: 0, margin: const EdgeInsets.only(bottom: 8), child: ListTile(
+        if (!_loading && _visibleRows.isEmpty) const Card(child: ListTile(title: Text('No attendance records loaded.'))),
+        ..._visibleRows.map((r) => Card(color: AppColors.surface, elevation: 0, margin: const EdgeInsets.only(bottom: 8), child: ListTile(
           title: Text((r['name'] ?? r['student_name'] ?? 'Student').toString(), style: const TextStyle(fontWeight: FontWeight.w700)),
           subtitle: Text('Roll: ${r['roll_no'] ?? '-'} • ${r['attendance_date'] ?? '-'}\nSubject: ${r['subject_name'] ?? r['subject_id'] ?? '-'}'),
           isThreeLine: true,

@@ -297,7 +297,7 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
               children: [
                 _detail('Enquiry ID', value('enq_id')),
                 _detail('Class / Board', value('class_board')),
-                _detail('Date of Birth', value('date_of_birth')),
+                _detail('Date of Birth', _formatDateOfBirth(enquiry['date_of_birth'])),
                 _detail('Batch', value('batch')),
                 _detail('School', value('school_name')),
                 _detail('Subjects', value('subjects')),
@@ -357,6 +357,13 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
       ],
     ),
   );
+
+  String _formatDateOfBirth(dynamic raw) {
+    if (raw == null || raw.toString().trim().isEmpty) return '-';
+    final date = DateTime.tryParse(raw.toString());
+    if (date == null) return raw.toString().split('T').first;
+    return '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
+  }
 
   String _formatRegisteredDate(dynamic raw) {
     if (raw == null) return '-';

@@ -202,14 +202,30 @@ class _FacultyNotificationsScreenState
   }
 
   String _module(Map<String, dynamic> item) {
-    final value = item['module_name']?.toString().trim() ?? '';
-    if (value.isEmpty) return 'Notification';
-    return value
-        .split('-')
-        .map((part) => part.isEmpty
-            ? part
-            : '${part[0].toUpperCase()}${part.substring(1)}')
-        .join(' ');
+    final value = (item['module_name'] ?? '')
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replaceAll('_', '-');
+    switch (value) {
+      case 'task-overdue':
+      case 'overdue-task':
+        return 'Overdue Task';
+      case 'daily-task':
+      case 'daily-tasks':
+        return 'Daily Task';
+      case 'tasks':
+      case 'task':
+        return 'Task Update';
+      default:
+        if (value.isEmpty) return 'Notification';
+        return value
+            .split('-')
+            .map((part) => part.isEmpty
+                ? part
+                : '${part[0].toUpperCase()}${part.substring(1)}')
+            .join(' ');
+    }
   }
 
   String _formatIstDateTime(String raw) {

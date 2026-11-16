@@ -4,6 +4,7 @@ class FacultyTaskModel {
   final String facultyName;
   final String className;
   final String subjectName;
+  final String testCode;
   final String totalTestNote;
   final String otherTasks;
   final String? dueDate;
@@ -19,6 +20,7 @@ class FacultyTaskModel {
     required this.facultyName,
     required this.className,
     required this.subjectName,
+    this.testCode = '',
     required this.totalTestNote,
     required this.otherTasks,
     required this.dueDate,
@@ -36,6 +38,7 @@ class FacultyTaskModel {
       facultyName: json['faculty_name']?.toString() ?? '',
       className: json['class_name']?.toString() ?? '',
       subjectName: json['subject_name']?.toString() ?? '',
+      testCode: json['test_code']?.toString() ?? '',
       totalTestNote: json['total_test_note']?.toString() ?? '',
       otherTasks: json['other_tasks']?.toString() ?? '',
       dueDate: json['due_date']?.toString(),
@@ -54,6 +57,7 @@ class FacultyTaskModel {
       'faculty_name': facultyName,
       'class_name': className,
       'subject_name': subjectName,
+      'test_code': testCode,
       'total_test_note': totalTestNote,
       'other_tasks': otherTasks,
       'due_date': dueDate,

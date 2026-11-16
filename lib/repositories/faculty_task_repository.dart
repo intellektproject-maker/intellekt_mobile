@@ -98,6 +98,40 @@ class FacultyTaskRepository {
     }
   }
 
+  Future<void> updateTaskDetails({
+    required int taskId,
+    required String loginFacultyId,
+    required String facultyId,
+    required String facultyName,
+    required String className,
+    required String subjectName,
+    required String testCode,
+    required String totalTestNote,
+    required String otherTasks,
+    required String? dueDate,
+    required String priority,
+    required String taskType,
+  }) async {
+    try {
+      await _dio.put('/faculty-tasks/$taskId', data: {
+        'action': 'edit',
+        'loginFacultyId': loginFacultyId.trim().toUpperCase(),
+        'faculty_id': facultyId.trim().toUpperCase(),
+        'faculty_name': facultyName,
+        'class_name': className,
+        'subject_name': subjectName,
+        'test_code': testCode,
+        'total_test_note': totalTestNote,
+        'other_tasks': otherTasks,
+        'due_date': taskType == 'Daily' ? null : dueDate,
+        'priority': taskType == 'Daily' ? 'High' : priority,
+        'task_type': taskType,
+      });
+    } on DioException catch (e) {
+      throw Exception(_errorMessage(e, 'Unable to edit task.'));
+    }
+  }
+
   Future<void> deleteTask(int taskId, String loginFacultyId) async {
     try {
       await _dio.delete('/faculty-tasks/$taskId', queryParameters: {'loginFacultyId': loginFacultyId.trim().toUpperCase()});

@@ -79,7 +79,11 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
 
       final classes = await classFuture;
       if (!mounted) return;
-      setState(() => _classOptions = classes);
+      final availableClasses = [...classes];
+      if (widget.task != null && !availableClasses.contains(widget.task!.className)) {
+        availableClasses.add(widget.task!.className);
+      }
+      setState(() => _classOptions = availableClasses);
 
     } catch (e) {
       if (!mounted) return;
@@ -298,6 +302,7 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
             label: 'Task Frequency *',
             value: _taskType,
             items: const ['Weekly', 'Daily'],
+            enabled: widget.task == null,
             onChanged: (value) => setState(() {
               _taskType = value ?? 'Weekly';
               if (_taskType == 'Daily') {
@@ -401,6 +406,7 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
     required List<T> items,
     required ValueChanged<T?> onChanged,
     String Function(T)? display,
+    bool enabled = true,
   }) {
     final safeValue = items.contains(value) ? value : null;
 
@@ -424,7 +430,7 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
               ),
             )
             .toList(),
-        onChanged: onChanged,
+        onChanged: enabled ? onChanged : null,
       ),
     );
   }

@@ -602,9 +602,22 @@ class PushNotificationService {
     }
 
     final userId = authProvider.user?.id.trim();
-    final destination = userId == null || userId.isEmpty
-        ? route
-        : Uri(path: route, queryParameters: {'roll': userId}).toString();
+    final module = (data['module_name'] ?? data['module'] ?? data['type'])
+        ?.toString()
+        .trim()
+        .toLowerCase()
+        .replaceAll('_', '-')
+        .replaceAll(' ', '-');
+    final isOverdueTask = (module?.contains('overdue') ?? false) ||
+        (data['notification_type']?.toString().toLowerCase().contains('overdue') ?? false);
+    final queryParameters = <String, String>{
+      if (userId != null && userId.isNotEmpty) 'roll': userId,
+      if (route == AppRoutes.facultyTasks && isOverdueTask) 'filter': 'Overdue',
+    };
+    final destination = Uri(
+      path: route,
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    ).toString();
 
     _pendingNotificationData = null;
     router.go(destination);

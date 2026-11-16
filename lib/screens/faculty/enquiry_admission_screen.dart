@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
 
@@ -20,7 +22,7 @@ class EnquiryAdmissionScreen extends StatefulWidget {
   State<EnquiryAdmissionScreen> createState() => _EnquiryAdmissionScreenState();
 }
 
-class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
+class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> with WidgetsBindingObserver {
   final _api = ApiClient();
   final _formKey = GlobalKey<FormState>();
   final Map<String, TextEditingController> _fields = {};
@@ -34,6 +36,9 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
   String? _testWritingDay;
   String _board = '', _batch = 'Regular Batch';
   String? _lastRollNumber;
+  Timer? _draftTimer;
+  bool _draftReady = false;
+  bool _draftRequestInFlight = false;
 
   static const _fieldNames = [
     'roll_no', 'name', 'class', 'board', 'phone', 'email', 'school_name',
@@ -46,13 +51,18 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
   @override
   void initState() {
     super.initState();
-    for (final key in _fieldNames) { _field(key); }
+    WidgetsBinding.instance.addObserver(this);
+    for (final key in _fieldNames) {
+      _field(key).addListener(_scheduleDraftSave);
+    }
     _batch = _testBatch ? 'Test Batch' : 'Regular Batch';
     _prefill();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _draftTimer?.cancel();
     for (final controller in _fields.values) { controller.dispose(); }
     super.dispose();
   }
@@ -60,6 +70,82 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
   String _cleanPhone(dynamic value) => (value ?? '').toString().replaceAll(RegExp(r'\D'), '').substringSafe(10);
   String _date(dynamic value) => value == null ? '' : value.toString().split('T').first;
   String? _required(String? value) => value == null || value.trim().isEmpty ? 'Required' : null;
+  String get _enquiryId => widget.enquiry['id'].toString();
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _draftTimer?.cancel();
+      _persistDraft();
+    }
+  }
+
+  Map<String, dynamic> _draftSnapshot() => {
+    'fields': {
+      for (final key in _fieldNames)
+        if (key != 'password') key: _field(key).text,
+    },
+    'selected_subject_ids': _selectedSubjectIds,
+    'subject_choice': _subjectChoice,
+    'series_id': _seriesId,
+    'test_writing_day': _testWritingDay,
+  };
+
+  void _scheduleDraftSave() {
+    if (!_draftReady || _saving || !mounted) return;
+    _draftTimer?.cancel();
+    _draftTimer = Timer(const Duration(milliseconds: 650), _persistDraft);
+  }
+
+  Future<void> _persistDraft() async {
+    if (!_draftReady || _saving || _draftRequestInFlight) return;
+    _draftTimer?.cancel();
+    _draftRequestInFlight = true;
+    try {
+      await _api.put(
+        '/enquiries/${Uri.encodeComponent(_enquiryId)}/admission/draft',
+        data: {'draft_data': _draftSnapshot()},
+      );
+    } catch (_) {
+      // Keep the form usable during temporary network loss. The next edit or
+      // app resume will retry the latest snapshot.
+    } finally {
+      _draftRequestInFlight = false;
+    }
+  }
+
+  Future<void> _loadSavedDraft() async {
+    try {
+      final response = await _api.get(
+        '/enquiries/${Uri.encodeComponent(_enquiryId)}/admission/draft',
+      );
+      final data = response.data;
+      final draft = data is Map ? data['draft_data'] : null;
+      if (draft is! Map) return;
+      final fields = draft['fields'];
+      if (fields is Map) {
+        for (final key in _fieldNames) {
+          if (key == 'password') continue;
+          final value = fields[key];
+          if (value != null) _field(key).text = value.toString();
+        }
+      }
+      final ids = draft['selected_subject_ids'];
+      if (ids is List) {
+        _selectedSubjectIds = ids.map((v) => int.tryParse(v.toString()))
+            .whereType<int>().toList();
+      }
+      _subjectChoice = draft['subject_choice']?.toString();
+      _seriesId = draft['series_id']?.toString();
+      _testWritingDay = draft['test_writing_day']?.toString();
+    } catch (_) {
+      // A failed draft fetch should not prevent a fresh admission form opening.
+    }
+  }
+
+
 
   Future<void> _prefill() async {
     try {
@@ -146,6 +232,8 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
                     ? 'Physics'
                     : null;
       }
+      await _loadSavedDraft();
+      _draftReady = true;
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
     } finally {
@@ -163,6 +251,8 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
   }
 
   Future<void> _close() async {
+    _draftTimer?.cancel();
+    await _persistDraft();
     await _restoreEnquiry();
     if (mounted) Navigator.of(context).pop(false);
   }
@@ -237,6 +327,8 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
         });
       }
       _cancelled = true;
+      _draftTimer?.cancel();
+      try { await _api.delete('/enquiries/${Uri.encodeComponent(id)}/admission/draft'); } catch (_) {}
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student enrolled successfully.')));
       Navigator.of(context).pop(true);
@@ -255,6 +347,7 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
           controller: _field(key),
           keyboardType: keyboard,
           obscureText: obscure,
+          onChanged: (_) => _scheduleDraftSave(),
           decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
           validator: required ? _required : null,
         ),
@@ -307,14 +400,14 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
                 value: _seriesId,
                 decoration: const InputDecoration(labelText: 'Test Series', border: OutlineInputBorder()),
                 items: _series.map((s) => DropdownMenuItem(value: s['id'].toString(), child: Text(s['name']?.toString() ?? 'Series'))).toList(),
-                onChanged: (v) => setState(() => _seriesId = v),
+                onChanged: (v) { setState(() => _seriesId = v); _scheduleDraftSave(); },
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: _subjectChoice,
                 decoration: const InputDecoration(labelText: 'Subjects', border: OutlineInputBorder()),
                 items: const ['Mathematics', 'Physics', 'Both'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                onChanged: (v) => setState(() => _subjectChoice = v),
+                onChanged: (v) { setState(() => _subjectChoice = v); _scheduleDraftSave(); },
               ),
             ] else ...[
               DropdownButtonFormField<String>(
@@ -323,7 +416,7 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
                 items: const ['Sunday', 'Monday', 'Tuesday']
                     .map((day) => DropdownMenuItem(value: day, child: Text(day)))
                     .toList(),
-                onChanged: (value) => setState(() => _testWritingDay = value),
+                onChanged: (value) { setState(() => _testWritingDay = value); _scheduleDraftSave(); },
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
@@ -336,6 +429,7 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
                     _subjectChoice = v;
                     _selectedSubjectIds = _subjects.where((s) => selected.any((q) => (s['subject_name'] ?? '').toString().toLowerCase().contains(q))).map((s) => int.tryParse(s['subject_id'].toString())).whereType<int>().toList();
                   });
+                  _scheduleDraftSave();
                 },
               ),
               const SizedBox(height: 12),

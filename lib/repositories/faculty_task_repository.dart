@@ -31,17 +31,6 @@ class FacultyTaskRepository {
     }).toList(growable: false);
   }
 
-  List<String> _parseTestCodes(dynamic data) {
-    if (data is! List) return <String>[];
-
-    return data
-        .whereType<Map>()
-        .map<String>((item) => item['test_code']?.toString() ?? '')
-        .where((value) => value.isNotEmpty)
-        .toSet()
-        .toList(growable: false);
-  }
-
   String _errorMessage(DioException e, String fallback) {
     final data = e.response?.data;
     if (data is Map) {
@@ -104,7 +93,7 @@ class FacultyTaskRepository {
     }
   }
 
-  Future<void> assignTask({required String loginFacultyId, required String facultyId, required String facultyName, required String className, required String subjectName, required String totalTestNote, required String otherTasks, required String? dueDate, required String priority, required String taskType}) async {
+  Future<void> assignTask({required String loginFacultyId, required String facultyId, required String facultyName, required String className, required String subjectName, required String testCode, required String totalTestNote, required String otherTasks, required String? dueDate, required String priority, required String taskType}) async {
     try {
       await _dio.post('/faculty-tasks', data: {
         'loginFacultyId': loginFacultyId.trim().toUpperCase(),
@@ -112,6 +101,7 @@ class FacultyTaskRepository {
         'faculty_name': facultyName,
         'class_name': className,
         'subject_name': subjectName,
+        'test_code': testCode,
         'total_test_note': totalTestNote,
         'other_tasks': otherTasks,
         'due_date': taskType == 'Daily' ? null : dueDate,
@@ -146,15 +136,6 @@ class FacultyTaskRepository {
       return [...values, 'Others'];
     } on DioException {
       return <String>['Others'];
-    }
-  }
-
-  Future<List<String>> getTestCodes() async {
-    try {
-      final response = await _dio.get('/tests');
-      return _parseTestCodes(response.data);
-    } on DioException {
-      return <String>[];
     }
   }
 

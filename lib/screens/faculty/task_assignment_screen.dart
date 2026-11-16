@@ -21,15 +21,15 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
 
   List<FacultyModel> _facultyList = <FacultyModel>[];
   List<String> _classOptions = <String>[];
-  List<String> _testCodes = <String>[];
 
   String? _facultyId;
   String? _className;
-  String? _testCode;
+  String? _subjectName;
   String _taskType = 'Weekly';
   String _priority = 'Medium';
   DateTime? _dueDate;
 
+  final TextEditingController _testCodeController = TextEditingController();
   final TextEditingController _totalNoteController = TextEditingController();
   final TextEditingController _otherTasksController = TextEditingController();
 
@@ -45,6 +45,7 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
 
   @override
   void dispose() {
+    _testCodeController.dispose();
     _totalNoteController.dispose();
     _otherTasksController.dispose();
     super.dispose();
@@ -54,7 +55,6 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
     try {
       final facultyFuture = _repository.getFacultyList();
       final classFuture = _repository.getClassOptions();
-      final testFuture = _repository.getTestCodes();
 
       // Keep each request independent so one failed endpoint cannot erase
       // the other valid dropdown data.
@@ -66,9 +66,6 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
       if (!mounted) return;
       setState(() => _classOptions = classes);
 
-      final tests = await testFuture;
-      if (!mounted) return;
-      setState(() => _testCodes = tests);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -116,21 +113,19 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
     final isOthersClass =
         _className!.trim().toLowerCase() == 'others';
 
+    if (_subjectName == null || _subjectName!.isEmpty) {
+      _showMessage('Please select Subject');
+      return;
+    }
+
     if (isOthersClass) {
       if (_otherTasksController.text.trim().isEmpty) {
         _showMessage('Please enter Other Tasks for the Others class');
         return;
       }
-    } else {
-      if (_testCode == null || _testCode!.isEmpty) {
-        _showMessage('Please select Test Code');
-        return;
-      }
-
-      if (_totalNoteController.text.trim().isEmpty) {
-        _showMessage('Please enter Total Test Note');
-        return;
-      }
+    } else if (_totalNoteController.text.trim().isEmpty) {
+      _showMessage('Please enter Total Test Note');
+      return;
     }
 
     if (_taskType == 'Weekly' && _dueDate == null) {
@@ -161,7 +156,8 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
         facultyId: selectedFaculty.facultyId,
         facultyName: selectedFaculty.name,
         className: _className!,
-        subjectName: _testCode ?? '',
+        subjectName: _subjectName!,
+        testCode: _testCodeController.text.trim(),
         totalTestNote: _totalNoteController.text.trim(),
         otherTasks: _otherTasksController.text.trim(),
         dueDate: _taskType == 'Daily' ? null : _formatDate(_dueDate!),
@@ -278,11 +274,15 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
               }
             }),
           ),
+          _textField(
+            controller: _testCodeController,
+            label: 'Test Code (Optional)',
+          ),
           _dropdown<String>(
-            label: _isOthersClass ? 'Test Code' : 'Test Code *',
-            value: _testCode,
-            items: _testCodes,
-            onChanged: (value) => setState(() => _testCode = value),
+            label: 'Subject *',
+            value: _subjectName,
+            items: const ['Maths', 'Physics', 'Other'],
+            onChanged: (value) => setState(() => _subjectName = value),
           ),
           _textField(
             controller: _totalNoteController,

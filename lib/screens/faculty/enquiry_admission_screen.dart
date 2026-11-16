@@ -124,6 +124,16 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> with Wi
     }
   }
 
+  Future<void> _flushDraft() async {
+    _draftTimer?.cancel();
+    _draftRevision++;
+    while (_draftRequestInFlight) {
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
+    _draftTimer?.cancel();
+    await _persistDraft();
+  }
+
   Future<void> _loadSavedDraft() async {
     try {
       final response = await _api.get(
@@ -262,8 +272,7 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> with Wi
   }
 
   Future<void> _close() async {
-    _draftTimer?.cancel();
-    await _persistDraft();
+    await _flushDraft();
     await _restoreEnquiry();
     if (mounted) Navigator.of(context).pop(false);
   }

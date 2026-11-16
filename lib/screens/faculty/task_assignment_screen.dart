@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/colors.dart';
 import '../../models/faculty_model.dart';
+import '../../models/faculty_task_model.dart';
 import '../../repositories/faculty_task_repository.dart';
 
 class TaskAssignmentScreen extends StatefulWidget {
   final String loginFacultyId;
+  final FacultyTaskModel? task;
 
   const TaskAssignmentScreen({
     super.key,
     required this.loginFacultyId,
+    this.task,
   });
 
   @override
@@ -40,6 +43,18 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
   @override
   void initState() {
     super.initState();
+    final task = widget.task;
+    if (task != null) {
+      _facultyId = task.facultyId;
+      _className = task.className;
+      _subjectName = task.subjectName;
+      _taskType = task.taskType;
+      _priority = task.priority;
+      _dueDate = task.dueDate == null ? null : DateTime.tryParse(task.dueDate!);
+      _testCodeController.text = task.testCode;
+      _totalNoteController.text = task.totalTestNote;
+      _otherTasksController.text = task.otherTasks;
+    }
     _loadOptions();
   }
 
@@ -151,19 +166,36 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
     setState(() => _saving = true);
 
     try {
-      await _repository.assignTask(
-        loginFacultyId: widget.loginFacultyId.trim().toUpperCase(),
-        facultyId: selectedFaculty.facultyId,
-        facultyName: selectedFaculty.name,
-        className: _className!,
-        subjectName: _subjectName!,
-        testCode: _testCodeController.text.trim(),
-        totalTestNote: _totalNoteController.text.trim(),
-        otherTasks: _otherTasksController.text.trim(),
-        dueDate: _taskType == 'Daily' ? null : _formatDate(_dueDate!),
-        priority: _taskType == 'Daily' ? 'High' : _priority,
-        taskType: _taskType,
-      );
+      if (widget.task == null) {
+        await _repository.assignTask(
+          loginFacultyId: widget.loginFacultyId.trim().toUpperCase(),
+          facultyId: selectedFaculty.facultyId,
+          facultyName: selectedFaculty.name,
+          className: _className!,
+          subjectName: _subjectName!,
+          testCode: _testCodeController.text.trim(),
+          totalTestNote: _totalNoteController.text.trim(),
+          otherTasks: _otherTasksController.text.trim(),
+          dueDate: _taskType == 'Daily' ? null : _formatDate(_dueDate!),
+          priority: _taskType == 'Daily' ? 'High' : _priority,
+          taskType: _taskType,
+        );
+      } else {
+        await _repository.updateTaskDetails(
+          taskId: widget.task!.id,
+          loginFacultyId: widget.loginFacultyId,
+          facultyId: selectedFaculty.facultyId,
+          facultyName: selectedFaculty.name,
+          className: _className!,
+          subjectName: _subjectName!,
+          testCode: _testCodeController.text.trim(),
+          totalTestNote: _totalNoteController.text.trim(),
+          otherTasks: _otherTasksController.text.trim(),
+          dueDate: _taskType == 'Daily' ? null : _formatDate(_dueDate!),
+          priority: _taskType == 'Daily' ? 'High' : _priority,
+          taskType: _taskType,
+        );
+      }
 
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -190,7 +222,7 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
         foregroundColor: AppColors.primary,
         elevation: 0,
         title: const Text(
-          'Task Assignment',
+          widget.task == null ? 'Task Assignment' : 'Edit Task',
           style: TextStyle(
             color: AppColors.primary,
             fontWeight: FontWeight.w800,
@@ -221,7 +253,7 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Assign a new task',
+            widget.task == null ? 'Assign a new task' : 'Edit assigned task',
             style: TextStyle(
               color: AppColors.primary,
               fontSize: 24,
@@ -335,7 +367,7 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
                       ),
                     )
                   : const Text(
-                      'Assign Task',
+                      widget.task == null ? 'Assign Task' : 'Save Changes',
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),
             ),

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
 
@@ -39,6 +38,7 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> with Wi
   Timer? _draftTimer;
   bool _draftReady = false;
   bool _draftRequestInFlight = false;
+  int _draftRevision = 0;
 
   static const _fieldNames = [
     'roll_no', 'name', 'class', 'board', 'phone', 'email', 'school_name',
@@ -97,6 +97,7 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> with Wi
 
   void _scheduleDraftSave() {
     if (!_draftReady || _saving || !mounted) return;
+    _draftRevision++;
     _draftTimer?.cancel();
     _draftTimer = Timer(const Duration(milliseconds: 650), _persistDraft);
   }
@@ -105,6 +106,7 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> with Wi
     if (!_draftReady || _saving || _draftRequestInFlight) return;
     _draftTimer?.cancel();
     _draftRequestInFlight = true;
+    final savingRevision = _draftRevision;
     try {
       await _api.put(
         '/enquiries/${Uri.encodeComponent(_enquiryId)}/admission/draft',
@@ -115,6 +117,10 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> with Wi
       // app resume will retry the latest snapshot.
     } finally {
       _draftRequestInFlight = false;
+      if (_draftReady && _draftRevision != savingRevision && mounted) {
+        _draftTimer?.cancel();
+        _draftTimer = Timer(const Duration(milliseconds: 250), _persistDraft);
+      }
     }
   }
 
@@ -140,7 +146,10 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> with Wi
             .whereType<int>().toList();
       }
       _subjectChoice = draft['subject_choice']?.toString();
-      _seriesId = draft['series_id']?.toString();
+      final savedSeriesId = draft['series_id']?.toString();
+      _seriesId = _series.any((series) => series['id'].toString() == savedSeriesId)
+          ? savedSeriesId
+          : (_series.isEmpty ? null : _series.first['id']?.toString());
       _testWritingDay = draft['test_writing_day']?.toString();
     } catch (_) {
       // A failed draft fetch should not prevent a fresh admission form opening.

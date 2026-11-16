@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'enquiry_admission_screen.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
@@ -199,8 +200,26 @@ class _FacultyEnquiriesRequestsScreenState extends State<FacultyEnquiriesRequest
       }
       await _loadEnquiries();
     } catch (e) {
+      // Dio's default exception text hides the useful JSON error returned by
+      // the API (especially HTTP 409 admission-lock conflicts). Prefer the
+      // server's explanation so the admin knows what action is required.
+      var message = e.toString().replaceFirst('Exception: ', '');
+      if (e is DioException) {
+        final responseData = e.response?.data;
+        if (responseData is Map) {
+          final serverMessage = responseData['error'] ?? responseData['message'];
+          if (serverMessage != null && serverMessage.toString().trim().isNotEmpty) {
+            message = serverMessage.toString();
+          }
+        } else if (responseData is String && responseData.trim().isNotEmpty) {
+          message = responseData;
+        }
+      }
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not continue admission: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(
+          content: Text('Could not continue admission: $message'),
+          duration: const Duration(seconds: 6),
+        ),
       );
       await _loadEnquiries();
     }

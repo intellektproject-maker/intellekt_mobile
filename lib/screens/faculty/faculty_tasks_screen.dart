@@ -8,7 +8,8 @@ import 'task_assignment_screen.dart';
 class FacultyTasksScreen extends StatefulWidget {
   final String facultyId;
   final bool facultyOnly;
-  const FacultyTasksScreen({super.key, required this.facultyId, this.facultyOnly = false});
+  final String initialFilter;
+  const FacultyTasksScreen({super.key, required this.facultyId, this.facultyOnly = false, this.initialFilter = 'All'});
 
   @override
   State<FacultyTasksScreen> createState() => _FacultyTasksScreenState();
@@ -29,6 +30,8 @@ class _FacultyTasksScreenState extends State<FacultyTasksScreen> with SingleTick
   @override
   void initState() {
     super.initState();
+    _allFilter = widget.initialFilter;
+    _mineFilter = widget.initialFilter;
     _tabs = TabController(length: widget.facultyOnly ? 1 : 4, vsync: this);
     _tabs.addListener(() {
       if (!_tabs.indexIsChanging && _pages.hasClients) _pages.jumpToPage(_tabs.index);

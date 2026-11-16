@@ -31,6 +31,27 @@ class FacultyTaskRepository {
     }).toList(growable: false);
   }
 
+  // Retained for existing faculty-profile workflows that still load posted test codes.
+  List<String> _parseTestCodes(dynamic data) {
+    if (data is! List) return <String>[];
+
+    return data
+        .whereType<Map>()
+        .map<String>((item) => item['test_code']?.toString() ?? '')
+        .where((value) => value.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+  }
+
+  Future<List<String>> getTestCodes() async {
+    try {
+      final response = await _dio.get('/tests');
+      return _parseTestCodes(response.data);
+    } on DioException {
+      return <String>[];
+    }
+  }
+
   String _errorMessage(DioException e, String fallback) {
     final data = e.response?.data;
     if (data is Map) {

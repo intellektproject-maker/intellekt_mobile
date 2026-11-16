@@ -121,6 +121,16 @@ class _FacultyTasksScreenState extends State<FacultyTasksScreen> with SingleTick
     } catch (e) { _message(e.toString().replaceFirst('Exception: ', '')); }
   }
 
+  Future<void> _edit(FacultyTaskModel task) async {
+    final result = await Navigator.of(context).push<bool>(MaterialPageRoute(
+      builder: (_) => TaskAssignmentScreen(loginFacultyId: _id, task: task),
+    ));
+    if (result == true) {
+      _message('Task updated successfully');
+      await _reloadCurrent();
+    }
+  }
+
   Future<void> _assign() async {
     final result = await Navigator.of(context).push<bool>(MaterialPageRoute(
       builder: (_) => TaskAssignmentScreen(loginFacultyId: _id),
@@ -195,12 +205,13 @@ class _FacultyTasksScreenState extends State<FacultyTasksScreen> with SingleTick
           Text('Frequency: ${t.taskType}   •   Priority: ${t.priority}'),
           Text('Test Code: ${t.testCode.isEmpty ? '-' : t.testCode}'),
           Text('Subject: ${t.subjectName.isEmpty ? '-' : t.subjectName}'),
-          if (t.totalTestNote.isNotEmpty) Text('Task: ${t.totalTestNote}'),
+          if (t.totalTestNote.isNotEmpty) Text('No. of notes: ${t.totalTestNote}'),
           if (t.otherTasks.isNotEmpty) Text('Other tasks: ${t.otherTasks}'),
           Text('Due: ${t.dueDate ?? 'No due date'}'),
           if (t.assignedBy.isNotEmpty) Text('Assigned by: ${t.assignedBy}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           if (t.isCompleted) const Text('Completed', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w700)),
           if (_admin && !checklist) Wrap(spacing: 8, children: [
+            TextButton(onPressed: () => _edit(t), child: const Text('Edit')),
             TextButton(onPressed: () => _reassign(t), child: const Text('Reassign')),
             TextButton(onPressed: () => _delete(t), child: const Text('Delete', style: TextStyle(color: Colors.red))),
           ]),

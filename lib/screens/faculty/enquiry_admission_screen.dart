@@ -74,7 +74,9 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> with Wi
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.inactive ||
+    if (state == AppLifecycleState.resumed) {
+      _persistDraft();
+    } else if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
       _draftTimer?.cancel();
@@ -333,7 +335,6 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> with Wi
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student enrolled successfully.')));
       Navigator.of(context).pop(true);
     } catch (e) {
-      await _restoreEnquiry();
       if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _saving = false);

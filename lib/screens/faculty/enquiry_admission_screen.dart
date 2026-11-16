@@ -94,9 +94,36 @@ class _EnquiryAdmissionScreenState extends State<EnquiryAdmissionScreen> {
       } else {
         final lastRollResponse = await _api.get('/students/last-roll-number');
         final lastRollData = lastRollResponse.data;
-        _lastRollNumber = lastRollData is Map
-            ? (lastRollData['last_roll_no'] ?? lastRollData['last_roll_number'] ?? lastRollData['lastRollNumber'] ?? lastRollData['lastRollNo'] ?? lastRollData['roll_no'])?.toString()
-            : lastRollData?.toString();
+        // The endpoint may return either an object or a list. In particular,
+        // an empty list means there are no regular students yet; never render
+        // the Dart list representation ("[]") in the admission form.
+        dynamic lastRollValue;
+        if (lastRollData is Map) {
+          lastRollValue = lastRollData['last_roll_no'] ??
+              lastRollData['last_roll_number'] ??
+              lastRollData['lastRollNumber'] ??
+              lastRollData['lastRollNo'] ??
+              lastRollData['roll_no'];
+        } else if (lastRollData is List) {
+          if (lastRollData.isNotEmpty) {
+            final first = lastRollData.first;
+            if (first is Map) {
+              lastRollValue = first['last_roll_no'] ??
+                  first['last_roll_number'] ??
+                  first['lastRollNumber'] ??
+                  first['lastRollNo'] ??
+                  first['roll_no'];
+            } else {
+              lastRollValue = first;
+            }
+          }
+        } else {
+          lastRollValue = lastRollData;
+        }
+        final parsedLastRoll = lastRollValue?.toString().trim();
+        _lastRollNumber = parsedLastRoll == null || parsedLastRoll.isEmpty
+            ? null
+            : parsedLastRoll;
         final subjectsResponse = await _api.get('/subjects');
         _subjects = subjectsResponse.data is List
             ? (subjectsResponse.data as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()

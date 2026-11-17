@@ -3872,7 +3872,7 @@ app.put('/faculty-tasks/:id', async (req, res) => {
 			}
 		}
 
-		if (updatedTask.is_completed === true) {
+		if (action !== 'edit' && updatedTask.is_completed === true) {
 			const moduleName = updatedTask.task_type === 'Daily' ? 'daily-tasks' : 'all-tasks';
 
 			const message =

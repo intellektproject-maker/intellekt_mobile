@@ -1,10 +1,12 @@
 const express = require('express');
+require('./faculty-device-token-routes');
 const cors = require('cors');
 const pool = require('./db');
 const registerRecordEditRoutes = require('./record_edit_requests');
 const crypto = require("node:crypto");
 const admin = require('firebase-admin');
 const { createNotificationWorker } = require('./app-notification-worker');
+const { createFacultyNotification } = require('./faculty-notification-service');
 const app = express();
 
 let firebaseMessaging = null;
@@ -3763,12 +3765,58 @@ app.post('/faculty-tasks', async (req, res) => {
 
 app.put('/faculty-tasks/:id', async (req, res) => {
 	const { id } = req.params;
-	const { is_completed, faculty_id, faculty_name } = req.body;
+	const { is_completed, faculty_id, faculty_name, action } = req.body;
 
 	try {
 		let result;
 
-		if (faculty_id && faculty_name) {
+		if (action === 'edit') {
+			const loginFacultyId = String(req.body.loginFacultyId || '').trim().toUpperCase();
+			const updatedFacultyId = String(faculty_id || '').trim().toUpperCase();
+			const updatedFacultyName = String(faculty_name || '').trim();
+			const className = String(req.body.class_name || '').trim();
+			const taskType = req.body.task_type === 'Daily' ? 'Daily' : 'Weekly';
+
+			if (!['IG001', 'IG002'].includes(loginFacultyId)) {
+				return res.status(403).json({ error: 'Only IG001 and IG002 can edit faculty tasks' });
+			}
+
+			if (!updatedFacultyId || !updatedFacultyName || !className) {
+				return res.status(400).json({ error: 'Faculty Name and Class are required' });
+			}
+
+			if (taskType === 'Weekly' && !req.body.due_date) {
+				return res.status(400).json({ error: 'Due Date is required for weekly tasks' });
+			}
+
+			result = await pool.query(
+				`
+					UPDATE faculty_tasks
+					SET faculty_id = $1,
+						faculty_name = $2,
+						class_name = $3,
+						subject_name = $4,
+						total_test_note = $5,
+						other_tasks = $6,
+						due_date = CASE WHEN $9 = 'Daily' THEN due_date ELSE $7::date END,
+						priority = $8
+					WHERE id = $10
+					RETURNING *
+				`,
+				[
+					updatedFacultyId,
+					updatedFacultyName,
+					className,
+					String(req.body.subject_name || ''),
+					String(req.body.total_test_note || ''),
+					String(req.body.other_tasks || ''),
+					req.body.due_date || null,
+					taskType === 'Daily' ? 'High' : (req.body.priority || 'Medium'),
+					taskType,
+					id
+				]
+			);
+		} else if (faculty_id && faculty_name) {
 			result = await pool.query(
 				`
 					UPDATE faculty_tasks
@@ -3805,6 +3853,24 @@ app.put('/faculty-tasks/:id', async (req, res) => {
 			return res.status(404).json({ error: 'Task not found' });
 		}
 		const updatedTask = result.rows[0];
+
+		if (action === 'edit') {
+			try {
+				await createFacultyNotification(pool, {
+					facultyId: updatedTask.faculty_id,
+					moduleName: 'tasks',
+					message: 'Your assigned task has been updated by admin.',
+					title: 'Task Updated',
+					data: {
+						module: 'tasks',
+						taskId: updatedTask.id,
+						event: 'task-updated'
+					}
+				});
+			} catch (notificationError) {
+				console.error('Faculty task edit notification failed:', notificationError);
+			}
+		}
 
 		if (updatedTask.is_completed === true) {
 			const moduleName = updatedTask.task_type === 'Daily' ? 'daily-tasks' : 'all-tasks';

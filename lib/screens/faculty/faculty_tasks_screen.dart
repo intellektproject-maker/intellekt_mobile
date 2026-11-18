@@ -8,7 +8,13 @@ import 'task_assignment_screen.dart';
 class FacultyTasksScreen extends StatefulWidget {
   final String facultyId;
   final bool facultyOnly;
-  const FacultyTasksScreen({super.key, required this.facultyId, this.facultyOnly = false});
+  final String? initialTaskId;
+  const FacultyTasksScreen({
+    super.key,
+    required this.facultyId,
+    this.facultyOnly = false,
+    this.initialTaskId,
+  });
 
   @override
   State<FacultyTasksScreen> createState() => _FacultyTasksScreenState();
@@ -130,6 +136,14 @@ class _FacultyTasksScreenState extends State<FacultyTasksScreen> with SingleTick
 
   Widget _taskList(List<FacultyTaskModel> tasks, bool loading, String filter, ValueChanged<String> onFilter, {required bool checklist}) {
     final filtered = _filter(tasks, filter);
+    final targetTaskId = int.tryParse(widget.initialTaskId ?? '');
+    if (targetTaskId != null) {
+      filtered.sort((a, b) {
+        if (a.id == targetTaskId) return -1;
+        if (b.id == targetTaskId) return 1;
+        return 0;
+      });
+    }
     final counts = [
       ('Pending', tasks.where((t) => !t.isCompleted).length),
       ('Completed', tasks.where((t) => t.isCompleted).length),
@@ -188,7 +202,25 @@ class _FacultyTasksScreenState extends State<FacultyTasksScreen> with SingleTick
         const SizedBox(height: 14),
         if (loading) const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
         else if (filtered.isEmpty) const Card(child: ListTile(title: Text('No tasks found for this filter.')))
-        else ...filtered.map((t) => Card(color: AppColors.surface, margin: const EdgeInsets.only(bottom: 10), child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        else ...filtered.map((t) => Card(
+          color: AppColors.surface,
+          margin: const EdgeInsets.only(bottom: 10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: t.id == targetTaskId ? AppColors.primary : Colors.transparent,
+              width: t.id == targetTaskId ? 2 : 0,
+            ),
+          ),
+          child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (t.id == targetTaskId)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: Text(
+                'Opened from notification',
+                style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800),
+              ),
+            ),
           Row(children: [Expanded(child: Text('${t.facultyName} (${t.facultyId})', style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary))),
             if (checklist) Checkbox(value: t.isCompleted, onChanged: (_) => _toggle(t))]),
           Text('Class: ${t.className}'),

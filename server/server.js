@@ -5,6 +5,7 @@ const registerRecordEditRoutes = require('./record_edit_requests');
 const crypto = require("node:crypto");
 const admin = require('firebase-admin');
 const { createNotificationWorker } = require('./app-notification-worker');
+const { createFacultyNotification } = require('./faculty-notification-service');
 const app = express();
 
 let firebaseMessaging = null;
@@ -3684,14 +3685,13 @@ app.post('/faculty-tasks', async (req, res) => {
 				]
 			);
 
-			await pool.query(
-				`
-	INSERT INTO faculty_notifications
-	(faculty_id, module_name, message)
-	VALUES ($1, $2, $3)
-	`,
-				[ faculty_id, 'tasks', 'New task assigned by admin' ]
-			);
+			await createFacultyNotification(pool, {
+				facultyId: faculty_id,
+				moduleName: 'tasks',
+				message: 'New daily task assigned by admin',
+				title: 'New Daily Task Assigned',
+				data: { module: 'tasks', task_id: todayTaskResult.rows[0].id }
+			});
 
 			return res.json({
 				message: 'Daily task assigned successfully',
@@ -3730,14 +3730,13 @@ app.post('/faculty-tasks', async (req, res) => {
 				loginFacultyId
 			]
 		);
-		await pool.query(
-			`
-	INSERT INTO faculty_notifications
-	(faculty_id, module_name, message)
-	VALUES ($1, $2, $3)
-	`,
-			[ faculty_id, 'tasks', 'New task assigned by admin' ]
-		);
+		await createFacultyNotification(pool, {
+			facultyId: faculty_id,
+			moduleName: 'tasks',
+			message: 'New weekly task assigned by admin',
+			title: 'New Weekly Task Assigned',
+			data: { module: 'tasks', task_id: result.rows[0].id }
+		});
 		res.json({
 			message: 'Task assigned successfully',
 			task: result.rows[0]
@@ -4612,6 +4611,7 @@ let server;
 let notificationWorker;
 
 async function startServer() {
+	await ensureFacultyNotificationTaskIdColumn();
 	await ensureStudentDeviceTokensTable();
 	notificationWorker = createNotificationWorker({
 		pool,
@@ -4637,6 +4637,13 @@ async function shutdown(signal) {
 		process.exit(0);
 	});
 	setTimeout(() => process.exit(1), 10000).unref();
+}
+
+async function ensureFacultyNotificationTaskIdColumn() {
+    await pool.query(`
+        ALTER TABLE faculty_notifications
+        ADD COLUMN IF NOT EXISTS task_id BIGINT
+    `);
 }
 
 async function ensureStudentDeviceTokensTable() {

@@ -602,17 +602,13 @@ class PushNotificationService {
     }
 
     final userId = authProvider.user?.id.trim();
-    final module = (data['module_name'] ?? data['module'] ?? data['type'])
-        ?.toString()
-        .trim()
-        .toLowerCase()
-        .replaceAll('_', '-')
-        .replaceAll(' ', '-');
-    final isOverdueTask = (module?.contains('overdue') ?? false) ||
-        (data['notification_type']?.toString().toLowerCase().contains('overdue') ?? false);
+    final taskId = data['task_id'] ?? data['taskId'];
     final queryParameters = <String, String>{
       if (userId != null && userId.isNotEmpty) 'roll': userId,
-      if (route == AppRoutes.facultyTasks && isOverdueTask) 'filter': 'Overdue',
+      if (route == AppRoutes.facultyTasks &&
+          taskId != null &&
+          taskId.toString().trim().isNotEmpty)
+        'taskId': taskId.toString().trim(),
     };
     final destination = Uri(
       path: route,

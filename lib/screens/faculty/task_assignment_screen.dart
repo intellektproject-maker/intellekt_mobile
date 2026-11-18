@@ -225,7 +225,7 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.primary,
         elevation: 0,
-        title: const Text(
+        title: Text(
           widget.task == null ? 'Task Assignment' : 'Edit Task',
           style: TextStyle(
             color: AppColors.primary,
@@ -256,7 +256,7 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             widget.task == null ? 'Assign a new task' : 'Edit assigned task',
             style: TextStyle(
               color: AppColors.primary,
@@ -371,7 +371,7 @@ class _TaskAssignmentScreenState extends State<TaskAssignmentScreen> {
                         color: Colors.white,
                       ),
                     )
-                  : const Text(
+                  : Text(
                       widget.task == null ? 'Assign Task' : 'Save Changes',
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),

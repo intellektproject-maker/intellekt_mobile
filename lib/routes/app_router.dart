@@ -148,6 +148,7 @@ class AppRouter {
             // faculty members land on their own checklist.
             facultyOnly: !(authProvider.user?.isAdmin ?? false),
             initialFilter: state.uri.queryParameters['filter'] ?? 'All',
+            initialTaskId: state.uri.queryParameters['taskId'],
           ),
         ),
         GoRoute(

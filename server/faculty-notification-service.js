@@ -285,14 +285,15 @@ async function createFacultyNotification(
   }
 
   let result;
+  const taskId = data.task_id ?? data.taskId ?? null;
 
   try {
     result = await pool.query(
       `INSERT INTO faculty_notifications
-         (faculty_id, module_name, message, is_read)
-       VALUES ($1, $2, $3, FALSE)
-       RETURNING id, faculty_id, module_name, message, created_at`,
-      [id, moduleName, message]
+         (faculty_id, module_name, message, is_read, task_id)
+       VALUES ($1, $2, $3, FALSE, $4)
+       RETURNING id, faculty_id, module_name, message, created_at, task_id`,
+      [id, moduleName, message, taskId]
     );
   } catch (error) {
     console.error(
@@ -309,16 +310,23 @@ async function createFacultyNotification(
     `[Faculty Notification] Created notification #${notification.id} for ${id}`
   );
 
-  const push = await sendToFaculty(pool, [id], {
-    title,
-    body: message,
-    data: {
-      ...data,
-      notification_id: notification.id,
-      faculty_id: id,
-      module_name: moduleName
-    }
-  });
+  let push = { sent: 0, failed: 0, removed: 0, tokenCount: 0 };
+  try {
+    push = await sendToFaculty(pool, [id], {
+      title,
+      body: message,
+      data: {
+        ...data,
+        task_id: taskId,
+        notification_id: notification.id,
+        faculty_id: id,
+        module_name: moduleName
+      }
+    });
+  } catch (error) {
+    console.error('[Faculty Notification] Push delivery failed:', error);
+    push.failed = 1;
+  }
 
   console.log(
     `[Faculty Notification] Push completed for ${id}:`,
@@ -328,6 +336,7 @@ async function createFacultyNotification(
   return {
     inserted: result.rowCount > 0,
     notificationId: notification.id,
+    taskId,
     ...push
   };
 }

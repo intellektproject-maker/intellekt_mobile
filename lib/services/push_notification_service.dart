@@ -610,9 +610,12 @@ class PushNotificationService {
         .replaceAll(' ', '-');
     final isOverdueTask = (module?.contains('overdue') ?? false) ||
         (data['notification_type']?.toString().toLowerCase().contains('overdue') ?? false);
+    final taskId = data['task_id'] ?? data['taskId'];
     final queryParameters = <String, String>{
       if (userId != null && userId.isNotEmpty) 'roll': userId,
       if (route == AppRoutes.facultyTasks && isOverdueTask) 'filter': 'Overdue',
+      if (route == AppRoutes.facultyTasks && taskId != null && taskId.toString().isNotEmpty)
+        'taskId': taskId.toString(),
     };
     final destination = Uri(
       path: route,

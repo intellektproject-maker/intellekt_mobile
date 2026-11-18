@@ -9,7 +9,8 @@ class FacultyTasksScreen extends StatefulWidget {
   final String facultyId;
   final bool facultyOnly;
   final String initialFilter;
-  const FacultyTasksScreen({super.key, required this.facultyId, this.facultyOnly = false, this.initialFilter = 'All'});
+  final String? initialTaskId;
+  const FacultyTasksScreen({super.key, required this.facultyId, this.facultyOnly = false, this.initialFilter = 'All', this.initialTaskId});
 
   @override
   State<FacultyTasksScreen> createState() => _FacultyTasksScreenState();
@@ -143,6 +144,14 @@ class _FacultyTasksScreenState extends State<FacultyTasksScreen> with SingleTick
 
   Widget _taskList(List<FacultyTaskModel> tasks, bool loading, String filter, ValueChanged<String> onFilter, {required bool checklist}) {
     final filtered = _filter(tasks, filter);
+    if (checklist && widget.initialTaskId != null) {
+      filtered.sort((a, b) {
+        final aTarget = a.id.toString() == widget.initialTaskId;
+        final bTarget = b.id.toString() == widget.initialTaskId;
+        if (aTarget == bTarget) return 0;
+        return aTarget ? -1 : 1;
+      });
+    }
     final counts = [
       ('Pending', tasks.where((t) => !t.isCompleted).length),
       ('Completed', tasks.where((t) => t.isCompleted).length),
@@ -201,24 +210,45 @@ class _FacultyTasksScreenState extends State<FacultyTasksScreen> with SingleTick
         const SizedBox(height: 14),
         if (loading) const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
         else if (filtered.isEmpty) const Card(child: ListTile(title: Text('No tasks found for this filter.')))
-        else ...filtered.map((t) => Card(color: AppColors.surface, margin: const EdgeInsets.only(bottom: 10), child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [Expanded(child: Text('${t.facultyName} (${t.facultyId})', style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary))),
-            if (checklist) Checkbox(value: t.isCompleted, onChanged: (_) => _toggle(t))]),
-          Text('Class: ${t.className}'),
-          Text('Frequency: ${t.taskType}   •   Priority: ${t.priority}'),
-          Text('Test Code: ${t.testCode.isEmpty ? '-' : t.testCode}'),
-          Text('Subject: ${t.subjectName.isEmpty ? '-' : t.subjectName}'),
-          if (t.totalTestNote.isNotEmpty) Text('No. of notes: ${t.totalTestNote}'),
-          if (t.otherTasks.isNotEmpty) Text('Other tasks: ${t.otherTasks}'),
-          Text('Due: ${t.dueDate ?? 'No due date'}'),
-          if (t.assignedBy.isNotEmpty) Text('Assigned by: ${t.assignedBy}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-          if (t.isCompleted) const Text('Completed', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w700)),
-          if (_admin && !checklist) Wrap(spacing: 8, children: [
-            TextButton(onPressed: () => _edit(t), child: const Text('Edit')),
-            TextButton(onPressed: () => _reassign(t), child: const Text('Reassign')),
-            TextButton(onPressed: () => _delete(t), child: const Text('Delete', style: TextStyle(color: Colors.red))),
-          ]),
-        ])))),
+        else ...filtered.map((t) {
+          final isNotificationTarget = checklist &&
+              widget.initialTaskId != null &&
+              t.id.toString() == widget.initialTaskId;
+          return Card(
+            color: AppColors.surface,
+            margin: const EdgeInsets.only(bottom: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: isNotificationTarget
+                  ? const BorderSide(color: AppColors.primary, width: 2)
+                  : BorderSide.none,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                if (isNotificationTarget)
+                  const Text('Opened from notification',
+                    style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700)),
+                Row(children: [Expanded(child: Text('${t.facultyName} (${t.facultyId})', style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary))),
+                  if (checklist) Checkbox(value: t.isCompleted, onChanged: (_) => _toggle(t))]),
+                Text('Class: ${t.className}'),
+                Text('Frequency: ${t.taskType}   •   Priority: ${t.priority}'),
+                Text('Test Code: ${t.testCode.isEmpty ? '-' : t.testCode}'),
+                Text('Subject: ${t.subjectName.isEmpty ? '-' : t.subjectName}'),
+                if (t.totalTestNote.isNotEmpty) Text('No. of notes: ${t.totalTestNote}'),
+                if (t.otherTasks.isNotEmpty) Text('Other tasks: ${t.otherTasks}'),
+                Text('Due: ${t.dueDate ?? 'No due date'}'),
+                if (t.assignedBy.isNotEmpty) Text('Assigned by: ${t.assignedBy}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                if (t.isCompleted) const Text('Completed', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w700)),
+                if (_admin && !checklist) Wrap(spacing: 8, children: [
+                  TextButton(onPressed: () => _edit(t), child: const Text('Edit')),
+                  TextButton(onPressed: () => _reassign(t), child: const Text('Reassign')),
+                  TextButton(onPressed: () => _delete(t), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+                ]),
+              ]),
+            ),
+          );
+        }),
       ]),
     );
   }

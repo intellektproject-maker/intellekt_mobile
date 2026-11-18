@@ -3696,14 +3696,13 @@ app.post('/faculty-tasks', async (req, res) => {
 				]
 			);
 
-			await pool.query(
-				`
-	INSERT INTO faculty_notifications
-	(faculty_id, module_name, message)
-	VALUES ($1, $2, $3)
-	`,
-				[ faculty_id, 'tasks', 'New task assigned by admin' ]
-			);
+			await createFacultyNotification(pool, {
+				facultyId: faculty_id,
+				moduleName: 'tasks',
+				message: 'A new daily task has been assigned to you.',
+				title: 'New Daily Task Assigned',
+				data: { module: 'tasks', task_id: todayTaskResult.rows[0].id }
+			});
 
 			return res.json({
 				message: 'Daily task assigned successfully',
@@ -3742,14 +3741,13 @@ app.post('/faculty-tasks', async (req, res) => {
 				loginFacultyId
 			]
 		);
-		await pool.query(
-			`
-	INSERT INTO faculty_notifications
-	(faculty_id, module_name, message)
-	VALUES ($1, $2, $3)
-	`,
-			[ faculty_id, 'tasks', 'New task assigned by admin' ]
-		);
+		await createFacultyNotification(pool, {
+			facultyId: faculty_id,
+			moduleName: 'tasks',
+			message: 'A new weekly task has been assigned to you.',
+			title: 'New Weekly Task Assigned',
+			data: { module: 'tasks', task_id: result.rows[0].id }
+		});
 		res.json({
 			message: 'Task assigned successfully',
 			task: result.rows[0]
@@ -4691,7 +4689,15 @@ const PORT = process.env.PORT || 5050;
 let server;
 let notificationWorker;
 
+async function ensureFacultyNotificationTaskIdColumn() {
+	await pool.query(`
+		ALTER TABLE faculty_notifications
+		ADD COLUMN IF NOT EXISTS task_id BIGINT
+	`);
+}
+
 async function startServer() {
+	await ensureFacultyNotificationTaskIdColumn();
 	await ensureStudentDeviceTokensTable();
 	notificationWorker = createNotificationWorker({
 		pool,

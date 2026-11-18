@@ -43,6 +43,7 @@ class PushNotificationService {
   static const Duration _feeReminderInterval = Duration(hours: 24);
 
   Future<void> initialize() async {
+    debugPrint('[PushTap] initialize started');
     const initializationSettings = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       iOS: DarwinInitializationSettings(),
@@ -57,6 +58,7 @@ class PushNotificationService {
     final launchDetails =
         await _localNotifications.getNotificationAppLaunchDetails();
     final launchResponse = launchDetails?.notificationResponse;
+    debugPrint('[PushTap] local launch: didLaunch=${launchDetails?.didNotificationLaunchApp}, hasResponse=${launchResponse != null}');
     if (launchDetails?.didNotificationLaunchApp == true &&
         launchResponse != null) {
       _handleLocalNotificationTap(launchResponse);
@@ -97,9 +99,13 @@ class PushNotificationService {
       }
     });
 
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      debugPrint('[PushTap] onMessageOpenedApp received');
+      _handleNotificationTap(message);
+    });
     FirebaseMessaging.onMessage.listen(_showForegroundNotification);
     final initialMessage = await _messaging.getInitialMessage();
+    debugPrint('[PushTap] getInitialMessage: ${initialMessage == null ? 'null' : 'received'}');
     if (initialMessage != null) _handleNotificationTap(initialMessage);
   }
 
@@ -109,6 +115,7 @@ class PushNotificationService {
     required AuthProvider authProvider,
   }) {
     _router = router;
+    debugPrint('[PushTap] navigation attached; authInitialized=${authProvider.isInitialized}, loggedIn=${authProvider.isLoggedIn}');
 
     if (!identical(_authProvider, authProvider)) {
       _authProvider?.removeListener(_openPendingRouteIfReady);
@@ -392,6 +399,7 @@ class PushNotificationService {
   }
 
   void _handleNotificationTap(RemoteMessage message) {
+    debugPrint('[PushTap] Firebase notification tap received; messageId=${message.messageId}, dataKeys=${message.data.keys.toList()}, title=${message.notification?.title}, body=${message.notification?.body}');
     // Preserve the payload until authentication is ready so the same
     // notification can be routed safely for the signed-in role.
     final data = Map<String, dynamic>.from(message.data);
@@ -405,6 +413,7 @@ class PushNotificationService {
       data['body'] = notification!.body;
     }
     _pendingNotificationData = data;
+    debugPrint('[PushTap] pending payload saved; hasModule=${data.containsKey('module_name') || data.containsKey('module')}, hasTaskText=${('${data['title'] ?? ''} ${data['body'] ?? ''} ${data['message'] ?? ''}').toLowerCase().contains('task')}');
     _openPendingRouteIfReady();
   }
 
@@ -603,10 +612,18 @@ class PushNotificationService {
     final router = _router;
     final authProvider = _authProvider;
 
-    if (data == null || router == null || authProvider == null) return;
-    if (!authProvider.isInitialized || !authProvider.isLoggedIn) return;
+    if (data == null || router == null || authProvider == null) {
+      debugPrint('[PushTap] waiting for prerequisites: payload=${data != null}, router=${router != null}, authProvider=${authProvider != null}');
+      return;
+    }
+    if (!authProvider.isInitialized || !authProvider.isLoggedIn) {
+      debugPrint('[PushTap] waiting for auth: initialized=${authProvider.isInitialized}, loggedIn=${authProvider.isLoggedIn}');
+      return;
+    }
 
+    debugPrint('[PushTap] resolving route; faculty=${authProvider.isFaculty}, admin=${authProvider.user?.isAdmin}, student=${authProvider.isStudent}');
     final route = _routeForPayload(data);
+    debugPrint('[PushTap] resolved destination route=$route');
     if (route == null) {
       debugPrint(
         'Notification tap ignored for role/module: '
@@ -638,6 +655,7 @@ class PushNotificationService {
     ).toString();
 
     _pendingNotificationData = null;
+    debugPrint('[PushTap] navigating to $destination');
     router.go(destination);
   }
 }

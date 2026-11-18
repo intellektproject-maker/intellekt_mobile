@@ -1,4 +1,5 @@
 const express = require('express');
+require('./faculty-device-token-routes');
 const cors = require('cors');
 const pool = require('./db');
 const registerRecordEditRoutes = require('./record_edit_requests');
@@ -1534,7 +1535,9 @@ app.get('/student-records', async (req, res) => {
 					TRIM(board) AS board,
 					phone,
 					email,
-					school_name
+					school_name,
+					academic_year_from,
+					academic_year_to
 				FROM students
 				WHERE TRIM(class) = TRIM($1)
 				AND TRIM(board) = TRIM($2)
@@ -1659,6 +1662,8 @@ app.get('/attendance', async (req, res) => {
 						s.name,
 						TRIM(s.class) AS class,
 						TRIM(s.board) AS board,
+						s.academic_year_from,
+						s.academic_year_to,
 						a.subject_id,
 						a.attendance_date,
 						a.attendance_time,
@@ -1701,6 +1706,8 @@ app.get('/attendance', async (req, res) => {
 						s.name,
 						TRIM(s.class) AS class,
 						TRIM(s.board) AS board,
+						s.academic_year_from,
+						s.academic_year_to,
 						a.subject_id,
 						a.attendance_date,
 						a.attendance_time,
@@ -2759,6 +2766,8 @@ app.get('/students', async (req, res) => {
         s.phone,
         s.email,
         s.school_name,
+        s.academic_year_from,
+        s.academic_year_to,
         s.password,
         s.mode_of_education
       FROM students s
@@ -2853,6 +2862,8 @@ app.get('/enter-marks-students', async (req, res) => {
 			SELECT DISTINCT
 				s.roll_no,
 				s.name,
+				s.academic_year_from,
+				s.academic_year_to,
 				m.marks_obtained,
 				m.comments,
 				COALESCE(m.total_marks, t.total_marks) AS total_marks
@@ -3688,7 +3699,7 @@ app.post('/faculty-tasks', async (req, res) => {
 			await createFacultyNotification(pool, {
 				facultyId: faculty_id,
 				moduleName: 'tasks',
-				message: 'New daily task assigned by admin',
+				message: 'A new daily task has been assigned to you.',
 				title: 'New Daily Task Assigned',
 				data: { module: 'tasks', task_id: todayTaskResult.rows[0].id }
 			});
@@ -3733,7 +3744,7 @@ app.post('/faculty-tasks', async (req, res) => {
 		await createFacultyNotification(pool, {
 			facultyId: faculty_id,
 			moduleName: 'tasks',
-			message: 'New weekly task assigned by admin',
+			message: 'A new weekly task has been assigned to you.',
 			title: 'New Weekly Task Assigned',
 			data: { module: 'tasks', task_id: result.rows[0].id }
 		});
@@ -3752,12 +3763,58 @@ app.post('/faculty-tasks', async (req, res) => {
 
 app.put('/faculty-tasks/:id', async (req, res) => {
 	const { id } = req.params;
-	const { is_completed, faculty_id, faculty_name } = req.body;
+	const { is_completed, faculty_id, faculty_name, action } = req.body;
 
 	try {
 		let result;
 
-		if (faculty_id && faculty_name) {
+		if (action === 'edit') {
+			const loginFacultyId = String(req.body.loginFacultyId || '').trim().toUpperCase();
+			const updatedFacultyId = String(faculty_id || '').trim().toUpperCase();
+			const updatedFacultyName = String(faculty_name || '').trim();
+			const className = String(req.body.class_name || '').trim();
+			const taskType = req.body.task_type === 'Daily' ? 'Daily' : 'Weekly';
+
+			if (!['IG001', 'IG002'].includes(loginFacultyId)) {
+				return res.status(403).json({ error: 'Only IG001 and IG002 can edit faculty tasks' });
+			}
+
+			if (!updatedFacultyId || !updatedFacultyName || !className) {
+				return res.status(400).json({ error: 'Faculty Name and Class are required' });
+			}
+
+			if (taskType === 'Weekly' && !req.body.due_date) {
+				return res.status(400).json({ error: 'Due Date is required for weekly tasks' });
+			}
+
+			result = await pool.query(
+				`
+					UPDATE faculty_tasks
+					SET faculty_id = $1,
+						faculty_name = $2,
+						class_name = $3,
+						subject_name = $4,
+						total_test_note = $5,
+						other_tasks = $6,
+						due_date = CASE WHEN $9 = 'Daily' THEN due_date ELSE $7::date END,
+						priority = $8
+					WHERE id = $10
+					RETURNING *
+				`,
+				[
+					updatedFacultyId,
+					updatedFacultyName,
+					className,
+					String(req.body.subject_name || ''),
+					String(req.body.total_test_note || ''),
+					String(req.body.other_tasks || ''),
+					req.body.due_date || null,
+					taskType === 'Daily' ? 'High' : (req.body.priority || 'Medium'),
+					taskType,
+					id
+				]
+			);
+		} else if (faculty_id && faculty_name) {
 			result = await pool.query(
 				`
 					UPDATE faculty_tasks
@@ -3795,7 +3852,25 @@ app.put('/faculty-tasks/:id', async (req, res) => {
 		}
 		const updatedTask = result.rows[0];
 
-		if (updatedTask.is_completed === true) {
+		if (action === 'edit') {
+			try {
+				await createFacultyNotification(pool, {
+					facultyId: updatedTask.faculty_id,
+					moduleName: 'tasks',
+					message: 'Your assigned task has been updated by admin.',
+					title: 'Task Updated',
+					data: {
+						module: 'tasks',
+						taskId: updatedTask.id,
+						event: 'task-updated'
+					}
+				});
+			} catch (notificationError) {
+				console.error('Faculty task edit notification failed:', notificationError);
+			}
+		}
+
+		if (action !== 'edit' && updatedTask.is_completed === true) {
 			const moduleName = updatedTask.task_type === 'Daily' ? 'daily-tasks' : 'all-tasks';
 
 			const message =
@@ -4347,10 +4422,14 @@ app.delete('/answer-sheet-requests/:id', async (req, res) => {
 				tr.slot_start,
 				tr.slot_end,
 				tr.duration_minutes,
-				COALESCE(s.subject_name, 'Unknown') AS subject_name
+				COALESCE(s.subject_name, 'Unknown') AS subject_name,
+				st.academic_year_from,
+				st.academic_year_to
 			FROM test_registrations tr
 			LEFT JOIN subjects s
 				ON tr.subject_id = s.subject_id
+			LEFT JOIN students st
+				ON UPPER(TRIM(st.roll_no)) = UPPER(TRIM(tr.roll_no))
 			WHERE 1=1
 		`;
 
@@ -4610,6 +4689,13 @@ const PORT = process.env.PORT || 5050;
 let server;
 let notificationWorker;
 
+async function ensureFacultyNotificationTaskIdColumn() {
+	await pool.query(`
+		ALTER TABLE faculty_notifications
+		ADD COLUMN IF NOT EXISTS task_id BIGINT
+	`);
+}
+
 async function startServer() {
 	await ensureFacultyNotificationTaskIdColumn();
 	await ensureStudentDeviceTokensTable();
@@ -4637,13 +4723,6 @@ async function shutdown(signal) {
 		process.exit(0);
 	});
 	setTimeout(() => process.exit(1), 10000).unref();
-}
-
-async function ensureFacultyNotificationTaskIdColumn() {
-    await pool.query(`
-        ALTER TABLE faculty_notifications
-        ADD COLUMN IF NOT EXISTS task_id BIGINT
-    `);
 }
 
 async function ensureStudentDeviceTokensTable() {

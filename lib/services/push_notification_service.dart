@@ -602,9 +602,18 @@ class PushNotificationService {
     }
 
     final userId = authProvider.user?.id.trim();
-    final destination = userId == null || userId.isEmpty
-        ? route
-        : Uri(path: route, queryParameters: {'roll': userId}).toString();
+    final taskId = data['task_id'] ?? data['taskId'];
+    final queryParameters = <String, String>{
+      if (userId != null && userId.isNotEmpty) 'roll': userId,
+      if (route == AppRoutes.facultyTasks &&
+          taskId != null &&
+          taskId.toString().trim().isNotEmpty)
+        'taskId': taskId.toString().trim(),
+    };
+    final destination = Uri(
+      path: route,
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    ).toString();
 
     _pendingNotificationData = null;
     router.go(destination);

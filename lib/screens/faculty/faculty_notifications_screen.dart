@@ -261,6 +261,7 @@ class _FacultyNotificationsScreenState
                 await _markRead(item);
                 if (!mounted) return;
                 PushNotificationService.instance.openNotificationData({
+                  ...item,
                   'module_name':
                       item['module_name']?.toString() ?? 'notifications',
                   'title': item['title']?.toString() ?? _module(item),

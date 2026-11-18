@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/constants/colors.dart';
 import '../../repositories/faculty_task_repository.dart';
+import '../../routes/app_routes.dart';
 import '../../services/push_notification_service.dart';
 
 class FacultyNotificationsScreen extends StatefulWidget {
@@ -276,10 +278,29 @@ class _FacultyNotificationsScreenState
             : () async {
                 await _markRead(item);
                 if (!mounted) return;
+                final module = (item['module_name'] ??
+                        item['module'] ??
+                        item['type'] ??
+                        '')
+                    .toString()
+                    .toLowerCase();
+                final title = (item['title'] ?? '').toString().toLowerCase();
+                final message = (item['message'] ?? item['body'] ?? '')
+                    .toString()
+                    .toLowerCase();
+                final isTaskNotification = module.contains('task') ||
+                    title.contains('task') ||
+                    message.contains('task');
+
+                if (isTaskNotification) {
+                  // Task alerts always open the Task Management screen directly.
+                  context.go(AppRoutes.facultyTasks);
+                  return;
+                }
+
                 PushNotificationService.instance.openNotificationData({
                   ...item,
-                  'module_name':
-                      item['module_name']?.toString() ?? 'notifications',
+                  'module_name': item['module_name']?.toString() ?? 'notifications',
                   'title': item['title']?.toString() ?? _module(item),
                   'body': item['message']?.toString() ?? '',
                 });

@@ -413,17 +413,32 @@ class PushNotificationService {
     final user = auth?.user;
     if (auth == null || user == null) return null;
 
-    final module = (data['module_name'] ?? data['module'] ?? data['type'])
+    final nested = data['data'] is Map
+        ? Map<String, dynamic>.from(data['data'] as Map)
+        : <String, dynamic>{};
+    final module = (data['module_name'] ??
+            data['module'] ??
+            data['type'] ??
+            nested['module_name'] ??
+            nested['module'] ??
+            nested['type'])
         ?.toString()
         .trim()
         .toLowerCase()
         .replaceAll('_', '-');
-    final title = (data['title'] ?? '').toString().trim().toLowerCase();
-    final reminderType = (data['reminder_type'] ?? '')
+    final title = (data['title'] ?? nested['title'] ?? '')
         .toString()
         .trim()
         .toLowerCase();
-    final body = (data['body'] ?? data['message'] ?? '')
+    final reminderType = (data['reminder_type'] ?? nested['reminder_type'] ?? '')
+        .toString()
+        .trim()
+        .toLowerCase();
+    final body = (data['body'] ??
+            data['message'] ??
+            nested['body'] ??
+            nested['message'] ??
+            '')
         .toString()
         .trim()
         .toLowerCase();

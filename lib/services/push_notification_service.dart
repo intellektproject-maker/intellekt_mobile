@@ -29,6 +29,12 @@ class PushNotificationService {
   AuthProvider? _authProvider;
   Map<String, dynamic>? _pendingNotificationData;
 
+  // Remains true for this app launch even after the payload is consumed.
+  // Splash must not overwrite notification navigation with the role landing page.
+  bool _notificationLaunchReceived = false;
+
+  bool get hasNotificationLaunch => _notificationLaunchReceived;
+
   static const AndroidNotificationChannel _androidChannel =
       AndroidNotificationChannel(
         'intellekt_high_importance',
@@ -385,6 +391,7 @@ class PushNotificationService {
 
   void _handleLocalNotificationTap(NotificationResponse response) {
     final payload = response.payload;
+    _notificationLaunchReceived = true;
     if (payload == null || payload.isEmpty) return;
 
     try {
@@ -399,6 +406,7 @@ class PushNotificationService {
   }
 
   void _handleNotificationTap(RemoteMessage message) {
+    _notificationLaunchReceived = true;
     debugPrint('[PushTap] Firebase notification tap received; messageId=${message.messageId}, dataKeys=${message.data.keys.toList()}, title=${message.notification?.title}, body=${message.notification?.body}');
     // Preserve the payload until authentication is ready so the same
     // notification can be routed safely for the signed-in role.

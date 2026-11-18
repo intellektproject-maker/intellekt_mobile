@@ -47,9 +47,13 @@ class AppRouter {
       refreshListenable: authProvider,
       redirect: (context, state) {
         final location = state.matchedLocation;
+        debugPrint('[RouterGuard] requested=$location initialized=${authProvider.isInitialized} loggedIn=${authProvider.isLoggedIn} faculty=${authProvider.isFaculty} testBatch=${authProvider.isTestBatchStudent} student=${authProvider.isStudent}');
 
         if (!authProvider.isInitialized) {
-          if (location != AppRoutes.splash) return AppRoutes.splash;
+          if (location != AppRoutes.splash) {
+            debugPrint('[RouterGuard] redirecting $location -> ${AppRoutes.splash}: auth not initialized');
+            return AppRoutes.splash;
+          }
           return null;
         }
 
@@ -85,6 +89,7 @@ class AppRouter {
             location == AppRoutes.manageFaculty;
 
         if (isLoggedIn && isAuthenticationPage) {
+          debugPrint('[RouterGuard] authenticated user opened auth page; choosing role landing page');
           if (authProvider.user!.mustResetPassword) {
             return AppRoutes.changePassword;
           }
@@ -108,9 +113,11 @@ class AppRouter {
         }
 
         if (isLoggedIn && isFacultyPage && !authProvider.isFaculty) {
-          return authProvider.isStudent
+          final destination = authProvider.isStudent
               ? AppRoutes.studentDashboard
               : AppRoutes.login;
+          debugPrint('[RouterGuard] BLOCKED faculty route $location -> $destination; faculty role is false');
+          return destination;
         }
 
         if (isLoggedIn && isStudentPage && !authProvider.isRegularStudent) {
@@ -120,6 +127,7 @@ class AppRouter {
               : AppRoutes.login;
         }
 
+        debugPrint('[RouterGuard] allowing route $location');
         return null;
       },
       routes: [

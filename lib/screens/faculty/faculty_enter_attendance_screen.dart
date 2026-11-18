@@ -5,7 +5,12 @@ import '../../widgets/academic_year_range_filter.dart';
 
 class FacultyEnterAttendanceScreen extends StatefulWidget {
   final String facultyId;
-  const FacultyEnterAttendanceScreen({super.key, required this.facultyId});
+  final bool isAdmin;
+  const FacultyEnterAttendanceScreen({
+    super.key,
+    required this.facultyId,
+    required this.isAdmin,
+  });
 
   @override
   State<FacultyEnterAttendanceScreen> createState() => _FacultyEnterAttendanceScreenState();
@@ -27,7 +32,7 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
   List<Map<String, dynamic>> get _visibleStudents => filterStudentsByAcademicYear(_students, fromYear: _academicYearFrom, toYear: _academicYearTo);
 
   String get _facultyId => widget.facultyId.trim().toUpperCase();
-  bool get _isAdmin => const {'IG001', 'IG002'}.contains(_facultyId);
+  bool get _isAdmin => widget.isAdmin && const {'IG001', 'IG002'}.contains(_facultyId);
   String get _dateKey => _date.toIso8601String().split('T').first;
   String get _selectedBoard => (_classKey ?? '').split('||').first;
   String get _selectedClass => (_classKey ?? '').split('||').length > 1 ? (_classKey ?? '').split('||')[1] : '';

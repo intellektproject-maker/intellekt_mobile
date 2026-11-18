@@ -27,6 +27,7 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
   List<Map<String, dynamic>> get _visibleStudents => filterStudentsByAcademicYear(_students, fromYear: _academicYearFrom, toYear: _academicYearTo);
 
   String get _facultyId => widget.facultyId.trim().toUpperCase();
+  bool get _isAdmin => const {'IG001', 'IG002'}.contains(_facultyId);
   String get _dateKey => _date.toIso8601String().split('T').first;
   String get _selectedBoard => (_classKey ?? '').split('||').first;
   String get _selectedClass => (_classKey ?? '').split('||').length > 1 ? (_classKey ?? '').split('||')[1] : '';
@@ -270,6 +271,44 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
     } finally { if (mounted) setState(() => _saving = false); }
   }
 
+  Future<void> _saveAdminAttendanceEdits() async {
+    if (!_isAdmin || _editDrafts.isEmpty) return;
+    setState(() => _saving = true);
+    try {
+      final records = _editDrafts.entries
+          .where((entry) => _savedAttendance.containsKey(entry.key) &&
+              entry.value != _savedAttendance[entry.key])
+          .map((entry) => {'roll_no': entry.key, 'status': entry.value})
+          .toList();
+      if (records.isEmpty) {
+        _show('No attendance changes to save.');
+        return;
+      }
+      await _api.put('/attendance', data: {
+        'records': records,
+        'subject': int.parse(_subject),
+        'facultyId': _facultyId,
+        'adminId': _facultyId,
+        'date': _dateKey,
+      });
+      if (!mounted) return;
+      setState(() {
+        for (final record in records) {
+          _savedAttendance[record['roll_no'] as String] =
+              record['status'] as String;
+        }
+        _editDrafts.clear();
+      });
+      _show('Attendance updated successfully.');
+      await _loadStudents();
+    } catch (e) {
+      _show('Could not update attendance: ' +
+          e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -303,7 +342,7 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
         if (_error != null) Card(color: Colors.red.shade50, child: ListTile(leading: const Icon(Icons.error_outline, color: Colors.red), title: const Text('Request failed'), subtitle: Text(_error!))),
         if (_loadingStudents) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
         if (!_loadingStudents && _students.isEmpty) const Card(child: ListTile(title: Text('Select class, subject and date, then load students.'))),
-        if (_savedAttendance.isNotEmpty) Card(
+        if (_savedAttendance.isNotEmpty && !_isAdmin) Card(
           color: Colors.amber.shade50,
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -354,14 +393,14 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
               Row(children: [
                 Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.w700))),
                 if (saved) Chip(
-                  label: Text(pending ? 'Request Pending' : approved ? 'Edit Approved' : 'Saved • Locked'),
+                  label: Text(_isAdmin ? 'Saved' : pending ? 'Request Pending' : approved ? 'Edit Approved' : 'Saved • Locked'),
                   visualDensity: VisualDensity.compact,
                   backgroundColor: pending ? Colors.orange.shade50 : Colors.green.shade50,
                 ),
               ]),
               Text('Roll No: $roll'),
               const SizedBox(height: 8),
-              if (saved && approved)
+              if (saved && (approved || _isAdmin))
                 DropdownButton<String>(
                   value: _editDrafts[roll] ?? _savedAttendance[roll],
                   items: const [DropdownMenuItem(value: 'Present', child: Text('Present')), DropdownMenuItem(value: 'Absent', child: Text('Absent'))],
@@ -375,8 +414,8 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
                   items: const [DropdownMenuItem(value: 'Present', child: Text('Present')), DropdownMenuItem(value: 'Absent', child: Text('Absent'))],
                   onChanged: (v) => setState(() => _attendance[roll] = v ?? 'Present'),
                 ),
-              if (saved && pending) const Padding(padding: EdgeInsets.only(top: 6), child: Text('Your edit request is waiting for admin approval.', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.w600))),
-              if (saved) Padding(padding: const EdgeInsets.only(top: 8), child: Wrap(spacing: 8, children: [
+              if (saved && pending && !_isAdmin) const Padding(padding: EdgeInsets.only(top: 6), child: Text('Your edit request is waiting for admin approval.', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.w600))),
+              if (saved && !_isAdmin) Padding(padding: const EdgeInsets.only(top: 8), child: Wrap(spacing: 8, children: [
                 if (!approved) OutlinedButton.icon(
                   onPressed: _busyRoll == roll || pending ? null : () => _requestAttendanceEdit(s),
                   icon: const Icon(Icons.lock_open),
@@ -390,6 +429,20 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
             ]),
           ));
         }),
+        if (_isAdmin && _editDrafts.entries.any((entry) =>
+            _savedAttendance.containsKey(entry.key) &&
+            entry.value != _savedAttendance[entry.key]))
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: FilledButton.icon(
+              onPressed: _saving ? null : _saveAdminAttendanceEdits,
+              icon: _saving
+                  ? const SizedBox(width: 18, height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.save_outlined),
+              label: Text(_saving ? 'Saving changes...' : 'Save attendance changes'),
+            ),
+          ),
         if (_students.any((s) => !_savedAttendance.containsKey((s['roll_no'] ?? '').toString())))
           FilledButton.icon(onPressed: _saving ? null : () => _save(), icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined), label: Text(_saving ? 'Saving...' : 'Save new attendance')),
       ]),

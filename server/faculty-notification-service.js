@@ -289,10 +289,10 @@ async function createFacultyNotification(
   try {
     result = await pool.query(
       `INSERT INTO faculty_notifications
-         (faculty_id, module_name, message, is_read)
-       VALUES ($1, $2, $3, FALSE)
-       RETURNING id, faculty_id, module_name, message, created_at`,
-      [id, moduleName, message]
+         (faculty_id, module_name, message, is_read, task_id)
+       VALUES ($1, $2, $3, FALSE, $4)
+       RETURNING id, faculty_id, module_name, message, task_id, created_at`,
+      [id, moduleName, message, data.task_id ?? data.taskId ?? null]
     );
   } catch (error) {
     console.error(

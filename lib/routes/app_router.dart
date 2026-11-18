@@ -145,6 +145,7 @@ class AppRouter {
           builder: (context, state) => FacultyTasksScreen(
             facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
             facultyOnly: true,
+            initialTaskId: state.uri.queryParameters['taskId'],
           ),
         ),
         GoRoute(

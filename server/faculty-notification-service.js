@@ -289,10 +289,10 @@ async function createFacultyNotification(
   try {
     result = await pool.query(
       `INSERT INTO faculty_notifications
-         (faculty_id, module_name, message, is_read)
-       VALUES ($1, $2, $3, FALSE)
-       RETURNING id, faculty_id, module_name, message, created_at`,
-      [id, moduleName, message]
+         (faculty_id, module_name, message, is_read, task_id)
+       VALUES ($1, $2, $3, FALSE, $4)
+       RETURNING id, faculty_id, module_name, message, task_id, created_at`,
+      [id, moduleName, message, data.task_id ?? data.taskId ?? null]
     );
   } catch (error) {
     console.error(
@@ -309,16 +309,30 @@ async function createFacultyNotification(
     `[Faculty Notification] Created notification #${notification.id} for ${id}`
   );
 
-  const push = await sendToFaculty(pool, [id], {
-    title,
-    body: message,
-    data: {
-      ...data,
-      notification_id: notification.id,
-      faculty_id: id,
-      module_name: moduleName
-    }
-  });
+  let push;
+  try {
+    push = await sendToFaculty(pool, [id], {
+      title,
+      body: message,
+      data: {
+        ...data,
+        notification_id: notification.id,
+        faculty_id: id,
+        module_name: moduleName
+      }
+    });
+  } catch (error) {
+    // A push-delivery failure must not undo a successfully saved task or
+    // notification. The in-app notification remains available for the faculty.
+    console.error('[Faculty Notification] Push delivery failed:', error);
+    push = {
+      sent: 0,
+      failed: 1,
+      removed: 0,
+      tokenCount: 0,
+      pushError: error.message
+    };
+  }
 
   console.log(
     `[Faculty Notification] Push completed for ${id}:`,

@@ -309,16 +309,30 @@ async function createFacultyNotification(
     `[Faculty Notification] Created notification #${notification.id} for ${id}`
   );
 
-  const push = await sendToFaculty(pool, [id], {
-    title,
-    body: message,
-    data: {
-      ...data,
-      notification_id: notification.id,
-      faculty_id: id,
-      module_name: moduleName
-    }
-  });
+  let push;
+  try {
+    push = await sendToFaculty(pool, [id], {
+      title,
+      body: message,
+      data: {
+        ...data,
+        notification_id: notification.id,
+        faculty_id: id,
+        module_name: moduleName
+      }
+    });
+  } catch (error) {
+    // A push-delivery failure must not undo a successfully saved task or
+    // notification. The in-app notification remains available for the faculty.
+    console.error('[Faculty Notification] Push delivery failed:', error);
+    push = {
+      sent: 0,
+      failed: 1,
+      removed: 0,
+      tokenCount: 0,
+      pushError: error.message
+    };
+  }
 
   console.log(
     `[Faculty Notification] Push completed for ${id}:`,

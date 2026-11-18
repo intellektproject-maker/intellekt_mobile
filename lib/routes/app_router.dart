@@ -195,9 +195,13 @@ class AppRouter {
         ),
         GoRoute(
           path: AppRoutes.facultyEnterAttendance,
-          builder: (context, state) => FacultyEnterAttendanceScreen(
-            facultyId: authProvider.user?.id.trim().toUpperCase() ?? '',
-          ),
+          builder: (context, state) {
+            final userId = authProvider.user?.id.trim().toUpperCase() ?? '';
+            return FacultyEnterAttendanceScreen(
+              facultyId: userId,
+              isAdmin: const {'IG001', 'IG002'}.contains(userId),
+            );
+          },
         ),
         GoRoute(
           path: AppRoutes.facultyEnterMarks,

@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../core/constants/colors.dart';
 import '../../core/widgets/intellekt_wordmark.dart';
 import '../../routes/app_routes.dart';
+import '../../services/push_notification_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -35,6 +36,14 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     if (!mounted) return;
+
+    // A notification tap has its own destination. The notification service
+    // navigates as soon as auth is restored; do not replace it with the
+    // normal role landing page (for example, Faculty Profile).
+    if (PushNotificationService.instance.hasNotificationLaunch) {
+      debugPrint('[Splash] notification launch detected; preserving notification destination');
+      return;
+    }
 
     if (authProvider.isLoggedIn) {
       if (authProvider.user!.mustResetPassword) {

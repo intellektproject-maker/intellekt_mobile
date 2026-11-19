@@ -518,24 +518,19 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
       _dateOnly(s['registered_writing_date'] ?? s['writing_date']) == _writingDate
     ).toList();
 
-    // Marks can only be saved after attendance is recorded for this exact
-    // registered writing date. Catch this in the app before sending a request
-    // that the backend must reject.
+    // Students without attendance remain visible with an informational
+    // "Attendance: Not marked" status. Skip them rather than sending a
+    // request that the backend would reject. Students with attendance can
+    // still have their marks saved in the same batch.
     final missingAttendance = selectedStudents.where((s) {
       final status = (s['attendance_status'] ?? '').toString();
       return status != 'Present' && status != 'Absent';
     }).map((s) => (s['roll_no'] ?? '').toString()).where((roll) => roll.isNotEmpty).toList();
-    if (missingAttendance.isNotEmpty) {
-      setState(() => _error =
-          'Attendance is not marked for ' + missingAttendance.join(', ') +
-          ' on ' + _writingDate! +
-          '. Open the Attendance tab, mark Present or Absent, save attendance, then return to Enter Marks.');
-      return;
-    }
 
     final records = selectedStudents.where((s) {
       final attendanceStatus = (s['attendance_status'] ?? '').toString();
       final roll = (s['roll_no'] ?? '').toString();
+      if (attendanceStatus != 'Present' && attendanceStatus != 'Absent') return false;
       if (_isFaculty && _hasSavedMark(s)) return false;
       return attendanceStatus == 'Absent' || (_marks[roll] ?? '').trim().isNotEmpty;
     }).map((s) {
@@ -547,7 +542,15 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
         'remarks': _remarks[roll] ?? '',
       };
     }).toList();
-    if (records.isEmpty) { setState(() => _error = 'Enter marks for at least one student who completed the test.'); return; }
+    if (records.isEmpty) {
+      setState(() {
+        _message = missingAttendance.isNotEmpty
+            ? 'Attendance not marked for ' + missingAttendance.join(', ') + '. Mark attendance to enable marks entry.'
+            : 'Enter marks for at least one student who completed the test.';
+        _error = null;
+      });
+      return;
+    }
     for (final r in records) {
       final raw = r['marks_obtained'].toString();
       final n = num.tryParse(raw);
@@ -561,8 +564,13 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
       await widget.api.post('/test-batch/tests/${Uri.encodeComponent(_testCode!)}/marks', data: {
         'adminId': widget.adminId, 'writing_date': _writingDate, 'records': records,
       });
-      if (mounted) setState(() => _message = 'Saved marks for ${records.length} student(s). You can enter remaining marks later.');
       await _loadStudents();
+      if (mounted) setState(() {
+        _message = 'Saved marks for ${records.length} student(s).' +
+            (missingAttendance.isNotEmpty
+                ? ' Attendance not marked for ' + missingAttendance.join(', ') + '. Mark attendance to enable their marks entry.'
+                : ' You can enter remaining marks later.');
+      });
     } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
     finally { if (mounted) setState(() => _saving = false); }
   }

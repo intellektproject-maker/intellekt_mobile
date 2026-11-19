@@ -517,6 +517,22 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     final selectedStudents = _visibleStudents.where((s) =>
       _dateOnly(s['registered_writing_date'] ?? s['writing_date']) == _writingDate
     ).toList();
+
+    // Marks can only be saved after attendance is recorded for this exact
+    // registered writing date. Catch this in the app before sending a request
+    // that the backend must reject.
+    final missingAttendance = selectedStudents.where((s) {
+      final status = (s['attendance_status'] ?? '').toString();
+      return status != 'Present' && status != 'Absent';
+    }).map((s) => (s['roll_no'] ?? '').toString()).where((roll) => roll.isNotEmpty).toList();
+    if (missingAttendance.isNotEmpty) {
+      setState(() => _error =
+          'Attendance is not marked for ' + missingAttendance.join(', ') +
+          ' on ' + _writingDate! +
+          '. Open the Attendance tab, mark Present or Absent, save attendance, then return to Enter Marks.');
+      return;
+    }
+
     final records = selectedStudents.where((s) {
       final attendanceStatus = (s['attendance_status'] ?? '').toString();
       final roll = (s['roll_no'] ?? '').toString();
@@ -642,10 +658,28 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
         Padding(padding: const EdgeInsets.only(bottom: 10), child: FilledButton.icon(onPressed: _saving ? null : _applyApprovedOverallMarkEdit, icon: const Icon(Icons.check_circle_outline), label: const Text('Apply Approved Overall Edit'))),
       ..._visibleStudents.where((s) => _writingDate == null || _dateOnly(s['registered_writing_date'] ?? s['writing_date']) == _writingDate).map((s) {
         final roll = (s['roll_no'] ?? '').toString();
+        final attendanceStatus = (s['attendance_status'] ?? '').toString();
+        final hasAttendance = attendanceStatus == 'Present' || attendanceStatus == 'Absent';
         return Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('${s['name'] ?? s['student_name'] ?? roll}', style: const TextStyle(fontWeight: FontWeight.w800)),
           Text('Roll No: $roll'),
-          TextFormField(initialValue: _marks[roll] ?? '', readOnly: _isFaculty && _hasSavedMark(s) && _approvedOverallMarkEdit == null, decoration: const InputDecoration(labelText: 'Marks (or A if absent)'), keyboardType: TextInputType.text, onChanged: (v) => _marks[roll] = v.trim()),
+          Text(
+            hasAttendance ? 'Attendance: $attendanceStatus' : 'Attendance: Not marked',
+            style: TextStyle(
+              color: hasAttendance ? Colors.green.shade700 : Colors.red.shade700,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          TextFormField(
+            initialValue: _marks[roll] ?? '',
+            readOnly: !hasAttendance || (_isFaculty && _hasSavedMark(s) && _approvedOverallMarkEdit == null),
+            decoration: InputDecoration(
+              labelText: 'Marks (or A if absent)',
+              helperText: hasAttendance ? null : 'Mark attendance for ' + (_writingDate ?? 'the selected date') + ' first',
+            ),
+            keyboardType: TextInputType.text,
+            onChanged: (v) => _marks[roll] = v.trim(),
+          ),
           TextFormField(initialValue: _remarks[roll] ?? '', readOnly: _isFaculty && (s['marks_obtained']?.toString().trim().isNotEmpty ?? false) && _approvedOverallMarkEdit == null, decoration: const InputDecoration(labelText: 'Remarks (optional)'), onChanged: (v) => _remarks[roll] = v),
           if (_isFaculty && (s['marks_obtained']?.toString().trim().isNotEmpty ?? false))
             Wrap(spacing: 8, children: [

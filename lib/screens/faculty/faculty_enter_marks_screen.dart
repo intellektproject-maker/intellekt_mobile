@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
 import '../../widgets/academic_year_range_filter.dart';
@@ -35,6 +36,51 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   List<Map<String, dynamic>> get _newStudents => _visibleStudents.where((s) => !(_saved[(s['roll_no'] ?? '').toString().trim()] ?? false)).toList();
   String _str(dynamic value) => (value ?? '').toString();
   String _err(Object e) => e.toString().replaceFirst('Exception: ', '');
+
+  String _friendlyError(Object error, {String action = 'complete this action'}) {
+    if (error is DioException) {
+      final status = error.response?.statusCode;
+      final data = error.response?.data;
+      final serverMessage = data is Map
+          ? (data['error'] ?? data['message'] ?? '').toString().trim()
+          : '';
+
+      if (status == 400) {
+        if (serverMessage.toLowerCase().contains('invalid regular batch test code') ||
+            serverMessage.toLowerCase().contains('invalid test code')) {
+          return 'Invalid test code. Check the board, class, subject, total marks and chapter in the code.';
+        }
+        if (serverMessage.toLowerCase().contains('class or board') ||
+            serverMessage.toLowerCase().contains('class/board')) {
+          return 'The class or board does not match this test code. Check the test code and its class/board details.';
+        }
+        if (serverMessage.toLowerCase().contains('subject abbreviation')) {
+          return 'The subject in this test code is not configured. Check the subject letter in the test code or contact the admin.';
+        }
+        if (serverMessage.toLowerCase().contains('required')) {
+          return 'Test details are missing. Check the test code, class and board, then try again.';
+        }
+        return serverMessage.isNotEmpty
+            ? serverMessage
+            : 'Some test details are invalid. Check the test code, class, board and subject.';
+      }
+      if (status == 404) {
+        return 'No matching test was found. Check the test code and try again.';
+      }
+      if (status != null && status >= 500) {
+        return 'Could not $action because of a server problem. Please try again later or contact the admin if it continues.';
+      }
+      if (error.response == null) {
+        return 'Could not connect to the server. Check your internet connection and try again.';
+      }
+    }
+
+    final message = _err(error);
+    if (message.startsWith('DioException')) {
+      return 'Could not $action. Check the test code and test details, then try again.';
+    }
+    return message;
+  }
 
   @override
   void initState() { super.initState(); }
@@ -79,7 +125,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       });
       return parsed;
     } catch (e) {
-      if (mounted) setState(() { _test = null; _code = null; _error = _err(e); });
+      if (mounted) setState(() { _test = null; _code = null; _error = _friendlyError(e, action: 'validate the test code'); });
       rethrow;
     } finally {
       if (mounted) setState(() => _validatingCode = false);
@@ -214,7 +260,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
         _show('No students found for this test, class and board.');
       }
     } catch (e) {
-      if (mounted) setState(() => _error = _err(e));
+      if (mounted) setState(() => _error = _friendlyError(e, action: 'load students'));
     } finally {
       if (mounted) setState(() => _loadingStudents = false);
     }
@@ -264,7 +310,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       if (!mounted) return;
       _show(res.data is Map ? _str(res.data['message']).isNotEmpty ? _str(res.data['message']) : 'Edit request sent to admin.' : 'Edit request sent to admin.');
       await _loadRequests();
-    } catch (e) { _show(_err(e)); }
+    } catch (e) { _show(_friendlyError(e)); }
     finally { if (mounted) setState(() => _busyRoll = ''); }
   }
 
@@ -349,7 +395,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       await _api.post('/marks', data: {'records': records, 'facultyId': _facultyId});
       _show('New student marks saved successfully.');
       await _loadStudents();
-    } catch (e) { _show('Could not save marks: ' + _err(e)); }
+    } catch (e) { _show(_friendlyError(e, action: 'save marks')); }
     finally { if (mounted) setState(() => _saving = false); }
   }
 

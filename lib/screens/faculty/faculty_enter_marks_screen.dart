@@ -35,6 +35,12 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   bool get _hasSaved => _saved.values.any((v) => v);
   List<Map<String, dynamic>> get _newStudents => _visibleStudents.where((s) => !(_saved[(s['roll_no'] ?? '').toString().trim()] ?? false)).toList();
   String _str(dynamic value) => (value ?? '').toString();
+  // ICSE and ISC are equivalent for Regular Batch student lookup.
+  String _normalizeBoard(String value) {
+    final board = value.trim().toUpperCase().replaceAll(RegExp(r'[^A-Z]'), '');
+    if (board == 'ICSE' || board == 'ISC' || board == 'I') return 'ISC';
+    return board;
+  }
   String _err(Object e) => e.toString().replaceFirst('Exception: ', '');
 
   String _friendlyError(Object error, {String action = 'complete this action'}) {
@@ -192,7 +198,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
 
     final code = _str(_code).trim();
     final cls = _selectedClass.trim();
-    final board = _selectedBoard.trim();
+    final board = _normalizeBoard(_selectedBoard);
     final subjectId = _str(t['subjectId']).trim();
     if (code.isEmpty ||
         cls.isEmpty ||

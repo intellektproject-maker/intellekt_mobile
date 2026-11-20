@@ -225,27 +225,51 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       _error = null;
     });
     try {
-      final query = {
+      // Try the board stored on the test first, then its ICSE/ISC equivalent.
+      // Some student records use ICSE while others use ISC.
+      final rawBoard = _selectedBoard.trim().toUpperCase();
+      final boardCandidates = <String>[
+        if (rawBoard.isNotEmpty) rawBoard,
+        if (board == 'ISC' && rawBoard != 'ICSE') 'ICSE',
+        if (board == 'ISC' && rawBoard != 'ISC') 'ISC',
+      ].toSet().toList();
+
+      List<Map<String, dynamic>> students = [];
+      String lookupBoard = board;
+      for (final candidateBoard in boardCandidates) {
+        final query = {
+          'className': cls,
+          'board': candidateBoard,
+          'testCode': code,
+          'subjectId': subjectId,
+        };
+        final studentsRes = await _api.get(
+          '/enter-marks-students',
+          queryParameters: query,
+        );
+        if (studentsRes.data is! List) {
+          throw Exception('Unexpected students response.');
+        }
+        students = (studentsRes.data as List)
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+        if (students.isNotEmpty) {
+          lookupBoard = candidateBoard;
+          break;
+        }
+      }
+
+      final marksRes = await _api.get('/marks', queryParameters: {
         'className': cls,
-        'board': board,
+        'board': lookupBoard,
         'testCode': code,
         'subjectId': subjectId,
-      };
-      final results = await Future.wait([
-        _api.get('/enter-marks-students', queryParameters: query),
-        _api.get('/marks', queryParameters: query),
-      ]);
-      if (results[0].data is! List) {
-        throw Exception('Unexpected students response.');
-      }
-      final students = (results[0].data as List)
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
+      });
       final marks = <String, String>{};
       final comments = <String, String>{};
       final saved = <String, bool>{};
-      final existing = results[1].data is List ? results[1].data as List : [];
+      final existing = marksRes.data is List ? marksRes.data as List : [];
       for (final item in existing.whereType<Map>()) {
         final roll = _str(item['roll_no']).trim();
         if (roll.isNotEmpty) {

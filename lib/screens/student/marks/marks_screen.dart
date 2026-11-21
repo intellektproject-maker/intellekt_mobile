@@ -36,10 +36,9 @@ class _MarksScreenState extends State<MarksScreen> {
       _mathsMarks = marks
           .where(
             (mark) =>
-        mark['subject_name']
-            ?.toString()
-            .toLowerCase() ==
-            'maths',
+        ['maths', 'mathematics'].contains(
+          mark['subject_name']?.toString().trim().toLowerCase(),
+        ),
       )
           .toList();
 

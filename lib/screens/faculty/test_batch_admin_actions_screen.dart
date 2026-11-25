@@ -664,18 +664,30 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
             if (_subject != null && _classOptions.isNotEmpty) ...[
               const SizedBox(height: 8),
               const Text('Class', style: TextStyle(fontWeight: FontWeight.w600)),
-              Wrap(spacing: 8, children: _classOptions.map((value) => Row(mainAxisSize: MainAxisSize.min, children: [
-                Radio<String>(value: value, groupValue: _classFilter, onChanged: (v) { _resetTestSelection(); setState(() => _classFilter = v); }),
-                Text(value),
-              ])).toList()),
+              Wrap(spacing: 8, children: [
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  Radio<String>(value: 'All', groupValue: _classFilter ?? 'All', onChanged: (_) { _resetTestSelection(); setState(() => _classFilter = null); }),
+                  const Text('All'),
+                ]),
+                ..._classOptions.map((value) => Row(mainAxisSize: MainAxisSize.min, children: [
+                  Radio<String>(value: value, groupValue: _classFilter ?? 'All', onChanged: (v) { _resetTestSelection(); setState(() => _classFilter = v); }),
+                  Text(value),
+                ])),
+              ]),
             ],
             if (_subject != null && _boardOptions.isNotEmpty) ...[
               const SizedBox(height: 8),
               const Text('Board', style: TextStyle(fontWeight: FontWeight.w600)),
-              Wrap(spacing: 8, children: _boardOptions.map((value) => Row(mainAxisSize: MainAxisSize.min, children: [
-                Radio<String>(value: value, groupValue: _boardFilter, onChanged: (v) { _resetTestSelection(); setState(() => _boardFilter = v); }),
-                Text(value),
-              ])).toList()),
+              Wrap(spacing: 8, children: [
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  Radio<String>(value: 'All', groupValue: _boardFilter ?? 'All', onChanged: (_) { _resetTestSelection(); setState(() => _boardFilter = null); }),
+                  const Text('All'),
+                ]),
+                ..._boardOptions.map((value) => Row(mainAxisSize: MainAxisSize.min, children: [
+                  Radio<String>(value: value, groupValue: _boardFilter ?? 'All', onChanged: (v) { _resetTestSelection(); setState(() => _boardFilter = v); }),
+                  Text(value),
+                ])),
+              ]),
             ],
             const SizedBox(height: 12),
             Autocomplete<String>(

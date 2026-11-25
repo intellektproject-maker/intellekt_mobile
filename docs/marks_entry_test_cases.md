@@ -122,7 +122,7 @@ Scope: Regular Batch and Test Batch marks entry on the `test` branch only.
 | TB-30 | Submit only a subset of registered students through API | Backend accepts the subset if every submitted roll number is registered and unique; no omitted student is required |
 | TB-31 | Include an unregistered student through API | Backend rejects request |
 | TB-32 | Submit duplicate roll numbers through API | Backend rejects request |
-| TB-33 | Submit marks a second time | Duplicate/finalized submission rejected |
+| TB-33 | Resubmit an already-saved student without edit approval, or submit after finalization as non-admin | Existing mark overwrite/finalized submission is rejected; a different unsubmitted registered student may still be submitted while the test is open |
 | TB-34 | Tap Save repeatedly while request is pending | Only one submission is sent |
 | TB-35 | All registered students have saved marks | Test marks status becomes finalized and success message appears |
 | TB-36 | Submit one student whose mark is already saved without edit approval | Backend rejects overwrite; faculty must use the approved edit flow |

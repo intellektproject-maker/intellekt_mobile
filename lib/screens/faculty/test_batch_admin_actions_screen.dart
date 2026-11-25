@@ -322,9 +322,13 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
       final status = error.response?.statusCode;
       final data = error.response?.data;
       final detail = data is Map ? (data['error'] ?? data['message'])?.toString().toLowerCase() ?? '' : '';
-      if (detail.contains('already submitted') || detail.contains('finalized') || status == 409) {
+      if (detail.contains('pending') || detail.contains('approved') || detail.contains('edit request')) {
+        return 'An edit request for this student is already pending or approved.';
+      }
+      if (detail.contains('already submitted') || detail.contains('finalized')) {
         return 'Marks have already been submitted for this test.';
       }
+      if (status == 409) return 'This record cannot be changed right now. Refresh and try again.';
       if (detail.contains('no registered students') || status == 404) {
         return 'No registered students were found for this test.';
       }

@@ -8,7 +8,12 @@ Scope: Regular Batch and Test Batch marks entry on the `test` branch only.
 2. [ ] Run `flutter pub get`.
 3. [ ] Run `flutter analyze`.
 4. [ ] Run `flutter test`.
-5. [ ] Build a test APK with the testing API URL.
+5. [ ] Set the test backend URL explicitly and build the APK (the test branch no longer falls back to production):
+
+   ```powershell
+   $env:TEST_API_URL = "https://<your-test-service>.up.railway.app"
+   flutter build apk --release --dart-define="API_BASE_URL=$env:TEST_API_URL"
+   ```
 6. [ ] Install the APK and execute the cases below in order.
 7. [ ] For every failure: record the case ID, inspect server logs privately, fix only the related test-branch code, rerun the failed case and its regression group, then rebuild and retest.
 8. [ ] Do not merge to `main` or production unless all required cases pass and the owner explicitly approves the merge.
@@ -69,6 +74,7 @@ Scope: Regular Batch and Test Batch marks entry on the `test` branch only.
 | RB-45 | Include a student from another class/board/subject through API | Backend rejects request |
 | RB-46 | Submit the same test code after a successful save | Duplicate test code rejected |
 | RB-47 | Faculty ID is missing or invalid | Access denied; no data write |
+| RB-48 | Load students, then attempt to change the code without using Change test code | Code stays read-only; Change test code clears the loaded list before a new code is entered |
 
 ## Test Batch – subject, test code and registered students
 

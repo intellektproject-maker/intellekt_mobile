@@ -526,9 +526,11 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
         data: {'adminId': widget.adminId, 'records': records},
       );
       if (!mounted) return;
+      final submittedCode = _testCode;
       _clearStudents();
       setState(() {
         _testCode = null;
+        _tests.removeWhere((test) => (test['test_code'] ?? '').toString() == submittedCode);
         _message = 'Marks saved successfully.';
       });
     } catch (error) {

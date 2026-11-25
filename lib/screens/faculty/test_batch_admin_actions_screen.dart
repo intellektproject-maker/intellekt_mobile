@@ -263,13 +263,389 @@ class _PostTestTabState extends State<_PostTestTab> {
   );
 }
 
-class _EnterMarksTab extends StatelessWidget {
+class _EnterMarksTab extends StatefulWidget {
   final ApiClient api;
   final String adminId;
   const _EnterMarksTab({required this.api, required this.adminId});
 
   @override
-  Widget build(BuildContext context) => const SizedBox.shrink();
+  State<_EnterMarksTab> createState() => _EnterMarksTabState();
+}
+
+class _TestBatchMarkStudent {
+  final String rollNo;
+  final String name;
+  final TextEditingController marks = TextEditingController();
+
+  _TestBatchMarkStudent({required this.rollNo, required this.name});
+
+  void dispose() => marks.dispose();
+}
+
+class _EnterMarksTabState extends State<_EnterMarksTab> {
+  List<String> _subjects = [];
+  List<Map<String, dynamic>> _tests = [];
+  List<_TestBatchMarkStudent> _students = [];
+  String? _subject;
+  String? _testCode;
+  Map<String, dynamic>? _test;
+  bool _loading = true;
+  bool _saving = false;
+  String? _error;
+  String? _message;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSubjects();
+  }
+
+  @override
+  void dispose() {
+    for (final student in _students) { student.dispose(); }
+    super.dispose();
+  }
+
+  String _friendlyError(Object error, {bool saving = false}) {
+    if (error is DioException) {
+      final status = error.response?.statusCode;
+      final data = error.response?.data;
+      final detail = data is Map ? (data['error'] ?? data['message'])?.toString().toLowerCase() ?? '' : '';
+      if (detail.contains('already submitted') || detail.contains('finalized') || status == 409) {
+        return 'Marks have already been submitted for this test.';
+      }
+      if (detail.contains('no registered students') || status == 404) {
+        return 'No registered students were found for this test.';
+      }
+      if (status == 403) return 'You do not have permission to enter Test Batch marks.';
+      if (error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.receiveTimeout ||
+          error.type == DioExceptionType.sendTimeout ||
+          error.type == DioExceptionType.connectionError) {
+        return 'Could not connect. Please check your connection and try again.';
+      }
+    }
+    return saving
+        ? 'Could not save marks. Your entries are still here; please try again.'
+        : 'Could not load Test Batch tests. Please try again.';
+  }
+
+  void _clearStudents() {
+    for (final student in _students) { student.dispose(); }
+    _students = [];
+    _test = null;
+  }
+
+  Future<void> _loadSubjects() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final response = await widget.api.get(
+        '/test-batch/mark-entry/subjects',
+        queryParameters: {'adminId': widget.adminId},
+      );
+      final raw = response.data is Map ? response.data['subjects'] : null;
+      final subjects = raw is List
+          ? raw.map((item) {
+              if (item is Map) return (item['subject_name'] ?? item['subject'] ?? '').toString();
+              return item.toString();
+            }).where((value) => value.trim().isNotEmpty).toSet().toList()
+          : <String>[];
+      if (!mounted) return;
+      setState(() { _subjects = subjects; _loading = false; });
+    } catch (error) {
+      if (mounted) setState(() { _error = _friendlyError(error); _loading = false; });
+    }
+  }
+
+  Future<void> _selectSubject(String? subject) async {
+    if (subject == null) return;
+    _clearStudents();
+    setState(() {
+      _subject = subject;
+      _testCode = null;
+      _tests = [];
+      _error = null;
+      _message = null;
+      _loading = true;
+    });
+    try {
+      final response = await widget.api.get(
+        '/test-batch/mark-entry/tests',
+        queryParameters: {'adminId': widget.adminId, 'subject': subject},
+      );
+      final raw = response.data is Map ? response.data['tests'] : null;
+      final tests = raw is List
+          ? raw.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList()
+          : <Map<String, dynamic>>[];
+      if (mounted) setState(() { _tests = tests; _loading = false; });
+    } catch (error) {
+      if (mounted) setState(() { _error = _friendlyError(error); _loading = false; });
+    }
+  }
+
+  Future<void> _selectTest(String? code) async {
+    if (code == null) return;
+    _clearStudents();
+    setState(() {
+      _testCode = code;
+      _error = null;
+      _message = null;
+      _loading = true;
+    });
+    try {
+      final response = await widget.api.get(
+        '/test-batch/tests/${Uri.encodeComponent(code)}/mark-entry',
+        queryParameters: {'adminId': widget.adminId},
+      );
+      final data = response.data;
+      final test = data is Map && data['test'] is Map
+          ? Map<String, dynamic>.from(data['test'] as Map)
+          : <String, dynamic>{};
+      final raw = data is Map ? data['students'] : null;
+      final students = raw is List
+          ? raw.whereType<Map>().map((row) => _TestBatchMarkStudent(
+                rollNo: (row['roll_no'] ?? '').toString(),
+                name: (row['name'] ?? '').toString(),
+              )).toList()
+          : <_TestBatchMarkStudent>[];
+      if (students.isEmpty) throw DioException(
+        requestOptions: RequestOptions(path: '/test-batch/mark-entry'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/test-batch/mark-entry'),
+          statusCode: 404,
+          data: {'error': 'No registered students'},
+        ),
+      );
+      if (!mounted) {
+        for (final student in students) { student.dispose(); }
+        return;
+      }
+      _clearStudents();
+      setState(() { _students = students; _test = test; _loading = false; });
+    } catch (error) {
+      if (mounted) setState(() { _error = _friendlyError(error); _loading = false; });
+    }
+  }
+
+  Future<void> _showMissing(List<_TestBatchMarkStudent> missing) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Marks missing'),
+        content: Text('Enter marks for all students before saving:\\n\\n${missing.map((s) => '${s.name} (${s.rollNo})').join('\\n')}'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Return to marks')),
+        ],
+      ),
+    );
+  }
+
+  Future<bool> _confirmAbsent(List<_TestBatchMarkStudent> absent) async {
+    if (absent.isEmpty) return true;
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Absent students'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: absent.map((s) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text('${s.name} — Roll No: ${s.rollNo}'),
+            )).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Continue')),
+        ],
+      ),
+    ) ?? false;
+  }
+
+  Future<bool> _confirmSubmit() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Submit marks'),
+        content: const Text('Are you sure you want to submit these marks?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Submit')),
+        ],
+      ),
+    ) ?? false;
+  }
+
+  Future<void> _saveMarks() async {
+    if (_students.isEmpty || _testCode == null || _test == null || _saving) return;
+    final missing = _students.where((s) => s.marks.text.trim().isEmpty).toList();
+    if (missing.isNotEmpty) {
+      await _showMissing(missing);
+      return;
+    }
+
+    final invalid = _students.where((s) {
+      final value = s.marks.text.trim().toUpperCase();
+      if (value == 'A') return false;
+      final number = int.tryParse(value);
+      return number == null || number < 0 || number > 100000;
+    }).toList();
+    if (invalid.isNotEmpty) {
+      setState(() => _error = 'Enter a whole number from 0 to 100000, or A for absent.');
+      return;
+    }
+
+    final maxMarks = int.tryParse((_test?['total_marks'] ?? '').toString());
+    if (maxMarks != null) {
+      final overMax = _students.where((s) {
+        final value = s.marks.text.trim().toUpperCase();
+        return value != 'A' && (int.tryParse(value) ?? 0) > maxMarks;
+      }).toList();
+      if (overMax.isNotEmpty) {
+        setState(() => _error = 'Marks cannot exceed the maximum of $maxMarks for this test.');
+        return;
+      }
+    }
+
+    final absent = _students.where((s) => s.marks.text.trim().toUpperCase() == 'A').toList();
+    if (!await _confirmAbsent(absent)) return;
+    if (!await _confirmSubmit()) return;
+
+    setState(() { _saving = true; _error = null; _message = null; });
+    try {
+      final records = _students.map((s) => {
+        'roll_no': s.rollNo,
+        'marks': s.marks.text.trim().toUpperCase(),
+      }).toList();
+      await widget.api.post(
+        '/test-batch/tests/${Uri.encodeComponent(_testCode!)}/marks/submit',
+        data: {'adminId': widget.adminId, 'records': records},
+      );
+      if (!mounted) return;
+      _clearStudents();
+      setState(() {
+        _testCode = null;
+        _message = 'Marks saved successfully.';
+      });
+    } catch (error) {
+      if (mounted) setState(() => _error = _friendlyError(error, saving: true));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Widget _notice(String text, {required bool error}) => Container(
+    margin: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: error ? Colors.red.shade50 : Colors.green.shade50,
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: error ? Colors.red.shade200 : Colors.green.shade200),
+    ),
+    child: Text(text, style: TextStyle(color: error ? Colors.red.shade800 : Colors.green.shade800)),
+  );
+
+  @override
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.all(16),
+    children: [
+      if (_error != null) _notice(_error!, error: true),
+      if (_message != null) _notice(_message!, error: false),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            const Text('Test Batch – Enter Marks', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.primary)),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _subject,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Subject', border: OutlineInputBorder()),
+              hint: const Text('Select subject'),
+              items: _subjects.map((subject) => DropdownMenuItem(value: subject, child: Text(subject))).toList(),
+              onChanged: _loading ? null : _selectSubject,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _testCode,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Test code', border: OutlineInputBorder()),
+              hint: const Text('Select test code'),
+              items: _tests.map((test) {
+                final code = (test['test_code'] ?? '').toString();
+                return DropdownMenuItem(value: code, child: Text(code));
+              }).toList(),
+              onChanged: _loading || _subject == null ? null : _selectTest,
+            ),
+            if (_loading) const Padding(
+              padding: EdgeInsets.only(top: 12),
+              child: LinearProgressIndicator(),
+            ),
+          ]),
+        ),
+      ),
+      if (_test != null) ...[
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: [
+                Text('Test Series: ${_test?['test_series_name'] ?? '-'}'),
+                Text('Class: ${_test?['class'] ?? '-'}'),
+                Text('Board: ${_test?['board'] ?? '-'}'),
+                Text('Subject: ${_test?['subject_name'] ?? _subject ?? '-'}'),
+                Text('Maximum marks: ${_test?['total_marks'] ?? '-'}'),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Row(children: [
+            Expanded(child: Text('Student', style: TextStyle(fontWeight: FontWeight.w700))),
+            SizedBox(width: 120, child: Text('Marks (A if absent)', style: TextStyle(fontWeight: FontWeight.w700))),
+          ]),
+        ),
+        ..._students.map((student) => Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(children: [
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(student.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(student.rollNo, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              ])),
+              SizedBox(
+                width: 120,
+                child: TextField(
+                  controller: student.marks,
+                  keyboardType: TextInputType.text,
+                  textCapitalization: TextCapitalization.characters,
+                  inputFormatters: [MarksEntryInputFormatter()],
+                  decoration: const InputDecoration(
+                    hintText: '0 / A',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                  ),
+                ),
+              ),
+            ]),
+          ),
+        )),
+        const SizedBox(height: 8),
+        ElevatedButton(
+          onPressed: _saving ? null : _saveMarks,
+          child: _saving ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save Marks'),
+        ),
+      ],
+    ],
+  );
 }
 
 class _AttendanceTab extends StatefulWidget {

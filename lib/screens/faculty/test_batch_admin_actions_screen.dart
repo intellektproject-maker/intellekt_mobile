@@ -576,7 +576,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     // Submit only marks entered in this save. Previously saved marks for faculty
     // stay read-only; blank students can be completed and submitted later.
     final entered = _students.where((s) => s.marks.text.trim().isNotEmpty &&
-        (_isAdmin || !s.hasSavedMark)).toList();
+        (_isAdmin && _editingExisting || !s.hasSavedMark)).toList();
     if (entered.isEmpty) {
       setState(() => _error = 'Enter marks for at least one student before saving.');
       return;
@@ -758,7 +758,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
                 Text(student.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                 Text(student.rollNo, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
               ])),
-              if (_hasExistingMarks && !_isAdmin)
+              if (_hasExistingMarks && !_isAdmin && student.hasSavedMark)
                 Column(mainAxisSize: MainAxisSize.min, children: [
                   TextButton(onPressed: _saving ? null : () => _requestMarkEdit(student), child: const Text('Request Edit')),
                   if (_approvedEditRequests.containsKey(student.rollNo.trim().toUpperCase()))
@@ -783,7 +783,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
           ),
         )),
         const SizedBox(height: 8),
-        if (!_hasExistingMarks || (_isAdmin && _editingExisting) || (!_isAdmin && _students.any((s) => !s.hasSavedMark)))
+        if (!_hasExistingMarks || (_isAdmin && (_editingExisting || _students.any((s) => !s.hasSavedMark))) || (!_isAdmin && _students.any((s) => !s.hasSavedMark)))
           ElevatedButton(onPressed: _saving ? null : _saveMarks,
             child: _saving ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
               : Text(_hasExistingMarks ? 'Save Changes' : 'Save Marks')),

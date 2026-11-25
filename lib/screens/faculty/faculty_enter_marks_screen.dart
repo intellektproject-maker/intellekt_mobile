@@ -202,7 +202,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
         } catch (_) {}
       }
       setState(() {
-        _students = loaded; _test = test; _chapter.text = (test['chapter'] ?? '').toString(); _portions.text = (test['portion'] ?? '').toString(); _hasExistingMarks = marksByRoll.isNotEmpty;
+        _students = loaded; _test = test; _chapter.clear(); _portions.clear(); _hasExistingMarks = marksByRoll.isNotEmpty;
         _editingExisting = marksByRoll.isEmpty; _approvedEditRequests = approved; _testCode.text = code;
       });
     } catch (error) {
@@ -317,6 +317,8 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
         'facultyId': widget.facultyId,
         'testCode': _testCode.text.trim().toUpperCase(),
         'testDate': _testDateString,
+        'chapter': chapterValue,
+        'portion': _portions.text.trim(),
         'records': records,
       });
       if (!mounted) return;
@@ -399,9 +401,26 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
                     Text('Class: ${_test?['class'] ?? '-'}'),
                     Text('Subject: ${_test?['subject'] ?? '-'}'),
                     Text('Maximum marks: ${_test?['total_marks'] ?? '-'}'),
-                    Text('Chapter: ${_test?['chapter'] ?? '-'}'),
                   ],
                 ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _chapter,
+              decoration: const InputDecoration(
+                labelText: 'Chapter',
+                hintText: 'Enter chapter number or combined',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _portions,
+              decoration: const InputDecoration(
+                labelText: 'Portions',
+                hintText: 'Enter portions covered in this test',
+                border: OutlineInputBorder(),
               ),
             ),
             if (_hasExistingMarks && _isAdmin)

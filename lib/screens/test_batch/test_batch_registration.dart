@@ -174,7 +174,7 @@ class _TestBatchRegistrationScreenState
     }
     final duration = durationValue!;
 
-    var slots = _slotsForDate(selectedDate, duration);
+    var slots = _availableSlotsForStudent(selectedDate, duration);
     if (slots.isEmpty) {
       selectedDate = _nextDateWithSlots(firstDate, lastDate, duration);
       if (selectedDate == null) {
@@ -184,7 +184,7 @@ class _TestBatchRegistrationScreenState
         );
         return;
       }
-      slots = _slotsForDate(selectedDate, duration);
+      slots = _availableSlotsForStudent(selectedDate, duration);
     }
 
     String? selectedSlot;
@@ -247,10 +247,10 @@ class _TestBatchRegistrationScreenState
                           final normalized =
                               DateTime(picked.year, picked.month, picked.day);
                           final newSlots =
-                              _slotsForDate(normalized, duration);
+                              _availableSlotsForStudent(normalized, duration);
                           if (newSlots.isEmpty) {
                             _showMessage(
-                              'No valid slots are available on Sunday for this duration.',
+                              'You have already registered for a test in this slot.',
                               isError: true,
                             );
                             return;
@@ -325,6 +325,55 @@ class _TestBatchRegistrationScreenState
     );
   }
 
+  int? _timeToMinutes(dynamic value) {
+    if (value == null) return null;
+    final parts = value.toString().trim().split(':');
+    if (parts.length < 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1].substring(0, 2));
+    if (hour == null || minute == null) return null;
+    return hour * 60 + minute;
+  }
+
+  bool _intervalsOverlap(int startA, int endA, int startB, int endB) =>
+      startA < endB && endA > startB;
+
+  List<Map<String, String>> _availableSlotsForStudent(
+    DateTime date,
+    int duration,
+  ) {
+    final dateKey = DateFormat('yyyy-MM-dd').format(date);
+    final bookedIntervals = _tests
+        .where((test) {
+          final registeredDate = _dateOnly(test['registered_writing_date']);
+          final start = test['registered_slot_start'];
+          final end = test['registered_slot_end'];
+          return registeredDate != null &&
+              DateFormat('yyyy-MM-dd').format(registeredDate) == dateKey &&
+              start != null &&
+              end != null;
+        })
+        .map((test) => (
+              _timeToMinutes(test['registered_slot_start']),
+              _timeToMinutes(test['registered_slot_end']),
+            ))
+        .where((interval) => interval.$1 != null && interval.$2 != null)
+        .toList();
+
+    return _slotsForDate(date, duration).where((slot) {
+      final candidateStart = _timeToMinutes(slot['start']);
+      final candidateEnd = _timeToMinutes(slot['end']);
+      if (candidateStart == null || candidateEnd == null) return false;
+
+      return !bookedIntervals.any((booked) => _intervalsOverlap(
+            candidateStart,
+            candidateEnd,
+            booked.$1!,
+            booked.$2!,
+          ));
+    }).toList();
+  }
+
   DateTime? _nextDateWithSlots(
     DateTime firstDate,
     DateTime lastDate,
@@ -332,7 +381,7 @@ class _TestBatchRegistrationScreenState
   ) {
     var date = firstDate;
     while (!date.isAfter(lastDate)) {
-      if (_slotsForDate(date, duration).isNotEmpty) return date;
+      if (_availableSlotsForStudent(date, duration).isNotEmpty) return date;
       date = date.add(const Duration(days: 1));
     }
     return null;

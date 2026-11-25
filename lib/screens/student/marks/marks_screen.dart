@@ -357,7 +357,7 @@ class _MarksTable extends StatelessWidget {
               ),
             ),
             DataCell(
-              SizedBox(width: 150, child: Text('$updater\\n$changedAtText', style: const TextStyle(fontSize: 11))),
+              SizedBox(width: 150, child: Text('$updater\n$changedAtText', style: const TextStyle(fontSize: 11))),
             ),
           ],
         );

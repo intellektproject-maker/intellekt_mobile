@@ -278,6 +278,7 @@ class _TestBatchMarkStudent {
   final String rollNo;
   final String name;
   final TextEditingController marks = TextEditingController();
+  bool hasSavedMark = false;
 
   _TestBatchMarkStudent({required this.rollNo, required this.name});
 
@@ -492,7 +493,10 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
       }
       for (final student in students) {
         final saved = marksByRoll[student.rollNo.trim().toUpperCase()];
-        if (saved != null) student.marks.text = (saved['marks_obtained'] ?? '').toString();
+        if (saved != null) {
+          student.marks.text = (saved['marks_obtained'] ?? '').toString();
+          student.hasSavedMark = student.marks.text.trim().isNotEmpty;
+        }
       }
       if (students.isEmpty) throw DioException(
         requestOptions: RequestOptions(path: '/test-batch/mark-entry'),
@@ -526,19 +530,6 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     } catch (error) {
       if (mounted) setState(() { _error = _friendlyError(error); _loading = false; });
     }
-  }
-
-  Future<void> _showMissing(List<_TestBatchMarkStudent> missing) async {
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Marks missing'),
-        content: Text('Enter marks for all students before saving:\\n\\n${missing.map((s) => '${s.name} (${s.rollNo})').join('\\n')}'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Return to marks')),
-        ],
-      ),
-    );
   }
 
   Future<bool> _confirmAbsent(List<_TestBatchMarkStudent> absent) async {
@@ -581,13 +572,17 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
 
   Future<void> _saveMarks() async {
     if (_students.isEmpty || _testCode == null || _test == null || _saving) return;
-    final missing = _students.where((s) => s.marks.text.trim().isEmpty).toList();
-    if (missing.isNotEmpty) {
-      await _showMissing(missing);
+
+    // Submit only marks entered in this save. Previously saved marks for faculty
+    // stay read-only; blank students can be completed and submitted later.
+    final entered = _students.where((s) => s.marks.text.trim().isNotEmpty &&
+        (_isAdmin || !s.hasSavedMark)).toList();
+    if (entered.isEmpty) {
+      setState(() => _error = 'Enter marks for at least one student before saving.');
       return;
     }
 
-    final invalid = _students.where((s) {
+    final invalid = entered.where((s) {
       final value = s.marks.text.trim().toUpperCase();
       if (value == 'A') return false;
       final number = int.tryParse(value);
@@ -600,7 +595,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
 
     final maxMarks = int.tryParse((_test?['total_marks'] ?? '').toString());
     if (maxMarks != null) {
-      final overMax = _students.where((s) {
+      final overMax = entered.where((s) {
         final value = s.marks.text.trim().toUpperCase();
         return value != 'A' && (int.tryParse(value) ?? 0) > maxMarks;
       }).toList();
@@ -610,13 +605,13 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
       }
     }
 
-    final absent = _students.where((s) => s.marks.text.trim().toUpperCase() == 'A').toList();
+    final absent = entered.where((s) => s.marks.text.trim().toUpperCase() == 'A').toList();
     if (!await _confirmAbsent(absent)) return;
     if (!await _confirmSubmit()) return;
 
     setState(() { _saving = true; _error = null; _message = null; });
     try {
-      final records = _students.map((s) => {
+      final records = entered.map((s) => {
         'roll_no': s.rollNo,
         'marks': s.marks.text.trim().toUpperCase(),
       }).toList();
@@ -625,7 +620,15 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
         data: {'adminId': widget.adminId, 'records': records},
       );
       if (!mounted) return;
-      setState(() { _hasExistingMarks = true; _editingExisting = false; _message = 'Marks saved successfully.'; _error = null; });
+      setState(() {
+        for (final student in entered) {
+          student.hasSavedMark = true;
+        }
+        _hasExistingMarks = true;
+        _editingExisting = false;
+        _message = 'Marks saved for ${entered.length} student(s). You can enter the remaining marks later.';
+        _error = null;
+      });
     } catch (error) {
       if (mounted) setState(() => _error = _friendlyError(error, saving: true));
     } finally {
@@ -765,7 +768,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
                 width: 120,
                 child: TextField(
                   controller: student.marks,
-                  readOnly: _hasExistingMarks && (!_isAdmin || !_editingExisting),
+                  readOnly: _hasExistingMarks && (!_isAdmin || !_editingExisting) && student.hasSavedMark,
                   keyboardType: TextInputType.text,
                   textCapitalization: TextCapitalization.characters,
                   inputFormatters: [MarksEntryInputFormatter()],
@@ -780,7 +783,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
           ),
         )),
         const SizedBox(height: 8),
-        if (!_hasExistingMarks || (_isAdmin && _editingExisting))
+        if (!_hasExistingMarks || (_isAdmin && _editingExisting) || (!_isAdmin && _students.any((s) => !s.hasSavedMark)))
           ElevatedButton(onPressed: _saving ? null : _saveMarks,
             child: _saving ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
               : Text(_hasExistingMarks ? 'Save Changes' : 'Save Marks')),

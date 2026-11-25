@@ -296,8 +296,8 @@ class _MarksTable extends StatelessWidget {
       ),
       columnSpacing: 18,
       horizontalMargin: 10,
-      dataRowMinHeight: 50,
-      dataRowMaxHeight: 50,
+      dataRowMinHeight: 58,
+      dataRowMaxHeight: 70,
       headingTextStyle: const TextStyle(
         color: Colors.black,
         fontWeight: FontWeight.bold,
@@ -317,6 +317,9 @@ class _MarksTable extends StatelessWidget {
         DataColumn(
           label: Text('Marks'),
         ),
+        DataColumn(
+          label: Text('Entered/Updated By'),
+        ),
       ],
       rows: marks.map((mark) {
         final obtainedMarks =
@@ -329,6 +332,9 @@ class _MarksTable extends StatelessWidget {
         obtainedMarks.toUpperCase() == 'A'
             ? 'Absent'
             : '$obtainedMarks / $totalMarks';
+        final updater = (mark['updated_by_name'] ?? mark['entered_by_name'] ?? '-').toString();
+        final changedAt = DateTime.tryParse((mark['updated_at'] ?? mark['entered_at'] ?? '').toString())?.toLocal();
+        final changedAtText = changedAt == null ? '-' : DateFormat('dd/MM/yy hh:mm a').format(changedAt);
 
         return DataRow(
           cells: [
@@ -349,6 +355,9 @@ class _MarksTable extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+            ),
+            DataCell(
+              SizedBox(width: 150, child: Text('$updater\\n$changedAtText', style: const TextStyle(fontSize: 11))),
             ),
           ],
         );

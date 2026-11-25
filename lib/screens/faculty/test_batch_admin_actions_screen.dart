@@ -290,7 +290,16 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
   List<_TestBatchMarkStudent> _students = [];
   String? _subject;
   String? _testCode;
+  String? _classFilter, _boardFilter;
   Map<String, dynamic>? _test;
+  bool _hasExistingMarks = false, _editingExisting = false;
+  Map<String, Map<String, dynamic>> _approvedEditRequests = {};
+  bool get _isAdmin => const {'IG001','IG002'}.contains(widget.adminId.trim().toUpperCase());
+  List<Map<String, dynamic>> get _filteredTests => _tests.where((test) =>
+    (_classFilter == null || (test['class'] ?? '').toString() == _classFilter) &&
+    (_boardFilter == null || (test['board'] ?? '').toString().toUpperCase() == _boardFilter)).toList();
+  List<String> get _classOptions => _tests.map((test) => (test['class'] ?? '').toString()).where((v) => v.isNotEmpty).toSet().toList()..sort();
+  List<String> get _boardOptions => _tests.map((test) => (test['board'] ?? '').toString().toUpperCase()).where((v) => v.isNotEmpty).toSet().toList()..sort();
   bool _loading = true;
   bool _saving = false;
   String? _error;
@@ -336,6 +345,62 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     for (final student in _students) { student.dispose(); }
     _students = [];
     _test = null;
+    _hasExistingMarks = false;
+    _editingExisting = false;
+    _approvedEditRequests = {};
+  }
+
+  Future<void> _requestMarkEdit(_TestBatchMarkStudent student) async {
+    final controller = TextEditingController(text: student.marks.text);
+    final requested = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Request marks edit - ${student.rollNo}'),
+        content: TextField(controller: controller, autofocus: true, textCapitalization: TextCapitalization.characters,
+          inputFormatters: [MarksEntryInputFormatter()],
+          decoration: const InputDecoration(labelText: 'Requested marks (number or A)')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim().toUpperCase()), child: const Text('Request edit')),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (requested == null || requested.isEmpty || _testCode == null) return;
+    final maxMarks = int.tryParse((_test?['total_marks'] ?? '').toString()) ?? 100000;
+    final number = int.tryParse(requested);
+    if (requested != 'A' && (number == null || number < 0 || number > maxMarks)) {
+      if (mounted) setState(() => _error = 'Enter marks from 0 to $maxMarks, or A for absent.');
+      return;
+    }
+    try {
+      await widget.api.post('/test-batch/record-edit-requests', data: {
+        'facultyId': widget.adminId, 'recordType': 'marks', 'roll_no': student.rollNo,
+        'test_code': _testCode, 'subject_name': _test?['subject_name'] ?? _subject, 'requested_value': requested,
+      });
+      if (mounted) setState(() { _error = null; _message = 'Edit request sent to the admin. Apply it after approval.'; });
+    } catch (error) {
+      if (mounted) setState(() => _error = _friendlyError(error, saving: true));
+    }
+  }
+
+  Future<void> _applyApprovedMarkEdit(_TestBatchMarkStudent student) async {
+    final request = _approvedEditRequests[student.rollNo.trim().toUpperCase()];
+    if (request == null) return;
+    final value = (request['requested_value'] ?? '').toString().trim().toUpperCase();
+    try {
+      await widget.api.post('/test-batch/record-edit-requests/${request['id']}/apply',
+        data: {'facultyId': widget.adminId, 'newValue': value});
+      if (!mounted) return;
+      setState(() { student.marks.text = value; _approvedEditRequests.remove(student.rollNo.trim().toUpperCase()); _message = 'Approved marks edit applied for ${student.rollNo}.'; _error = null; });
+    } catch (error) {
+      if (mounted) setState(() => _error = _friendlyError(error, saving: true));
+    }
+  }
+
+  void _resetTestSelection() {
+    _clearStudents();
+    setState(() { _testCode = null; _error = null; _message = null; });
   }
 
   Future<void> _loadSubjects() async {
@@ -346,12 +411,14 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
         queryParameters: {'adminId': widget.adminId},
       );
       final raw = response.data is Map ? response.data['subjects'] : null;
-      final subjects = raw is List
-          ? raw.map((item) {
-              if (item is Map) return (item['subject_name'] ?? item['subject'] ?? '').toString();
-              return item.toString();
-            }).where((value) => value.trim().isNotEmpty).toSet().toList()
+      final sourceSubjects = raw is List
+          ? raw.map((item) => item is Map ? (item['subject_name'] ?? item['subject'] ?? '').toString() : item.toString()).toList()
           : <String>[];
+      final normalized = sourceSubjects.map((value) => value.toLowerCase()).toSet();
+      final subjects = <String>[
+        if (normalized.any((value) => value.contains('math'))) 'Mathematics',
+        if (normalized.any((value) => value.contains('phys'))) 'Physics',
+      ];
       if (!mounted) return;
       setState(() { _subjects = subjects; _loading = false; });
     } catch (error) {
@@ -365,6 +432,8 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
     setState(() {
       _subject = subject;
       _testCode = null;
+      _classFilter = null;
+      _boardFilter = null;
       _tests = [];
       _error = null;
       _message = null;
@@ -410,6 +479,17 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
                 name: (row['name'] ?? '').toString(),
               )).toList()
           : <_TestBatchMarkStudent>[];
+      final marksRaw = data is Map ? data['marks'] : null;
+      final marksByRoll = <String, Map<String, dynamic>>{};
+      if (marksRaw is List) {
+        for (final row in marksRaw.whereType<Map>()) {
+          marksByRoll[(row['roll_no'] ?? '').toString().trim().toUpperCase()] = Map<String, dynamic>.from(row);
+        }
+      }
+      for (final student in students) {
+        final saved = marksByRoll[student.rollNo.trim().toUpperCase()];
+        if (saved != null) student.marks.text = (saved['marks_obtained'] ?? '').toString();
+      }
       if (students.isEmpty) throw DioException(
         requestOptions: RequestOptions(path: '/test-batch/mark-entry'),
         response: Response(
@@ -422,8 +502,23 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
         for (final student in students) { student.dispose(); }
         return;
       }
+      final approved = <String, Map<String, dynamic>>{};
+      if (!_isAdmin && marksByRoll.isNotEmpty) {
+        try {
+          final approvedResponse = await widget.api.get('/test-batch/record-edit-requests/approved', queryParameters: {'facultyId': widget.adminId});
+          final rows = approvedResponse.data is List ? (approvedResponse.data as List).whereType<Map>() : const <Map>[];
+          for (final row in rows) {
+            if ((row['record_type'] ?? '').toString() == 'marks' && (row['status'] ?? '').toString() == 'Approved' &&
+                (row['test_code'] ?? '').toString().trim().toUpperCase() == code &&
+                (row['roll_no'] ?? '').toString().trim() != '*') {
+              approved[(row['roll_no'] ?? '').toString().trim().toUpperCase()] = Map<String, dynamic>.from(row);
+            }
+          }
+        } catch (_) {}
+      }
       _clearStudents();
-      setState(() { _students = students; _test = test; _loading = false; });
+      setState(() { _students = students; _test = test; _hasExistingMarks = marksByRoll.isNotEmpty;
+        _editingExisting = marksByRoll.isEmpty; _approvedEditRequests = approved; _loading = false; });
     } catch (error) {
       if (mounted) setState(() { _error = _friendlyError(error); _loading = false; });
     }
@@ -526,13 +621,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
         data: {'adminId': widget.adminId, 'records': records},
       );
       if (!mounted) return;
-      final submittedCode = _testCode;
-      _clearStudents();
-      setState(() {
-        _testCode = null;
-        _tests.removeWhere((test) => (test['test_code'] ?? '').toString() == submittedCode);
-        _message = 'Marks saved successfully.';
-      });
+      setState(() { _hasExistingMarks = true; _editingExisting = false; _message = 'Marks saved successfully.'; _error = null; });
     } catch (error) {
       if (mounted) setState(() => _error = _friendlyError(error, saving: true));
     } finally {
@@ -563,25 +652,41 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             const Text('Test Batch – Enter Marks', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.primary)),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _subject,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Subject', border: OutlineInputBorder()),
-              hint: const Text('Select subject'),
-              items: _subjects.map((subject) => DropdownMenuItem(value: subject, child: Text(subject))).toList(),
-              onChanged: _loading ? null : _selectSubject,
-            ),
+            const Text('Subject', style: TextStyle(fontWeight: FontWeight.w600)),
+            Wrap(spacing: 8, children: _subjects.map((subject) => Row(mainAxisSize: MainAxisSize.min, children: [
+              Radio<String>(value: subject, groupValue: _subject, onChanged: _loading ? null : _selectSubject),
+              Text(subject),
+            ])).toList()),
+            if (_subject != null && _classOptions.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              const Text('Class', style: TextStyle(fontWeight: FontWeight.w600)),
+              Wrap(spacing: 8, children: _classOptions.map((value) => Row(mainAxisSize: MainAxisSize.min, children: [
+                Radio<String>(value: value, groupValue: _classFilter, onChanged: (v) { _resetTestSelection(); setState(() => _classFilter = v); }),
+                Text(value),
+              ])).toList()),
+            ],
+            if (_subject != null && _boardOptions.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              const Text('Board', style: TextStyle(fontWeight: FontWeight.w600)),
+              Wrap(spacing: 8, children: _boardOptions.map((value) => Row(mainAxisSize: MainAxisSize.min, children: [
+                Radio<String>(value: value, groupValue: _boardFilter, onChanged: (v) { _resetTestSelection(); setState(() => _boardFilter = v); }),
+                Text(value),
+              ])).toList()),
+            ],
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _testCode,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Test code', border: OutlineInputBorder()),
-              hint: const Text('Select test code'),
-              items: _tests.map((test) {
-                final code = (test['test_code'] ?? '').toString();
-                return DropdownMenuItem(value: code, child: Text(code));
-              }).toList(),
-              onChanged: _loading || _subject == null ? null : _selectTest,
+            Autocomplete<String>(
+              optionsBuilder: (value) {
+                final query = value.text.trim().toUpperCase();
+                return _filteredTests.map((test) => (test['test_code'] ?? '').toString())
+                  .where((code) => query.isEmpty || code.toUpperCase().contains(query));
+              },
+              onSelected: _selectTest,
+              fieldViewBuilder: (context, controller, focusNode, onSubmitted) => TextField(
+                controller: controller, focusNode: focusNode, enabled: !_loading && _subject != null,
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(labelText: 'Test code', hintText: 'Type test code', border: OutlineInputBorder()),
+                onSubmitted: (_) => onSubmitted(),
+              ),
             ),
             if (_loading) const Padding(
               padding: EdgeInsets.only(top: 12),
@@ -592,6 +697,12 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
       ),
       if (_test != null) ...[
         const SizedBox(height: 12),
+        if (_hasExistingMarks && _isAdmin)
+          Align(alignment: Alignment.centerRight, child: TextButton.icon(
+            onPressed: _saving ? null : () => setState(() => _editingExisting = !_editingExisting),
+            icon: Icon(_editingExisting ? Icons.lock_outline : Icons.edit_outlined),
+            label: Text(_editingExisting ? 'Finish editing' : 'Edit saved marks'),
+          )),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -604,6 +715,7 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
                 Text('Board: ${_test?['board'] ?? '-'}'),
                 Text('Subject: ${_test?['subject_name'] ?? _subject ?? '-'}'),
                 Text('Maximum marks: ${_test?['total_marks'] ?? '-'}'),
+                Text('Test date: ${_test?['test_date'] ?? _test?['writing_close_date'] ?? '-'}'),
               ],
             ),
           ),
@@ -625,10 +737,17 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
                 Text(student.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                 Text(student.rollNo, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
               ])),
+              if (_hasExistingMarks && !_isAdmin)
+                Column(mainAxisSize: MainAxisSize.min, children: [
+                  TextButton(onPressed: _saving ? null : () => _requestMarkEdit(student), child: const Text('Request Edit')),
+                  if (_approvedEditRequests.containsKey(student.rollNo.trim().toUpperCase()))
+                    TextButton(onPressed: _saving ? null : () => _applyApprovedMarkEdit(student), child: const Text('Apply Approved')),
+                ]),
               SizedBox(
                 width: 120,
                 child: TextField(
                   controller: student.marks,
+                  readOnly: _hasExistingMarks && (!_isAdmin || !_editingExisting),
                   keyboardType: TextInputType.text,
                   textCapitalization: TextCapitalization.characters,
                   inputFormatters: [MarksEntryInputFormatter()],
@@ -643,10 +762,10 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
           ),
         )),
         const SizedBox(height: 8),
-        ElevatedButton(
-          onPressed: _saving ? null : _saveMarks,
-          child: _saving ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save Marks'),
-        ),
+        if (!_hasExistingMarks || (_isAdmin && _editingExisting))
+          ElevatedButton(onPressed: _saving ? null : _saveMarks,
+            child: _saving ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              : Text(_hasExistingMarks ? 'Save Changes' : 'Save Marks')),
       ],
     ],
   );

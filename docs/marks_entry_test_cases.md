@@ -76,10 +76,13 @@ Scope: Regular Batch and Test Batch marks entry on the `test` branch only.
 | RB-46 | Submit the same test code after a successful save | Duplicate test code rejected |
 | RB-47 | Faculty ID is missing or invalid | Access denied; no data write |
 | RB-48 | Load students, then attempt to change the code without using Change test code | Code stays read-only; Change test code clears the loaded list before a new code is entered |
-| RB-49 | Enter Chapter as a positive number or `combined` (any capitalization) | Accepted and persisted; other text, zero and negative values are rejected |
-| RB-50 | Enter Portions as descriptive text | Portions are saved to the test record and shown again when the test code is loaded |
+| RB-49 | Enter Chapter in the separate Chapter field as a positive number or `combined` (any capitalization) | Accepted and persisted; Chapter is not inferred from the suffix after `C` |
+| RB-50 | Enter Portions in the separate Portions field as descriptive text | Portions are submitted separately from Chapter and saved to the test record |
 | RB-51 | Open Regular Batch Enter Marks Test Code input | Test Code field has no placeholder text |
-| RB-52 | Use a test code suffix after `C` that contains letters or mixed text and numbers | Valid non-empty suffix is accepted; Chapter field validation remains separate |
+| RB-52 | Use a test code suffix after `C` that contains letters or mixed text and numbers (for example `C9M50CVOLUME1`) | Suffix is accepted without a Chapter-format constraint; Chapter and Portions are entered separately |
+| RB-53 | Load Regular Batch marks and inspect the form | Visible Chapter and Portions text fields appear; neither value is derived from the test-code suffix |
+| RB-54 | Submit Regular Batch marks with valid Chapter and Portions | Both fields are included in the API request and persisted separately |
+| RB-55 | Omit Chapter or Portions | Show the corresponding field validation; user can enter the missing value on screen and retry |
 
 ## Test Batch – subject, test code and registered students
 

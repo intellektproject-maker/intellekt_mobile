@@ -76,6 +76,10 @@ Scope: Regular Batch and Test Batch marks entry on the `test` branch only.
 | RB-46 | Submit the same test code after a successful save | Duplicate test code rejected |
 | RB-47 | Faculty ID is missing or invalid | Access denied; no data write |
 | RB-48 | Load students, then attempt to change the code without using Change test code | Code stays read-only; Change test code clears the loaded list before a new code is entered |
+| RB-49 | Enter Chapter as a positive number or `combined` (any capitalization) | Accepted and persisted; other text, zero and negative values are rejected |
+| RB-50 | Enter Portions as descriptive text | Portions are saved to the test record and shown again when the test code is loaded |
+| RB-51 | Open Regular Batch Enter Marks Test Code input | Test Code field has no placeholder text |
+| RB-52 | Use a test code suffix after `C` that contains letters or mixed text and numbers | Valid non-empty suffix is accepted; Chapter field validation remains separate |
 
 ## Test Batch – subject, test code and registered students
 

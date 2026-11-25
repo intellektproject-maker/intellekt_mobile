@@ -310,6 +310,13 @@ class _MarkCard extends StatelessWidget {
             if (hasInternal) _DetailRow('Internal', _display(mark['internal_marks'])),
             if (hasExternal) _DetailRow('External', _display(mark['external_marks'])),
           ],
+          final updater = (mark['updated_by_name'] ?? mark['entered_by_name'] ?? '-').toString();
+          final changedAt = DateTime.tryParse((mark['updated_at'] ?? mark['entered_at'] ?? mark['created_at'] ?? '').toString())?.toLocal();
+          final changedAtText = changedAt == null ? '-' : changedAt.toString().split('.').first;
+          const auditStyle = TextStyle(color: Color(0xFF6B7280), fontSize: 12);
+          const SizedBox(height: 8),
+          Text('Entered/Updated By: $updater', style: auditStyle),
+          Text('Date/Time: $changedAtText', style: auditStyle),
           if (mark['comments']?.toString().trim().isNotEmpty == true) ...[
             const SizedBox(height: 8),
             Text(mark['comments'].toString(), style: const TextStyle(color: Color(0xFF6B7280))),

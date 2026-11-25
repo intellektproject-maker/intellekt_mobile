@@ -588,20 +588,20 @@ class _AttendanceListCard extends StatelessWidget {
               itemBuilder: (context, index) {
                 final item = attendance[index];
 
-                return Row(
+                final updater = (item['edited_by_name'] ?? item['updated_by_name'] ?? '-').toString();
+                final changedAt = DateTime.tryParse((item['edited_at'] ?? item['marked_at'] ?? '').toString())?.toLocal();
+                final changedAtText = changedAt == null ? '-' : DateFormat('dd/MM/yy hh:mm a').format(changedAt);
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        formatDate(
-                          item['attendance_date'],
-                        ),
-                      ),
+                    Row(
+                      children: [
+                        Expanded(child: Text(formatDate(item['attendance_date'])),),
+                        Text(getSubjectName(item['subject_id'])),
+                      ],
                     ),
-                    Text(
-                      getSubjectName(
-                        item['subject_id'],
-                      ),
-                    ),
+                    const SizedBox(height: 3),
+                    Text('Entered/Updated By: $updater  •  $changedAtText', style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
                   ],
                 );
               },

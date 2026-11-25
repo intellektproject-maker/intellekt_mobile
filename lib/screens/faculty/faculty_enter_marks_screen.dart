@@ -51,9 +51,13 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       final status = error.response?.statusCode;
       final data = error.response?.data;
       final detail = data is Map ? (data['error'] ?? data['message'])?.toString().toLowerCase() ?? '' : '';
-      if (detail.contains('already taken') || detail.contains('duplicate') || status == 409) {
+      if (detail.contains('pending') || detail.contains('approved') || detail.contains('edit request')) {
+        return 'An edit request for this student is already pending or approved.';
+      }
+      if (detail.contains('already taken') || detail.contains('duplicate')) {
         return 'This test code is already taken. Please enter a different test code.';
       }
+      if (status == 409) return 'This record cannot be changed right now. Refresh and try again.';
       if (detail.contains('invalid test code') || detail.contains('test code format')) {
         return 'The test code is invalid. Please check it and try again.';
       }

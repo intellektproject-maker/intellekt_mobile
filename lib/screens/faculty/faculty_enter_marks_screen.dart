@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/constants/colors.dart';
@@ -71,7 +70,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   }
 
   Future<void> _loadStudents() async {
-    final code = _testCode.text.trim().toUpperCase().replaceAll(RegExp(r'\\s+'), '');
+    final code = _testCode.text.trim().toUpperCase().replaceAll(RegExp(r'\s+'), '');
     if (code.isEmpty) {
       setState(() { _error = 'Enter a test code to continue.'; _message = null; });
       return;
@@ -320,7 +319,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
                     width: 120,
                     child: TextField(
                       controller: student.marks,
-                      keyboardType: TextInputType.number,
+                      keyboardType: TextInputType.text,
                       textCapitalization: TextCapitalization.characters,
                       inputFormatters: [MarksEntryInputFormatter()],
                       decoration: const InputDecoration(

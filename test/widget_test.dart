@@ -29,7 +29,10 @@ void main() {
       ),
     );
 
-    await tester.pump();
+    // The splash screen intentionally waits 2 seconds before routing.
+    // Advance fake time so its delayed timer completes before the test ends.
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
 
     expect(find.byType(IntellektApp), findsOneWidget);
 

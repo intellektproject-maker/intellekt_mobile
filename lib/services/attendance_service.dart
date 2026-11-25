@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 
-import '../../core/api/api_client.dart';
-import '../../core/api/api_routes.dart';
+import '../core/api/api_client.dart';
+import '../core/api/api_routes.dart';
 
 class AttendanceService {
   AttendanceService._();

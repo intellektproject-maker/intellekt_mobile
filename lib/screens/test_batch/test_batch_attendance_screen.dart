@@ -167,7 +167,11 @@ class _SubjectAttendanceScreen extends StatelessWidget {
                 child: ListTile(
                   leading: Icon(isPresent ? Icons.check_circle_outline : Icons.cancel_outlined, color: isPresent ? Colors.green : Colors.red),
                   title: Text(item['test_code']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary)),
-                  subtitle: Text('Writing Date: ' + formatDate(item['attendance_date'])),
+                  subtitle: Text(
+                    'Writing Date: ' + formatDate(item['attendance_date']) +
+                    '\\nEntered/Updated By: ' + (item['edited_by_name'] ?? item['marked_by_name'] ?? '-').toString() +
+                    '\\nDate/Time: ' + (DateTime.tryParse((item['edited_at'] ?? item['marked_at'] ?? '').toString())?.toLocal().toString().split('.').first ?? '-'),
+                  ),
                   trailing: Text(item['status']?.toString() ?? '-', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: isPresent ? Colors.green.shade700 : Colors.red.shade700)),
                 ),
               );

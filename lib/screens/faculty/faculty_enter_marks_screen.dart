@@ -28,6 +28,10 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   final TextEditingController _testCode = TextEditingController();
   List<_RegularMarkStudent> _students = [];
   Map<String, dynamic>? _test;
+  DateTime _testDate = DateTime.now();
+  bool _hasExistingMarks = false, _editingExisting = false;
+  Map<String, Map<String, dynamic>> _approvedEditRequests = {};
+  bool get _isAdmin => const {'IG001','IG002'}.contains(widget.facultyId.trim().toUpperCase());
   bool _loading = false;
   bool _saving = false;
   String? _error;
@@ -69,14 +73,61 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
         : 'Could not load students. Please check the test code and try again.';
   }
 
+  String get _testDateString => '${_testDate.year.toString().padLeft(4, '0')}-${_testDate.month.toString().padLeft(2, '0')}-${_testDate.day.toString().padLeft(2, '0')}';
+
+  Future<void> _pickTestDate() async {
+    final picked = await showDatePicker(context: context, initialDate: _testDate, firstDate: DateTime(2020), lastDate: DateTime(2100));
+    if (picked != null && mounted) setState(() => _testDate = picked);
+  }
+
+  Future<void> _requestMarkEdit(_RegularMarkStudent student) async {
+    final controller = TextEditingController(text: student.marks.text);
+    final requested = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Request marks edit - ${student.rollNo}'),
+        content: TextField(controller: controller, autofocus: true, textCapitalization: TextCapitalization.characters,
+          inputFormatters: [MarksEntryInputFormatter()],
+          decoration: const InputDecoration(labelText: 'Requested marks (number or A)')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim().toUpperCase()), child: const Text('Request edit')),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (requested == null || requested.isEmpty) return;
+    final maxMarks = int.tryParse((_test?['total_marks'] ?? '').toString()) ?? 100000;
+    final number = int.tryParse(requested);
+    if (requested != 'A' && (number == null || number < 0 || number > maxMarks)) {
+      if (mounted) setState(() => _error = 'Enter marks from 0 to $maxMarks, or A for absent.');
+      return;
+    }
+    try {
+      await _api.post('/record-edit-requests', data: {'facultyId': widget.facultyId, 'recordType': 'marks',
+        'roll_no': student.rollNo, 'test_code': _testCode.text.trim().toUpperCase(), 'requested_value': requested});
+      if (mounted) setState(() { _error = null; _message = 'Edit request sent to the admin. Apply it after approval.'; });
+    } catch (error) {
+      if (mounted) setState(() => _error = _friendlyError(error, saving: true));
+    }
+  }
+
+  Future<void> _applyApprovedMarkEdit(_RegularMarkStudent student) async {
+    final request = _approvedEditRequests[student.rollNo.trim().toUpperCase()];
+    if (request == null) return;
+    final value = (request['requested_value'] ?? '').toString().trim().toUpperCase();
+    try {
+      await _api.post('/record-edit-requests/${request['id']}/apply', data: {'facultyId': widget.facultyId, 'newValue': value});
+      if (!mounted) return;
+      setState(() { student.marks.text = value; _approvedEditRequests.remove(student.rollNo.trim().toUpperCase()); _message = 'Approved marks edit applied for ${student.rollNo}.'; _error = null; });
+    } catch (error) {
+      if (mounted) setState(() => _error = _friendlyError(error, saving: true));
+    }
+  }
+
   void _changeTestCode() {
     for (final student in _students) { student.dispose(); }
-    setState(() {
-      _students = [];
-      _test = null;
-      _error = null;
-      _message = null;
-    });
+    setState(() { _students = []; _test = null; _hasExistingMarks = false; _editingExisting = false; _approvedEditRequests = {}; _error = null; _message = null; });
   }
 
   Future<void> _loadStudents() async {
@@ -102,6 +153,19 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
                 name: (row['name'] ?? '').toString(),
               )).toList()
           : <_RegularMarkStudent>[];
+      final marksRaw = data is Map ? data['marks'] : null;
+      final marksByRoll = <String, Map<String, dynamic>>{};
+      if (marksRaw is List) {
+        for (final row in marksRaw.whereType<Map>()) {
+          marksByRoll[(row['roll_no'] ?? '').toString().trim().toUpperCase()] = Map<String, dynamic>.from(row);
+        }
+      }
+      for (final student in loaded) {
+        final saved = marksByRoll[student.rollNo.trim().toUpperCase()];
+        if (saved != null) student.marks.text = (saved['marks_obtained'] ?? '').toString();
+      }
+      final savedDate = DateTime.tryParse((test['test_date'] ?? '').toString());
+      if (savedDate != null) _testDate = savedDate;
       if (loaded.isEmpty) throw DioException(
         requestOptions: RequestOptions(path: '/regular-mark-entry'),
         response: Response(
@@ -115,10 +179,23 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
         return;
       }
       for (final student in _students) { student.dispose(); }
+      final approved = <String, Map<String, dynamic>>{};
+      if (!_isAdmin && marksByRoll.isNotEmpty) {
+        try {
+          final approvedResponse = await _api.get('/record-edit-requests/approved', queryParameters: {'facultyId': widget.facultyId});
+          final rows = approvedResponse.data is List ? (approvedResponse.data as List).whereType<Map>() : const <Map>[];
+          for (final row in rows) {
+            if ((row['record_type'] ?? '').toString() == 'marks' && (row['status'] ?? '').toString() == 'Approved' &&
+                (row['test_code'] ?? '').toString().trim().toUpperCase() == code &&
+                (row['roll_no'] ?? '').toString().trim() != '*') {
+              approved[(row['roll_no'] ?? '').toString().trim().toUpperCase()] = Map<String, dynamic>.from(row);
+            }
+          }
+        } catch (_) {}
+      }
       setState(() {
-        _students = loaded;
-        _test = test;
-        _testCode.text = code;
+        _students = loaded; _test = test; _hasExistingMarks = marksByRoll.isNotEmpty;
+        _editingExisting = marksByRoll.isEmpty; _approvedEditRequests = approved; _testCode.text = code;
       });
     } catch (error) {
       if (mounted) setState(() => _error = _friendlyError(error));
@@ -222,17 +299,11 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       await _api.post('/regular-mark-entry/submit', data: {
         'facultyId': widget.facultyId,
         'testCode': _testCode.text.trim().toUpperCase(),
-        'testDate': DateTime.now().toIso8601String().substring(0, 10),
+        'testDate': _testDateString,
         'records': records,
       });
       if (!mounted) return;
-      for (final student in _students) { student.dispose(); }
-      setState(() {
-        _students = [];
-        _test = null;
-        _testCode.clear();
-        _message = 'Marks saved successfully.';
-      });
+      setState(() { _hasExistingMarks = true; _editingExisting = false; _message = 'Marks saved successfully.'; _error = null; });
     } catch (error) {
       if (mounted) setState(() => _error = _friendlyError(error, saving: true));
     } finally {
@@ -271,6 +342,8 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 const Text('Enter test code', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.primary)),
                 const SizedBox(height: 12),
+                OutlinedButton.icon(onPressed: _loading ? null : _pickTestDate, icon: const Icon(Icons.calendar_month_outlined), label: Text('Test date: $_testDateString')),
+                const SizedBox(height: 8),
                 TextField(
                   controller: _testCode,
                   readOnly: _students.isNotEmpty,
@@ -315,6 +388,12 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
                 ),
               ),
             ),
+            if (_hasExistingMarks && _isAdmin)
+              Align(alignment: Alignment.centerRight, child: TextButton.icon(
+                onPressed: _saving ? null : () => setState(() => _editingExisting = !_editingExisting),
+                icon: Icon(_editingExisting ? Icons.lock_outline : Icons.edit_outlined),
+                label: Text(_editingExisting ? 'Finish editing' : 'Edit saved marks'),
+              )),
             const SizedBox(height: 8),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
@@ -332,10 +411,17 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
                     Text(student.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                     Text(student.rollNo, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                   ])),
+                  if (_hasExistingMarks && !_isAdmin)
+                    Column(mainAxisSize: MainAxisSize.min, children: [
+                      TextButton(onPressed: _saving ? null : () => _requestMarkEdit(student), child: const Text('Request Edit')),
+                      if (_approvedEditRequests.containsKey(student.rollNo.trim().toUpperCase()))
+                        TextButton(onPressed: _saving ? null : () => _applyApprovedMarkEdit(student), child: const Text('Apply Approved')),
+                    ]),
                   SizedBox(
                     width: 120,
                     child: TextField(
                       controller: student.marks,
+                      readOnly: _hasExistingMarks && (!_isAdmin || !_editingExisting),
                       keyboardType: TextInputType.text,
                       textCapitalization: TextCapitalization.characters,
                       inputFormatters: [MarksEntryInputFormatter()],
@@ -350,10 +436,10 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
               ),
             )),
             const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: _saving ? null : _saveMarks,
-              child: _saving ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save Marks'),
-            ),
+            if (!_hasExistingMarks || (_isAdmin && _editingExisting))
+              ElevatedButton(onPressed: _saving ? null : _saveMarks,
+                child: _saving ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Text(_hasExistingMarks ? 'Save Changes' : 'Save Marks')),
           ],
         ],
       ),

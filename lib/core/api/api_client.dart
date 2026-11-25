@@ -42,7 +42,7 @@ class ApiClient {
 
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://responsible-wonder-production-aea7de41.up.railway.app',
+    defaultValue: 'https://test-api-not-configured.invalid',
   );
 
   // ==========================================================

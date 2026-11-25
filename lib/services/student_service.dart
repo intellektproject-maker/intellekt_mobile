@@ -1,5 +1,5 @@
-import '../../models/student_details_model.dart';
-import '../../repositories/mock_student_repository.dart';
+import '../models/student_details_model.dart';
+import '../repositories/mock_student_repository.dart';
 
 class StudentService {
   final MockStudentRepository _repository = MockStudentRepository();

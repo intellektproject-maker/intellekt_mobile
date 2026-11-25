@@ -69,6 +69,16 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
         : 'Could not load students. Please check the test code and try again.';
   }
 
+  void _changeTestCode() {
+    for (final student in _students) { student.dispose(); }
+    setState(() {
+      _students = [];
+      _test = null;
+      _error = null;
+      _message = null;
+    });
+  }
+
   Future<void> _loadStudents() async {
     final code = _testCode.text.trim().toUpperCase().replaceAll(RegExp(r'\s+'), '');
     if (code.isEmpty) {
@@ -263,6 +273,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _testCode,
+                  readOnly: _students.isNotEmpty,
                   textCapitalization: TextCapitalization.characters,
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _loadStudents(),
@@ -273,10 +284,16 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: _loading ? null : _loadStudents,
-                  child: _loading ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Load students'),
-                ),
+                if (_students.isEmpty)
+                  ElevatedButton(
+                    onPressed: _loading ? null : _loadStudents,
+                    child: _loading ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Load students'),
+                  )
+                else
+                  OutlinedButton(
+                    onPressed: _saving ? null : _changeTestCode,
+                    child: const Text('Change test code'),
+                  ),
               ]),
             ),
           ),

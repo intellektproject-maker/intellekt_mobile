@@ -16,7 +16,8 @@ Scope: Regular Batch and Test Batch marks entry on the `test` branch only.
    ```
 6. [ ] Install the APK and execute the cases below in order.
 7. [ ] For every failure: record the case ID, inspect server logs privately, fix only the related test-branch code, rerun the failed case and its regression group, then rebuild and retest.
-8. [ ] Do not merge to `main` or production unless all required cases pass and the owner explicitly approves the merge.
+8. [ ] Whenever marks-entry requirements or implementation change, update this checklist in the same `test`-branch change.
+9. [ ] Do not merge to `main` or production unless all required cases pass and the owner explicitly approves the merge.
 
 ## Regular Batch – test code and student loading
 
@@ -32,9 +33,9 @@ Scope: Regular Batch and Test Batch marks entry on the `test` branch only.
 | RB-08 | Use an invalid subject letter | Code rejected |
 | RB-09 | Use maximum marks 0 | Code rejected |
 | RB-10 | Use maximum marks 1000 or more | Code rejected |
-| RB-11 | Use chapter 0 | Code rejected |
-| RB-12 | Use chapter 100 or more | Code rejected |
-| RB-13 | Use chapter 1 and chapter 99 | Both valid boundary values accepted when database mapping exists |
+| RB-11 | Use any non-empty text or number after `C` in the test code (for example `C8`, `Ccombined`, `CABC`) | Suffix is accepted; it does not force the Chapter field value |
+| RB-12 | Enter Chapter `0`, negative value, or text other than `combined` | Chapter validation blocks saving |
+| RB-13 | Enter Chapter `1`, `99`, or `combined` | Accepted; Chapter value is saved and returned when the test is loaded again |
 | RB-14 | Use a code already in the tests table | Show “This test code is already taken”; no marks saved |
 | RB-15 | Use a code already present in marks history | Duplicate rejected |
 | RB-16 | Code class/board has no matching database students | Friendly no-students message |
@@ -59,7 +60,7 @@ Scope: Regular Batch and Test Batch marks entry on the `test` branch only.
 | RB-30 | Enter 100000 | Accepted by field range; server also checks the test maximum |
 | RB-31 | Enter 100001 | Rejected |
 | RB-32 | Paste mixed invalid text | Invalid paste rejected; prior value retained |
-| RB-33 | Leave one student blank | Save blocked; missing student(s) listed |
+| RB-33 | Leave one student blank while entering marks for another student | Only the entered student is submitted; blank student remains pending |
 | RB-34 | Leave all students blank | Save blocked; no database write |
 | RB-35 | Enter a mark above the test maximum | Save blocked with a clear message |
 | RB-36 | Mark one or more students absent | Absent confirmation lists names and roll numbers |
@@ -109,17 +110,23 @@ Scope: Regular Batch and Test Batch marks entry on the `test` branch only.
 | TB-22 | Enter negative or decimal marks | Rejected |
 | TB-23 | Enter more than 100000 | Rejected |
 | TB-24 | Enter marks above the posted test maximum | Save blocked |
-| TB-25 | Leave any registered student blank | Save blocked; missing student(s) listed |
+| TB-25 | Leave some registered students blank and enter marks for only one student | One student’s marks can be submitted; blank students remain pending and do not block the submission |
 | TB-26 | Mark absent students | Confirmation lists absent names and roll numbers |
 | TB-27 | Cancel absent or final confirmation | No database write; entered marks retained |
-| TB-28 | Confirm submission | All registered students’ marks save in one transaction |
+| TB-28 | Submit marks for one or several selected/changed registered students | Only submitted student records save in one transaction; remaining registered students can be submitted later |
 | TB-29 | Force a database failure mid-save | All inserted marks roll back |
-| TB-30 | Submit only a subset of registered students through API | Backend rejects request |
+| TB-30 | Submit only a subset of registered students through API | Backend accepts the subset if every submitted roll number is registered and unique; no omitted student is required |
 | TB-31 | Include an unregistered student through API | Backend rejects request |
 | TB-32 | Submit duplicate roll numbers through API | Backend rejects request |
 | TB-33 | Submit marks a second time | Duplicate/finalized submission rejected |
 | TB-34 | Tap Save repeatedly while request is pending | Only one submission is sent |
-| TB-35 | Successful submission | Test marks status becomes finalized and success message appears |
+| TB-35 | All registered students have saved marks | Test marks status becomes finalized and success message appears |
+| TB-36 | Submit one student whose mark is already saved without edit approval | Backend rejects overwrite; faculty must use the approved edit flow |
+| TB-37 | Submit one new student while other registered students already have saved marks | New student’s mark saves; unrelated saved marks do not block it |
+| TB-38 | Submit a roll number not registered for the selected test code | Backend rejects that record; no partial transaction is committed |
+| TB-39 | Open Test Batch Enter Marks and inspect Board dropdown | Board options are fetched from distinct database board values; no hardcoded board list is used for this screen |
+| TB-40 | Open Test Batch Enter Marks and inspect Class dropdown | Class options are fetched from distinct database class values; no hardcoded class list is used for this screen |
+| TB-41 | Add a class or board value to the testing database and reload mark-entry options | The new value appears in the relevant dropdown without a code change |
 
 ## Error-message and resilience checks
 

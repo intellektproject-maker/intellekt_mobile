@@ -663,31 +663,33 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
             ])).toList()),
             if (_subject != null && _classOptions.isNotEmpty) ...[
               const SizedBox(height: 8),
-              const Text('Class', style: TextStyle(fontWeight: FontWeight.w600)),
-              Wrap(spacing: 8, children: [
-                Row(mainAxisSize: MainAxisSize.min, children: [
-                  Radio<String>(value: 'All', groupValue: _classFilter ?? 'All', onChanged: (_) { _resetTestSelection(); setState(() => _classFilter = null); }),
-                  const Text('All'),
-                ]),
-                ..._classOptions.map((value) => Row(mainAxisSize: MainAxisSize.min, children: [
-                  Radio<String>(value: value, groupValue: _classFilter ?? 'All', onChanged: (v) { _resetTestSelection(); setState(() => _classFilter = v); }),
-                  Text(value),
-                ])),
-              ]),
+              DropdownButtonFormField<String>(
+                value: _classFilter ?? 'All',
+                decoration: const InputDecoration(labelText: 'Class', border: OutlineInputBorder()),
+                items: ['All', ..._classOptions].map((value) => DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                )).toList(),
+                onChanged: _loading ? null : (value) {
+                  _resetTestSelection();
+                  setState(() => _classFilter = value == null || value == 'All' ? null : value);
+                },
+              ),
             ],
             if (_subject != null && _boardOptions.isNotEmpty) ...[
               const SizedBox(height: 8),
-              const Text('Board', style: TextStyle(fontWeight: FontWeight.w600)),
-              Wrap(spacing: 8, children: [
-                Row(mainAxisSize: MainAxisSize.min, children: [
-                  Radio<String>(value: 'All', groupValue: _boardFilter ?? 'All', onChanged: (_) { _resetTestSelection(); setState(() => _boardFilter = null); }),
-                  const Text('All'),
-                ]),
-                ..._boardOptions.map((value) => Row(mainAxisSize: MainAxisSize.min, children: [
-                  Radio<String>(value: value, groupValue: _boardFilter ?? 'All', onChanged: (v) { _resetTestSelection(); setState(() => _boardFilter = v); }),
-                  Text(value),
-                ])),
-              ]),
+              DropdownButtonFormField<String>(
+                value: _boardFilter ?? 'All',
+                decoration: const InputDecoration(labelText: 'Board', border: OutlineInputBorder()),
+                items: ['All', ..._boardOptions].map((value) => DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                )).toList(),
+                onChanged: _loading ? null : (value) {
+                  _resetTestSelection();
+                  setState(() => _boardFilter = value == null || value == 'All' ? null : value);
+                },
+              ),
             ],
             const SizedBox(height: 12),
             Autocomplete<String>(

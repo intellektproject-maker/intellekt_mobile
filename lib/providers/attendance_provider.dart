@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../services/student/attendance_service.dart';
+import '../services/student/attendance_service.dart';
 
 class AttendanceProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _attendance = [];

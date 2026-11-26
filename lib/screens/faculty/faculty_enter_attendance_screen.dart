@@ -413,6 +413,12 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
                 )
               else if (saved)
                 Text('Saved attendance: ' + (_savedAttendance[roll] ?? ''), style: const TextStyle(fontWeight: FontWeight.w700))
+              else
+                DropdownButton<String>(
+                  value: _attendance[roll] ?? 'Present',
+                  items: const [DropdownMenuItem(value: 'Present', child: Text('Present')), DropdownMenuItem(value: 'Absent', child: Text('Absent'))],
+                  onChanged: (v) => setState(() => _attendance[roll] = v ?? 'Present'),
+                ),
               if (saved && _attendanceAuditByRoll[roll] != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
@@ -423,12 +429,6 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
                     (DateTime.tryParse((_attendanceAuditByRoll[roll]!['edited_at'] ?? _attendanceAuditByRoll[roll]!['marked_at'] ?? '').toString())?.toLocal().toString().split('.').first ?? '-'),
                     style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                   ),
-                ),
-              else
-                DropdownButton<String>(
-                  value: _attendance[roll] ?? 'Present',
-                  items: const [DropdownMenuItem(value: 'Present', child: Text('Present')), DropdownMenuItem(value: 'Absent', child: Text('Absent'))],
-                  onChanged: (v) => setState(() => _attendance[roll] = v ?? 'Present'),
                 ),
               if (saved && pending && !_isAdmin) const Padding(padding: EdgeInsets.only(top: 6), child: Text('Your edit request is waiting for admin approval.', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.w600))),
               if (saved && !_isAdmin) Padding(padding: const EdgeInsets.only(top: 8), child: Wrap(spacing: 8, children: [

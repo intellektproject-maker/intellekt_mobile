@@ -961,7 +961,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text((s['name'] ?? 'Student').toString()),
-                subtitle: Text('Roll: $roll\\nTests: ${s['test_codes'] ?? '-'}'),
+                subtitle: Text('Roll: $roll\nTests: ${s['test_codes'] ?? '-'}'),
                 isThreeLine: true,
                 trailing: (_isFaculty && savedStatus != null)
                     ? PopupMenuButton<String>(

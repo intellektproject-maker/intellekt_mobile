@@ -810,6 +810,28 @@ class _AttendanceTabState extends State<_AttendanceTab> {
   bool _loading = false, _saving = false;
   bool get _isFaculty => !const {'IG001', 'IG002'}.contains(widget.adminId.trim().toUpperCase());
 
+  Widget _attendanceRadioOption(String roll, String status, bool enabled) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Radio<String>(
+          value: status,
+          groupValue: const {'Present', 'Absent'}.contains(_status[roll])
+              ? _status[roll]
+              : null,
+          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          onChanged: enabled
+              ? (value) {
+                  if (value != null) setState(() => _status[roll] = value);
+                }
+              : null,
+        ),
+        Text(status),
+      ],
+    );
+  }
+
   Future<void> _loadApprovedAttendanceEdits() async {
     if (!_isFaculty) return;
     try {
@@ -928,31 +950,46 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     if (!_loading && _visibleStudents.isEmpty) const Card(child: ListTile(title: Text('Load students registered for a test on this date.'))),
     ..._visibleStudents.map((s) {
       final roll = (s['roll_no'] ?? '').toString();
-      return Card(child: ListTile(
-        title: Text((s['name'] ?? 'Student').toString()),
-        subtitle: Text('Roll: $roll\nTests: ${s['test_codes'] ?? '-'}'),
-        isThreeLine: true,
-        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-          DropdownButton<String>(
-            value: const {'Present', 'Absent'}.contains(_status[roll]) ? _status[roll] : null,
-            hint: const Text('Select status'),
-            items: const [DropdownMenuItem(value: 'Present', child: Text('Present')), DropdownMenuItem(value: 'Absent', child: Text('Absent'))],
-            onChanged: (_isFaculty && _savedAttendanceStatus(s) != null) ? null : (v) => setState(() => _status[roll] = v ?? 'Present'),
+      final savedStatus = _savedAttendanceStatus(s);
+      final canMark = !(_isFaculty && savedStatus != null);
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text((s['name'] ?? 'Student').toString()),
+                subtitle: Text('Roll: $roll\\nTests: ${s['test_codes'] ?? '-'}'),
+                isThreeLine: true,
+                trailing: (_isFaculty && savedStatus != null)
+                    ? PopupMenuButton<String>(
+                        tooltip: 'Edit attendance',
+                        onSelected: (action) {
+                          if (action == 'request') _requestAttendanceEdit(roll, savedStatus);
+                          if (action == 'apply') _applyApprovedAttendanceEdit(roll);
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(value: 'request', child: Text('Request Edit')),
+                          if (_approvedAttendanceEdits.containsKey(roll))
+                            const PopupMenuItem(value: 'apply', child: Text('Apply Approved Edit')),
+                        ],
+                      )
+                    : null,
+              ),
+              Wrap(
+                spacing: 12,
+                runSpacing: 4,
+                children: [
+                  _attendanceRadioOption(roll, 'Present', canMark),
+                  _attendanceRadioOption(roll, 'Absent', canMark),
+                ],
+              ),
+            ],
           ),
-          if (_isFaculty && _savedAttendanceStatus(s) != null)
-            PopupMenuButton<String>(
-              tooltip: 'Edit attendance',
-              onSelected: (action) {
-                if (action == 'request') _requestAttendanceEdit(roll, _savedAttendanceStatus(s)!);
-                if (action == 'apply') _applyApprovedAttendanceEdit(roll);
-              },
-              itemBuilder: (_) => [
-                const PopupMenuItem(value: 'request', child: Text('Request Edit')),
-                if (_approvedAttendanceEdits.containsKey(roll)) const PopupMenuItem(value: 'apply', child: Text('Apply Approved Edit')),
-              ],
-            ),
-        ]),
-      ));
+        ),
+      );
     }),
     if (_students.isNotEmpty) FilledButton.icon(onPressed: _saving ? null : _save, icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined), label: Text(_saving ? 'Saving...' : 'Save attendance')),
   ]);

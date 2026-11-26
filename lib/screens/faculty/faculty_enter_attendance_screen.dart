@@ -314,6 +314,37 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
     }
   }
 
+  Widget _attendanceStatusRadios(
+    String value,
+    ValueChanged<String> onChanged,
+  ) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 4,
+      children: ['Present', 'Absent'].map((status) {
+        return InkWell(
+          onTap: () => onChanged(status),
+          borderRadius: BorderRadius.circular(8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Radio<String>(
+                value: status,
+                groupValue: value,
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                onChanged: (selected) {
+                  if (selected != null) onChanged(selected);
+                },
+              ),
+              Text(status),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -406,18 +437,16 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
               Text('Roll No: $roll'),
               const SizedBox(height: 8),
               if (saved && (approved || _isAdmin))
-                DropdownButton<String>(
-                  value: _editDrafts[roll] ?? _savedAttendance[roll],
-                  items: const [DropdownMenuItem(value: 'Present', child: Text('Present')), DropdownMenuItem(value: 'Absent', child: Text('Absent'))],
-                  onChanged: (v) => setState(() => _editDrafts[roll] = v ?? _savedAttendance[roll] ?? 'Present'),
+                _attendanceStatusRadios(
+                  _editDrafts[roll] ?? _savedAttendance[roll] ?? 'Present',
+                  (value) => setState(() => _editDrafts[roll] = value),
                 )
               else if (saved)
                 Text('Saved attendance: ' + (_savedAttendance[roll] ?? ''), style: const TextStyle(fontWeight: FontWeight.w700))
               else
-                DropdownButton<String>(
-                  value: _attendance[roll] ?? 'Present',
-                  items: const [DropdownMenuItem(value: 'Present', child: Text('Present')), DropdownMenuItem(value: 'Absent', child: Text('Absent'))],
-                  onChanged: (v) => setState(() => _attendance[roll] = v ?? 'Present'),
+                _attendanceStatusRadios(
+                  _attendance[roll] ?? 'Present',
+                  (value) => setState(() => _attendance[roll] = value),
                 ),
               if (saved && _attendanceAuditByRoll[roll] != null)
                 Padding(

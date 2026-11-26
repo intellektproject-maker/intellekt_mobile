@@ -144,53 +144,44 @@ class _RegularEditRequestsScreenState extends State<RegularEditRequestsScreen> {
   }
 
   Future<void> _apply(Map<String, dynamic> request) async {
-    if (request['_source'] == 'test_batch') {
-      try {
-        await _api.post(
-          '/test-batch/record-edit-requests/${request['id']}/apply',
-          data: {'facultyId': _id},
-        );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Approved Test Batch edit applied successfully.')),
-          );
-        }
-        await _load();
-      } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-        );
-      }
-      return;
-    }
-    final controller = TextEditingController();
     final type = (request['record_type'] ?? '').toString();
+    final controller = TextEditingController();
     final value = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Apply approved edit'),
+        title: const Text('Edit approved field'),
         content: TextField(
           controller: controller,
           keyboardType: type == 'marks' ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
           decoration: InputDecoration(
-            labelText: type == 'marks' ? 'New marks (or A for absent)' : 'New attendance status',
+            labelText: type == 'marks' ? 'New marks (or A)' : 'New attendance status',
             hintText: type == 'marks' ? 'Enter marks or A' : 'Present or Absent',
           ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('Apply')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('Save')),
         ],
       ),
     );
     controller.dispose();
-    if (value == null || value.isEmpty) return;
+    if (value == null || value.trim().isEmpty) return;
     try {
-      await _api.post('/record-edit-requests/${request['id']}/apply', data: {'facultyId': _id, 'newValue': value});
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Approved edit applied successfully.')));
+      final source = request['_source'] == 'test_batch' ? 'test-batch/record-edit-requests' : 'record-edit-requests';
+      await _api.post('/$source/${request['id']}/apply', data: {
+        'facultyId': _id,
+        'newValue': value.trim(),
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Approved edit saved successfully.')),
+        );
+      }
       await _load();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
     }
   }
 

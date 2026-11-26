@@ -154,7 +154,7 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
       final response = await _api.post('/record-edit-requests', data: {
         'facultyId': _facultyId, 'recordType': 'attendance', 'roll_no': roll,
         'subject_id': int.parse(_subject), 'attendance_date': _dateKey,
-        'requested_value': current == 'Present' ? 'Absent' : 'Present',
+        'requested_value': 'EDIT_PERMISSION',
       });
       if (!mounted) return;
       _show(response.data is Map && _value(response.data['message']).isNotEmpty

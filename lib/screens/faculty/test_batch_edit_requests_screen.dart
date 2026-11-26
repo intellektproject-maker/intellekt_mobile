@@ -22,8 +22,6 @@ class _TestBatchEditRequestsScreenState
   final _testCode = TextEditingController();
   final _subject = TextEditingController();
   final _date = TextEditingController();
-  final _original = TextEditingController();
-  final _requested = TextEditingController();
   final _note = TextEditingController();
   String _type = 'marks';
   bool _loading = true;
@@ -43,7 +41,7 @@ class _TestBatchEditRequestsScreenState
   @override
   void dispose() {
     for (final controller in [
-      _roll, _testCode, _subject, _date, _original, _requested, _note,
+      _roll, _testCode, _subject, _date, _note,
     ]) {
       controller.dispose();
     }
@@ -110,11 +108,9 @@ class _TestBatchEditRequestsScreenState
           'subject_name': _subject.text.trim(),
         },
         if (_type == 'attendance') 'attendance_date': _date.text.trim(),
-        'original_value': _original.text.trim(),
-        'requested_value': _requested.text.trim(),
+        'requested_value': 'EDIT_PERMISSION',
       });
       _roll.clear(); _testCode.clear(); _subject.clear(); _date.clear();
-      _original.clear(); _requested.clear();
       await _load();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -151,17 +147,40 @@ class _TestBatchEditRequestsScreenState
   }
 
   Future<void> _applyApproved(Map<String, dynamic> request) async {
+    final type = (request['record_type'] ?? '').toString();
+    final controller = TextEditingController();
+    final value = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit approved field'),
+        content: TextField(
+          controller: controller,
+          keyboardType: type == 'marks' ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
+          decoration: InputDecoration(
+            labelText: type == 'marks' ? 'New marks (or A)' : 'New attendance status',
+            hintText: type == 'marks' ? 'Enter marks or A' : 'Present or Absent',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('Save')),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (value == null || value.trim().isEmpty) return;
     final id = request['id'];
     if (id == null) return;
     setState(() { _saving = true; _error = null; });
     try {
       await _api.post('/test-batch/record-edit-requests/$id/apply', data: {
         'facultyId': _id,
+        'newValue': value.trim(),
       });
       await _load();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Approved change applied successfully.')),
+          const SnackBar(content: Text('Approved edit saved successfully.')),
         );
       }
     } catch (error) {
@@ -259,14 +278,6 @@ class _TestBatchEditRequestsScreenState
                 border: OutlineInputBorder())),
             ],
             const SizedBox(height: 10),
-            TextFormField(controller: _original, validator: _required,
-              decoration: const InputDecoration(labelText: 'Current value',
-                border: OutlineInputBorder())),
-            const SizedBox(height: 10),
-            TextFormField(controller: _requested, validator: _required,
-              decoration: InputDecoration(
-                labelText: _type == 'marks' ? 'Requested marks (or A)' : 'Requested status (Present/Absent)',
-                border: const OutlineInputBorder())),
             const SizedBox(height: 12),
             FilledButton(
               onPressed: _saving ? null : _submit,
@@ -300,7 +311,7 @@ class _TestBatchEditRequestsScreenState
             ]),
             Text(record),
             Text('Faculty: ${request['requested_by_name'] ?? request['requested_by'] ?? '-'}'),
-            Text('Change: ${request['original_value'] ?? '-'} → ${request['requested_value'] ?? '-'}'),
+            const Text('Permission requested to edit this field.'),
             if (!_isAdmin && status.toLowerCase() == 'approved') ...[
               const SizedBox(height: 10),
               SizedBox(

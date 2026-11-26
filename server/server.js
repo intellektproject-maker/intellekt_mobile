@@ -1238,12 +1238,7 @@ app.post('/marks', async (req, res) => {
 					total_marks
 				)
 				VALUES ($1, $2, $3, $4, $5, $6)
-				ON CONFLICT (roll_no, test_code)
-				DO UPDATE SET
-					student_name = EXCLUDED.student_name,
-					marks_obtained = EXCLUDED.marks_obtained,
-					comments = EXCLUDED.comments,
-					total_marks = EXCLUDED.total_marks
+				ON CONFLICT (roll_no, test_code) DO NOTHING
 				`,
 				[
 					studentResult.rows[0].roll_no,
@@ -1355,6 +1350,10 @@ app.get('/marks', async (req, res) => {
 	}
 });
 app.put('/marks/:roll_no/:test_code', async (req, res) => {
+	const editorId = String(req.get('x-admin-id') || req.body?.adminId || req.body?.facultyId || '').trim().toUpperCase();
+	if (!['IG001', 'IG002'].includes(editorId)) {
+		return res.status(403).json({ error: 'Faculty must request admin edit approval before changing saved marks.' });
+	}
 	const { roll_no, test_code } = req.params;
 	const { marks, comments } = req.body;
 
@@ -1810,6 +1809,9 @@ if (!subject && !isSundayMode) {
 	if (!facultyId) {
 		return res.status(400).json({ error: 'facultyId is required' });
 	}
+	if (overwrite && !['IG001', 'IG002'].includes(String(facultyId).trim().toUpperCase())) {
+		return res.status(403).json({ error: 'Faculty must request admin edit approval before overwriting attendance.' });
+	}
 
 	if (!selectedDate) {
 		return res.status(400).json({ error: 'date is required' });
@@ -1917,6 +1919,9 @@ if (!subject && !isSundayMode) {
 app.put('/attendance', async (req, res) => {
 	const { records, subject, facultyId } = req.body;
 	const selectedDate = req.body.date || req.body.attendanceDate;
+	if (!['IG001', 'IG002'].includes(String(facultyId || '').trim().toUpperCase())) {
+		return res.status(403).json({ error: 'Faculty must request admin edit approval before changing saved attendance.' });
+	}
 
 	if (!records || !Array.isArray(records) || records.length === 0) {
 		return res.status(400).json({ error: 'records are required' });

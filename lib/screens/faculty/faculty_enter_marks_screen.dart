@@ -33,6 +33,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   DateTime _testDate = DateTime.now();
   bool _hasExistingMarks = false, _editingExisting = false;
   Map<String, Map<String, dynamic>> _approvedEditRequests = {};
+  final Map<String, Map<String, dynamic>> _markAuditByRoll = {};
   bool get _isAdmin => const {'IG001','IG002'}.contains(widget.facultyId.trim().toUpperCase());
   bool _loading = false;
   bool _saving = false;
@@ -147,7 +148,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
 
   void _changeTestCode() {
     for (final student in _students) { student.dispose(); }
-    setState(() { _students = []; _test = null; _chapter.clear(); _portions.clear(); _hasExistingMarks = false; _editingExisting = false; _approvedEditRequests = {}; _error = null; _message = null; });
+    setState(() { _students = []; _test = null; _chapter.clear(); _portions.clear(); _hasExistingMarks = false; _editingExisting = false; _approvedEditRequests = {}; _markAuditByRoll.clear(); _error = null; _message = null; });
   }
 
   Future<void> _loadStudents() async {
@@ -156,7 +157,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       setState(() { _error = 'Enter a test code to continue.'; _message = null; });
       return;
     }
-    setState(() { _loading = true; _error = null; _message = null; });
+    setState(() { _loading = true; _markAuditByRoll.clear(); _error = null; _message = null; });
     try {
       final response = await _api.get(
         '/regular-mark-entry/${Uri.encodeComponent(code)}',
@@ -182,7 +183,10 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       }
       for (final student in loaded) {
         final saved = marksByRoll[student.rollNo.trim().toUpperCase()];
-        if (saved != null) student.marks.text = (saved['marks_obtained'] ?? '').toString();
+        if (saved != null) {
+          student.marks.text = (saved['marks_obtained'] ?? '').toString();
+          _markAuditByRoll[student.rollNo.trim().toUpperCase()] = saved;
+        }
       }
       final savedDate = DateTime.tryParse((test['test_date'] ?? '').toString());
       if (savedDate != null) _testDate = savedDate;
@@ -334,7 +338,8 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
         'records': records,
       });
       if (!mounted) return;
-      setState(() { _hasExistingMarks = true; _editingExisting = false; _message = 'Marks saved successfully.'; _error = null; });
+      await _loadStudents();
+      if (mounted) setState(() { _message = 'Marks saved successfully.'; _error = null; });
     } catch (error) {
       if (mounted) setState(() => _error = _friendlyError(error, saving: true));
     } finally {
@@ -453,7 +458,8 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
               margin: const EdgeInsets.only(bottom: 8),
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Row(children: [
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  Row(children: [
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(student.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                     Text(student.rollNo, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
@@ -479,6 +485,18 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
                       ),
                     ),
                   ),
+                  ]),
+                  if (_markAuditByRoll[student.rollNo.trim().toUpperCase()] != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        'Entered/updated by: ' +
+                        (_markAuditByRoll[student.rollNo.trim().toUpperCase()]!['updated_by_name'] ?? _markAuditByRoll[student.rollNo.trim().toUpperCase()]!['entered_by_name'] ?? '-').toString() +
+                        '  •  Date: ' +
+                        (DateTime.tryParse((_markAuditByRoll[student.rollNo.trim().toUpperCase()]!['updated_at'] ?? _markAuditByRoll[student.rollNo.trim().toUpperCase()]!['entered_at'] ?? '').toString())?.toLocal().toString().split('.').first ?? '-'),
+                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                    ),
                 ]),
               ),
             )),

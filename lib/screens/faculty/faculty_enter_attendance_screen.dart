@@ -20,6 +20,7 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
   DateTime _date = DateTime.now();
   Map<String, String> _attendance = {};
   final Map<String, String> _savedAttendance = {};
+  final Map<String, Map<String, dynamic>> _attendanceAuditByRoll = {};
   List<Map<String, dynamic>> _editRequests = [];
   final Map<String, String> _editDrafts = {};
   String _busyRoll = '';
@@ -83,7 +84,7 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final picked = await showDatePicker(context: context, initialDate: _date.isAfter(today) ? today : _date, firstDate: DateTime(now.year - 1), lastDate: today);
-    if (picked != null && mounted) setState(() { _date = picked; _students = []; _attendance = {}; _savedAttendance.clear(); _editRequests = []; _editDrafts.clear(); });
+    if (picked != null && mounted) setState(() { _date = picked; _students = []; _attendance = {}; _savedAttendance.clear(); _attendanceAuditByRoll.clear(); _editRequests = []; _editDrafts.clear(); });
   }
 
   Future<void> _loadStudents() async {
@@ -94,7 +95,7 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
     final selected = _classes.firstWhere((c) => '${c['board'] ?? ''}||${c['class'] ?? c['class_name'] ?? ''}' == _classKey);
     final board = (selected['board'] ?? '').toString();
     final cls = (selected['class'] ?? selected['class_name'] ?? '').toString();
-    setState(() { _loadingStudents = true; _students = []; _attendance = {}; _savedAttendance.clear(); _editRequests = []; _editDrafts.clear(); _error = null; });
+    setState(() { _loadingStudents = true; _students = []; _attendance = {}; _savedAttendance.clear(); _attendanceAuditByRoll.clear(); _editRequests = []; _editDrafts.clear(); _error = null; });
     try {
       final response = await _api.get('/students', queryParameters: {'class': cls, 'board': board, 'subject_id': int.parse(_subject)});
       if (response.data is! List) throw Exception('Unexpected students response.');
@@ -107,7 +108,10 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
         for (final item in (report.data as List).whereType<Map>()) {
           final row = Map<String, dynamic>.from(item);
           final roll = _value(row['roll_no']).trim();
-          if (roll.isNotEmpty) _savedAttendance[roll] = _value(row['status']);
+          if (roll.isNotEmpty) {
+            _savedAttendance[roll] = _value(row['status']);
+            _attendanceAuditByRoll[roll] = row;
+          }
         }
       }
       await _loadEditRequests();
@@ -409,6 +413,17 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
                 )
               else if (saved)
                 Text('Saved attendance: ' + (_savedAttendance[roll] ?? ''), style: const TextStyle(fontWeight: FontWeight.w700))
+              if (saved && _attendanceAuditByRoll[roll] != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Entered/updated by: ' +
+                    (_attendanceAuditByRoll[roll]!['edited_by_name'] ?? _attendanceAuditByRoll[roll]!['updated_by_name'] ?? '-').toString() +
+                    '  •  Date: ' +
+                    (DateTime.tryParse((_attendanceAuditByRoll[roll]!['edited_at'] ?? _attendanceAuditByRoll[roll]!['marked_at'] ?? '').toString())?.toLocal().toString().split('.').first ?? '-'),
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                ),
               else
                 DropdownButton<String>(
                   value: _attendance[roll] ?? 'Present',

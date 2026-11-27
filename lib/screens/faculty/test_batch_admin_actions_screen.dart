@@ -369,7 +369,6 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
           initialValue: student.marks.text,
           autofocus: true,
           textCapitalization: TextCapitalization.characters,
-          keyboardType: const TextInputType.numberWithOptions(),
           inputFormatters: [MarksEntryInputFormatter()],
           onChanged: (value) => requestedText = value,
           decoration: const InputDecoration(labelText: 'Requested marks (number or A)'),

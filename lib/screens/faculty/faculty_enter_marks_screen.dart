@@ -190,6 +190,9 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       }
       final savedDate = DateTime.tryParse((test['test_date'] ?? '').toString());
       if (savedDate != null) _testDate = savedDate;
+      // Preserve existing test metadata so an admin can correct marks only.
+      _chapter.text = (test['chapter'] ?? '').toString();
+      _portions.text = (test['portion'] ?? '').toString();
       if (loaded.isEmpty) throw DioException(
         requestOptions: RequestOptions(path: '/regular-mark-entry'),
         response: Response(
@@ -218,7 +221,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
         } catch (_) {}
       }
       setState(() {
-        _students = loaded; _test = test; _chapter.clear(); _portions.clear(); _hasExistingMarks = marksByRoll.isNotEmpty;
+        _students = loaded; _test = test; _hasExistingMarks = marksByRoll.isNotEmpty;
         _editingExisting = marksByRoll.isEmpty; _approvedEditRequests = approved; _testCode.text = code;
       });
     } catch (error) {
@@ -282,13 +285,17 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   Future<void> _saveMarks() async {
     if (_students.isEmpty || _test == null || _saving) return;
     final chapterValue = _chapter.text.trim();
-    if (!RegExp(r'^(?:[1-9]\d*|combined)$', caseSensitive: false).hasMatch(chapterValue)) {
-      setState(() => _error = 'Chapter must be a number or combined.');
-      return;
-    }
-    if (_portions.text.trim().isEmpty) {
-      setState(() => _error = 'Enter the portions for this test.');
-      return;
+    final isAdminMarksCorrection = _hasExistingMarks && _isAdmin && _editingExisting;
+    // Existing test metadata is retained for marks-only corrections.
+    if (!isAdminMarksCorrection) {
+      if (!RegExp(r'^(?:[1-9]\d*|combined)$', caseSensitive: false).hasMatch(chapterValue)) {
+        setState(() => _error = 'Chapter must be a number or combined.');
+        return;
+      }
+      if (_portions.text.trim().isEmpty) {
+        setState(() => _error = 'Enter the portions for this test.');
+        return;
+      }
     }
     final missing = _students.where((s) => s.marks.text.trim().isEmpty).toList();
     if (missing.isNotEmpty) {

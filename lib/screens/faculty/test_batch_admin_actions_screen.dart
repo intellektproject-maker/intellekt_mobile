@@ -816,6 +816,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
   final Map<String, String?> _status = {};
   final Map<String, Map<String, dynamic>> _approvedAttendanceEdits = {};
   final Map<String, Map<String, dynamic>> _pendingAttendanceEdits = {};
+  Map<String, dynamic>? _overallAttendanceRequest;
   bool _loading = false, _saving = false;
   bool get _isFaculty => !const {'IG001', 'IG002'}.contains(widget.adminId.trim().toUpperCase());
 
@@ -864,6 +865,11 @@ class _AttendanceTabState extends State<_AttendanceTab> {
           ..addEntries(mineRows.where((row) => row['record_type'] == 'attendance' &&
               row['roll_no'] != '*' && row['status'] == 'Pending' && _attendanceRequestMatchesSelectedDate(row))
               .map((row) => MapEntry(row['roll_no'].toString().trim().toUpperCase(), row)));
+        _overallAttendanceRequest = rows.where((row) => row['record_type'] == 'attendance' &&
+            row['roll_no'] == '*' && _attendanceRequestMatchesSelectedDate(row)).cast<Map<String, dynamic>?>().firstOrNull
+            ?? mineRows.where((row) => row['record_type'] == 'attendance' && row['roll_no'] == '*' &&
+                row['status'] == 'Pending' && _attendanceRequestMatchesSelectedDate(row))
+                .cast<Map<String, dynamic>?>().firstOrNull;
       });
     } catch (_) {}
   }
@@ -894,6 +900,57 @@ class _AttendanceTabState extends State<_AttendanceTab> {
         _message = 'Attendance edit request sent. This record is locked until admin review.';
       });
     } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
+  }
+
+  Future<void> _requestOverallAttendanceEdit() async {
+    if (!_isFaculty || _saving || _students.where((s) => _savedAttendanceStatus(s) != null).isEmpty) return;
+    try {
+      final response = await widget.api.post('/test-batch/record-edit-requests', data: {
+        'facultyId': widget.adminId,
+        'recordType': 'attendance',
+        'roll_no': '*',
+        'attendance_date': _dateString,
+        'requested_value': 'EDIT_PERMISSION',
+      });
+      final request = response.data is Map && response.data['request'] is Map
+          ? Map<String, dynamic>.from(response.data['request'] as Map)
+          : <String, dynamic>{'status': 'Pending', 'roll_no': '*', 'attendance_date': _dateString};
+      if (mounted) setState(() {
+        _overallAttendanceRequest = request;
+        _message = 'Overall attendance edit request sent. Saved attendance is locked until admin review.';
+      });
+    } catch (e) {
+      if (mounted) setState(() => _error = _messageOfError(e));
+    }
+  }
+
+  Future<void> _applyOverallAttendanceEdit() async {
+    final request = _overallAttendanceRequest;
+    if (!_isFaculty || request == null || request['status'] != 'Approved' || _saving) return;
+    final records = _students.where((s) => _savedAttendanceStatus(s) != null).map((s) {
+      final roll = (s['roll_no'] ?? '').toString();
+      return {'roll_no': roll, 'status': _status[roll]};
+    }).toList();
+    if (records.isEmpty || records.any((row) => !const {'Present', 'Absent'}.contains(row['status']))) {
+      setState(() => _error = 'Please select Present or Absent for every saved student before saving overall attendance.');
+      return;
+    }
+    setState(() { _saving = true; _error = null; _message = null; });
+    try {
+      await widget.api.post('/test-batch/record-edit-requests/${request['id']}/apply', data: {
+        'facultyId': widget.adminId,
+        'records': records,
+      });
+      if (mounted) setState(() {
+        _overallAttendanceRequest = null;
+        _message = 'Overall attendance saved for ${records.length} students.';
+      });
+      await _load();
+    } catch (e) {
+      if (mounted) setState(() => _error = _messageOfError(e));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   Future<void> _applyApprovedAttendanceEdit(String roll) async {
@@ -966,6 +1023,15 @@ class _AttendanceTabState extends State<_AttendanceTab> {
       const Text('Test Batch attendance', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.primary)),
       OutlinedButton.icon(onPressed: _pickDate, icon: const Icon(Icons.calendar_month_outlined), label: Text('Writing date: $_dateString')),
       FilledButton.icon(onPressed: _loading ? null : _load, icon: const Icon(Icons.people_outline), label: Text(_loading ? 'Loading...' : 'Load registered students')),
+      if (_isFaculty && _students.any((s) => _savedAttendanceStatus(s) != null)) ...[
+        const SizedBox(height: 8),
+        if (_overallAttendanceRequest?['status'] == 'Pending')
+          const OutlinedButton(onPressed: null, child: Text('Overall Edit Request Pending'))
+        else if (_overallAttendanceRequest?['status'] == 'Approved')
+          FilledButton.icon(onPressed: _saving ? null : _applyOverallAttendanceEdit, icon: const Icon(Icons.save_outlined), label: Text(_saving ? 'Saving overall...' : 'Save Overall Attendance'))
+        else
+          OutlinedButton.icon(onPressed: _saving ? null : _requestOverallAttendanceEdit, icon: const Icon(Icons.edit_note), label: const Text('Request Overall Edit')),
+      ],
     ]))),
     if (_error != null) _notice(_error!, true),
     if (_message != null) _notice(_message!, false),
@@ -982,7 +1048,8 @@ class _AttendanceTabState extends State<_AttendanceTab> {
       final roll = (s['roll_no'] ?? '').toString();
       final savedStatus = _savedAttendanceStatus(s);
       final hasPendingRequest = _pendingAttendanceEdits.containsKey(roll.trim().toUpperCase());
-      final canMark = !(_isFaculty && savedStatus != null) && !hasPendingRequest;
+      final overallApproved = _overallAttendanceRequest?['status'] == 'Approved';
+      final canMark = !hasPendingRequest && (!(_isFaculty && savedStatus != null) || overallApproved);
       return Card(
         child: Padding(
           padding: const EdgeInsets.all(12),

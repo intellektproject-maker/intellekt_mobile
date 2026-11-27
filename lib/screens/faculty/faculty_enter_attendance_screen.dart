@@ -238,21 +238,18 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
     }
     setState(() => _saving = true);
     try {
-      for (final record in records) {
-        await _api.post('/record-edit-requests/' + _value(request['id']) + '/apply', data: {
-          'facultyId': _facultyId,
+      await _api.post('/record-edit-requests/' + _value(request['id']) + '/apply-bulk', data: {
+        'facultyId': _facultyId,
+        'records': records.map((record) => {
           'roll_no': record.key,
           'newValue': record.value,
-        });
-      }
-      await _api.post('/record-edit-requests/' + _value(request['id']) + '/finish', data: {
-        'facultyId': _facultyId,
+        }).toList(),
       });
       if (!mounted) return;
       _show('Overall attendance saved for ${records.length} student(s). Edit access is now closed.');
       await _loadStudents();
     } catch (e) {
-      _show('Could not save all overall attendance changes. Some changes may have been saved; reload and review before retrying. ' + e.toString().replaceFirst('Exception: ', ''));
+      _show('Overall attendance was not saved. No partial changes should be applied; reload and review before retrying. ' + e.toString().replaceFirst('Exception: ', ''));
       await _loadStudents();
     } finally {
       if (mounted) setState(() => _saving = false);

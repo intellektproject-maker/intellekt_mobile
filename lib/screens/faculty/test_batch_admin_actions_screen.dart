@@ -841,6 +841,11 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     );
   }
 
+  bool _attendanceRequestMatchesSelectedDate(Map<String, dynamic> request) {
+    final date = (request['attendance_date'] ?? '').toString();
+    return date.startsWith(_dateString);
+  }
+
   Future<void> _loadApprovedAttendanceEdits() async {
     if (!_isFaculty) return;
     try {
@@ -852,12 +857,12 @@ class _AttendanceTabState extends State<_AttendanceTab> {
       setState(() {
         _approvedAttendanceEdits
           ..clear()
-          ..addEntries(rows.where((row) => row['record_type'] == 'attendance' && row['roll_no'] != '*')
+          ..addEntries(rows.where((row) => row['record_type'] == 'attendance' && row['roll_no'] != '*' && _attendanceRequestMatchesSelectedDate(row))
               .map((row) => MapEntry(row['roll_no'].toString().trim().toUpperCase(), row)));
         _pendingAttendanceEdits
           ..clear()
           ..addEntries(mineRows.where((row) => row['record_type'] == 'attendance' &&
-              row['roll_no'] != '*' && row['status'] == 'Pending')
+              row['roll_no'] != '*' && row['status'] == 'Pending' && _attendanceRequestMatchesSelectedDate(row))
               .map((row) => MapEntry(row['roll_no'].toString().trim().toUpperCase(), row)));
       });
     } catch (_) {}

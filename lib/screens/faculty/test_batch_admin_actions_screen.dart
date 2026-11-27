@@ -865,11 +865,24 @@ class _AttendanceTabState extends State<_AttendanceTab> {
           ..addEntries(mineRows.where((row) => row['record_type'] == 'attendance' &&
               row['roll_no'] != '*' && row['status'] == 'Pending' && _attendanceRequestMatchesSelectedDate(row))
               .map((row) => MapEntry(row['roll_no'].toString().trim().toUpperCase(), row)));
-        _overallAttendanceRequest = rows.where((row) => row['record_type'] == 'attendance' &&
-            row['roll_no'] == '*' && _attendanceRequestMatchesSelectedDate(row)).cast<Map<String, dynamic>?>().firstOrNull
-            ?? mineRows.where((row) => row['record_type'] == 'attendance' && row['roll_no'] == '*' &&
-                row['status'] == 'Pending' && _attendanceRequestMatchesSelectedDate(row))
-                .cast<Map<String, dynamic>?>().firstOrNull;
+        Map<String, dynamic>? overallRequest;
+        for (final row in rows) {
+          if (row['record_type'] == 'attendance' && row['roll_no'] == '*' &&
+              _attendanceRequestMatchesSelectedDate(row)) {
+            overallRequest = row;
+            break;
+          }
+        }
+        if (overallRequest == null) {
+          for (final row in mineRows) {
+            if (row['record_type'] == 'attendance' && row['roll_no'] == '*' &&
+                row['status'] == 'Pending' && _attendanceRequestMatchesSelectedDate(row)) {
+              overallRequest = row;
+              break;
+            }
+          }
+        }
+        _overallAttendanceRequest = overallRequest;
       });
     } catch (_) {}
   }

@@ -58,7 +58,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       final data = error.response?.data;
       final detail = data is Map ? (data['error'] ?? data['message'])?.toString().toLowerCase() ?? '' : '';
       if (detail.contains('pending') || detail.contains('approved') || detail.contains('edit request')) {
-        return 'An edit request for this student is already pending or approved.';
+        return 'An edit request for this student or the overall test is already pending or approved.';
       }
       if (detail.contains('already taken') || detail.contains('duplicate')) {
         return 'This test code is already taken. Please enter a different test code.';
@@ -550,13 +550,23 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
                   child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                     const Text('Overall test edit access', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary)),
                     const SizedBox(height: 8),
-                    if (_overallEditRequest?['status'] == 'Pending')
-                      const Text('Overall edit request is pending admin approval.')
-                    else if (_overallEditRequest?['status'] == 'Approved')
-                      const Text('Overall edit access approved. You can edit marks for all students below.')
-                    else
+                    if (_overallEditRequest?['status'] == 'Pending') ...[
+                      const Text('Overall edit request is pending admin approval.'),
+                      TextButton.icon(
+                        onPressed: _loading ? null : _loadStudents,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Refresh approval status'),
+                      ),
+                    ] else if (_overallEditRequest?['status'] == 'Approved') ...[
+                      const Text('Overall edit access approved. You can edit marks for all students below.'),
+                      TextButton.icon(
+                        onPressed: _loading ? null : _loadStudents,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Refresh marks and approval'),
+                      ),
+                    ] else
                       OutlinedButton.icon(
-                        onPressed: _saving ? null : _requestOverallMarkEdit,
+                        onPressed: (_saving || _loading) ? null : _requestOverallMarkEdit,
                         icon: const Icon(Icons.edit_outlined),
                         label: const Text('Request Edit Access for Entire Test'),
                       ),

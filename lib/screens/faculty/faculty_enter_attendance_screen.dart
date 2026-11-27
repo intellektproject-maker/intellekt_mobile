@@ -224,6 +224,41 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
     finally { if (mounted) setState(() => _busyRoll = ''); }
   }
 
+  Future<void> _saveOverallAttendanceEdits() async {
+    final request = _overallAttendanceRequest;
+    if (!_overallAttendanceApproved || request == null || _saving) return;
+    final records = _editDrafts.entries
+        .where((entry) => _savedAttendance.containsKey(entry.key) &&
+            entry.value != _savedAttendance[entry.key])
+        .map((entry) => MapEntry(entry.key, entry.value))
+        .toList();
+    if (records.isEmpty) {
+      _show('No attendance changes to save.');
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      for (final record in records) {
+        await _api.post('/record-edit-requests/' + _value(request['id']) + '/apply', data: {
+          'facultyId': _facultyId,
+          'roll_no': record.key,
+          'newValue': record.value,
+        });
+      }
+      await _api.post('/record-edit-requests/' + _value(request['id']) + '/finish', data: {
+        'facultyId': _facultyId,
+      });
+      if (!mounted) return;
+      _show('Overall attendance saved for ${records.length} student(s). Edit access is now closed.');
+      await _loadStudents();
+    } catch (e) {
+      _show('Could not save all overall attendance changes. Some changes may have been saved; reload and review before retrying. ' + e.toString().replaceFirst('Exception: ', ''));
+      await _loadStudents();
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   Future<void> _finishOverallAttendanceEdit() async {
     final request = _overallAttendanceRequest;
     if (!_overallAttendanceApproved || request == null) return;
@@ -397,9 +432,10 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
                   icon: const Icon(Icons.edit_note),
                   label: Text(_busyRoll == '*' ? 'Sending...' : _overallAttendanceRequest?['status'] == 'Pending' ? 'Request pending' : _overallAttendanceApproved ? 'Approved' : 'Request overall edit'),
                 ),
-                if (_overallAttendanceApproved) FilledButton(
-                  onPressed: _busyRoll == '*' ? null : _finishOverallAttendanceEdit,
-                  child: const Text('Finish overall edit'),
+                if (_overallAttendanceApproved) FilledButton.icon(
+                  onPressed: _saving || _busyRoll == '*' ? null : _saveOverallAttendanceEdits,
+                  icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined),
+                  label: Text(_saving ? 'Saving overall attendance...' : 'Save Overall Attendance'),
                 ),
               ]),
             ]),
@@ -466,7 +502,7 @@ class _FacultyEnterAttendanceScreenState extends State<FacultyEnterAttendanceScr
                   icon: const Icon(Icons.lock_open),
                   label: Text(_busyRoll == roll ? 'Sending...' : pending ? 'Request pending' : 'Request edit'),
                 ),
-                if (approved) FilledButton(
+                if (approved && !_overallAttendanceApproved) FilledButton(
                   onPressed: _busyRoll == roll ? null : () => _applyApprovedAttendanceEdit(s),
                   child: Text(_busyRoll == roll ? 'Saving...' : 'Save approved edit'),
                 ),

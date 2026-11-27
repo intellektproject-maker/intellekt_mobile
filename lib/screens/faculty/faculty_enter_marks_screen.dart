@@ -33,6 +33,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   DateTime _testDate = DateTime.now();
   bool _hasExistingMarks = false, _editingExisting = false;
   Map<String, Map<String, dynamic>> _approvedEditRequests = {};
+  Map<String, Map<String, dynamic>> _pendingEditRequests = {};
   Map<String, dynamic>? _overallEditRequest;
   final Map<String, Map<String, dynamic>> _markAuditByRoll = {};
   bool get _isAdmin => const {'IG001','IG002'}.contains(widget.facultyId.trim().toUpperCase());
@@ -104,6 +105,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
     );
     if (confirmed != true) return;
     try {
+      final rollKey = student.rollNo.trim().toUpperCase();
       await _api.post('/record-edit-requests', data: {
         'facultyId': widget.facultyId,
         'recordType': 'marks',
@@ -112,8 +114,9 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
         'requested_value': 'EDIT_PERMISSION',
       });
       if (mounted) setState(() {
+        _pendingEditRequests[rollKey] = {'status': 'Pending'};
         _error = null;
-        _message = 'Edit permission request sent to the admin.';
+        _message = 'Edit permission request sent to the admin. Marks remain locked until approval.';
       });
       await _loadStudents();
     } catch (error) {
@@ -310,6 +313,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       }
       for (final student in _students) { student.dispose(); }
       final approved = <String, Map<String, dynamic>>{};
+      final pending = <String, Map<String, dynamic>>{};
       Map<String, dynamic>? overallEditRequest;
       if (!_isAdmin && marksByRoll.isNotEmpty) {
         try {
@@ -324,6 +328,8 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
               overallEditRequest = Map<String, dynamic>.from(row);
             } else if (row['status'] == 'Approved') {
               approved[roll] = Map<String, dynamic>.from(row);
+            } else if (row['status'] == 'Pending') {
+              pending[roll] = Map<String, dynamic>.from(row);
             }
           }
         } catch (_) {}
@@ -331,7 +337,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       setState(() {
         _students = loaded; _test = test; _hasExistingMarks = marksByRoll.isNotEmpty;
         _editingExisting = marksByRoll.isEmpty; _approvedEditRequests = approved;
-        _overallEditRequest = overallEditRequest; _testCode.text = code;
+        _pendingEditRequests = pending; _overallEditRequest = overallEditRequest; _testCode.text = code;
       });
     } catch (error) {
       if (mounted) setState(() => _error = _friendlyError(error));
@@ -618,14 +624,18 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
                   ])),
                   if (_hasExistingMarks && !_isAdmin && !['Pending', 'Approved'].contains((_overallEditRequest?['status'] ?? '').toString()))
                     Column(mainAxisSize: MainAxisSize.min, children: [
-                      TextButton(onPressed: _saving ? null : () => _requestMarkEdit(student), child: const Text('Request Edit')),
-                      if (_approvedEditRequests.containsKey(student.rollNo.trim().toUpperCase()))
-                        TextButton(onPressed: _saving ? null : () => _applyApprovedMarkEdit(student), child: const Text('Save Approved Edit')),
+                      if (_pendingEditRequests.containsKey(student.rollNo.trim().toUpperCase()))
+                        const Text('Request Pending', style: TextStyle(fontSize: 12, color: AppColors.textSecondary))
+                      else if (_approvedEditRequests.containsKey(student.rollNo.trim().toUpperCase()))
+                        TextButton(onPressed: _saving ? null : () => _applyApprovedMarkEdit(student), child: const Text('Save Approved Edit'))
+                      else
+                        TextButton(onPressed: _saving ? null : () => _requestMarkEdit(student), child: const Text('Request Edit')),
                     ]),
                   SizedBox(
                     width: 120,
                     child: TextField(
                       controller: student.marks,
+                      enabled: !_hasExistingMarks || _isAdmin || _editingExisting || _approvedEditRequests.containsKey(student.rollNo.trim().toUpperCase()) || _overallEditRequest?['status'] == 'Approved',
                       readOnly: _hasExistingMarks && (!_isAdmin || !_editingExisting) && !_approvedEditRequests.containsKey(student.rollNo.trim().toUpperCase()) && _overallEditRequest?['status'] != 'Approved',
                       keyboardType: TextInputType.text,
                       textCapitalization: TextCapitalization.characters,

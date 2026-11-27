@@ -815,6 +815,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
   List<Map<String, dynamic>> get _visibleStudents => filterStudentsByAcademicYear(_students, fromYear: _academicYearFrom, toYear: _academicYearTo);
   final Map<String, String?> _status = {};
   final Map<String, Map<String, dynamic>> _approvedAttendanceEdits = {};
+  final Map<String, Map<String, dynamic>> _pendingAttendanceEdits = {};
   bool _loading = false, _saving = false;
   bool get _isFaculty => !const {'IG001', 'IG002'}.contains(widget.adminId.trim().toUpperCase());
 
@@ -845,9 +846,19 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     try {
       final response = await widget.api.get('/test-batch/record-edit-requests/approved', queryParameters: {'facultyId': widget.adminId});
       final rows = response.data is List ? (response.data as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : <Map<String, dynamic>>[];
+      final mineResponse = await widget.api.get('/test-batch/record-edit-requests/mine', queryParameters: {'facultyId': widget.adminId});
+      final mineRows = mineResponse.data is List ? (mineResponse.data as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : <Map<String, dynamic>>[];
       if (!mounted) return;
       setState(() {
-        _approvedAttendanceEdits..clear()..addEntries(rows.where((row) => row['record_type'] == 'attendance' && row['roll_no'] != '*').map((row) => MapEntry(row['roll_no'].toString().toUpperCase(), row)));
+        _approvedAttendanceEdits
+          ..clear()
+          ..addEntries(rows.where((row) => row['record_type'] == 'attendance' && row['roll_no'] != '*')
+              .map((row) => MapEntry(row['roll_no'].toString().trim().toUpperCase(), row)));
+        _pendingAttendanceEdits
+          ..clear()
+          ..addEntries(mineRows.where((row) => row['record_type'] == 'attendance' &&
+              row['roll_no'] != '*' && row['status'] == 'Pending')
+              .map((row) => MapEntry(row['roll_no'].toString().trim().toUpperCase(), row)));
       });
     } catch (_) {}
   }
@@ -869,8 +880,14 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     ));
     if (value == null) return;
     try {
-      await widget.api.post('/test-batch/record-edit-requests', data: {'facultyId': widget.adminId, 'recordType': 'attendance', 'roll_no': roll, 'attendance_date': _dateString, 'requested_value': value});
-      if (mounted) setState(() => _message = 'Attendance edit request sent to the admin.');
+      final response = await widget.api.post('/test-batch/record-edit-requests', data: {'facultyId': widget.adminId, 'recordType': 'attendance', 'roll_no': roll, 'attendance_date': _dateString, 'requested_value': value});
+      final request = response.data is Map && response.data['request'] is Map
+          ? Map<String, dynamic>.from(response.data['request'] as Map)
+          : <String, dynamic>{'status': 'Pending'};
+      if (mounted) setState(() {
+        _pendingAttendanceEdits[roll.trim().toUpperCase()] = request;
+        _message = 'Attendance edit request sent. This record is locked until admin review.';
+      });
     } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
   }
 
@@ -879,7 +896,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     if (request == null) return;
     try {
       await widget.api.post('/test-batch/record-edit-requests/${request['id']}/apply', data: {'facultyId': widget.adminId});
-      if (mounted) { setState(() { _approvedAttendanceEdits.remove(roll); _message = 'Approved attendance edit applied for $roll.'; }); await _load(); }
+      if (mounted) { setState(() { _approvedAttendanceEdits.remove(roll); _pendingAttendanceEdits.remove(roll); _message = 'Approved attendance edit applied for $roll.'; }); await _load(); }
     } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
   }
   String? _error, _message;
@@ -959,7 +976,8 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     ..._visibleStudents.map((s) {
       final roll = (s['roll_no'] ?? '').toString();
       final savedStatus = _savedAttendanceStatus(s);
-      final canMark = !(_isFaculty && savedStatus != null);
+      final hasPendingRequest = _pendingAttendanceEdits.containsKey(roll.trim().toUpperCase());
+      final canMark = !(_isFaculty && savedStatus != null) && !hasPendingRequest;
       return Card(
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -979,21 +997,36 @@ class _AttendanceTabState extends State<_AttendanceTab> {
                           if (action == 'apply') _applyApprovedAttendanceEdit(roll);
                         },
                         itemBuilder: (_) => [
-                          const PopupMenuItem(value: 'request', child: Text('Request Edit')),
-                          if (_approvedAttendanceEdits.containsKey(roll))
-                            const PopupMenuItem(value: 'apply', child: Text('Apply Approved Edit')),
+                          if (hasPendingRequest)
+                            const PopupMenuItem(enabled: false, child: Text('Request Pending'))
+                          else if (_approvedAttendanceEdits.containsKey(roll.trim().toUpperCase()))
+                            const PopupMenuItem(value: 'apply', child: Text('Apply Approved Edit'))
+                          else
+                            const PopupMenuItem(value: 'request', child: Text('Request Edit')),
                         ],
                       )
                     : null,
               ),
-              Wrap(
-                spacing: 12,
-                runSpacing: 4,
-                children: [
-                  _attendanceRadioOption(roll, 'Present', canMark),
-                  _attendanceRadioOption(roll, 'Absent', canMark),
-                ],
+              Opacity(
+                opacity: canMark ? 1 : 0.48,
+                child: IgnorePointer(
+                  ignoring: !canMark,
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 4,
+                    children: [
+                      _attendanceRadioOption(roll, 'Present', canMark),
+                      _attendanceRadioOption(roll, 'Absent', canMark),
+                    ],
+                  ),
+                ),
               ),
+              if (hasPendingRequest)
+                const Padding(
+                  padding: EdgeInsets.only(top: 6),
+                  child: Text('Attendance edit request pending admin approval. This record is locked.',
+                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                ),
             ],
           ),
         ),

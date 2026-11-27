@@ -33,6 +33,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
   DateTime _testDate = DateTime.now();
   bool _hasExistingMarks = false, _editingExisting = false;
   Map<String, Map<String, dynamic>> _approvedEditRequests = {};
+  Map<String, dynamic>? _overallEditRequest;
   final Map<String, Map<String, dynamic>> _markAuditByRoll = {};
   bool get _isAdmin => const {'IG001','IG002'}.contains(widget.facultyId.trim().toUpperCase());
   bool _loading = false;
@@ -120,6 +121,108 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
     }
   }
 
+  Future<void> _requestOverallMarkEdit() async {
+    if (!_hasExistingMarks || _testCode.text.trim().isEmpty) {
+      setState(() => _error = 'Load a test with saved marks before requesting overall edit access.');
+      return;
+    }
+    final currentStatus = (_overallEditRequest?['status'] ?? '').toString();
+    if (currentStatus == 'Pending') {
+      setState(() => _message = 'An overall edit request is already pending with the admin.');
+      return;
+    }
+    if (currentStatus == 'Approved') {
+      setState(() => _message = 'Overall edit access is already approved for this test.');
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Request overall marks edit'),
+        content: Text('Request admin approval to edit saved marks for every student in test ${_testCode.text.trim().toUpperCase()}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Request edit')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      final code = _testCode.text.trim().toUpperCase();
+      await _api.post('/record-edit-requests', data: {
+        'facultyId': widget.facultyId,
+        'recordType': 'marks',
+        'roll_no': '*',
+        'test_code': code,
+        'requested_value': 'BULK_EDIT',
+      });
+      await _loadStudents();
+      if (mounted) setState(() {
+        _error = null;
+        _message = 'Overall edit request sent to the admin for test $code.';
+      });
+    } catch (error) {
+      if (mounted) setState(() => _error = _friendlyError(error, saving: true));
+    }
+  }
+
+  Future<void> _saveOverallApprovedMarks() async {
+    final request = _overallEditRequest;
+    if (request == null || request['status'] != 'Approved') {
+      setState(() => _error = 'Admin approval is required before editing the entire test.');
+      return;
+    }
+    final changed = <_RegularMarkStudent>[];
+    for (final student in _students) {
+      final key = student.rollNo.trim().toUpperCase();
+      final oldValue = (_markAuditByRoll[key]?['marks_obtained'] ?? '').toString().trim().toUpperCase();
+      final newValue = student.marks.text.trim().toUpperCase();
+      if (newValue.isEmpty) {
+        setState(() => _error = 'Enter marks or A for absent for ${student.rollNo}.');
+        return;
+      }
+      if (newValue != 'A') {
+        final number = int.tryParse(newValue);
+        final maxMarks = int.tryParse((_test?['total_marks'] ?? '').toString());
+        if (number == null || number < 0 || (maxMarks != null && number > maxMarks)) {
+          setState(() => _error = 'Enter valid marks for ${student.rollNo}; marks cannot exceed the test maximum.');
+          return;
+        }
+      }
+      if (newValue != oldValue) changed.add(student);
+    }
+    if (changed.isEmpty) {
+      setState(() => _message = 'No marks have been changed.');
+      return;
+    }
+    if (!await _confirmSubmit()) return;
+    setState(() { _saving = true; _error = null; _message = null; });
+    try {
+      for (final student in changed) {
+        await _api.post('/record-edit-requests/${request['id']}/apply', data: {
+          'facultyId': widget.facultyId,
+          'roll_no': student.rollNo.trim().toUpperCase(),
+          'newValue': student.marks.text.trim().toUpperCase(),
+        });
+      }
+      await _api.post('/record-edit-requests/${request['id']}/finish', data: {
+        'facultyId': widget.facultyId,
+      });
+      await _loadStudents();
+      if (mounted) setState(() {
+        _error = null;
+        _message = 'All approved marks changes were saved successfully.';
+      });
+    } catch (error) {
+      if (mounted) {
+        await _loadStudents();
+        setState(() => _error = _friendlyError(error, saving: true));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   Future<void> _applyApprovedMarkEdit(_RegularMarkStudent student) async {
     final key = student.rollNo.trim().toUpperCase();
     final request = _approvedEditRequests[key];
@@ -148,7 +251,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
 
   void _changeTestCode() {
     for (final student in _students) { student.dispose(); }
-    setState(() { _students = []; _test = null; _chapter.clear(); _portions.clear(); _hasExistingMarks = false; _editingExisting = false; _approvedEditRequests = {}; _markAuditByRoll.clear(); _error = null; _message = null; });
+    setState(() { _students = []; _test = null; _chapter.clear(); _portions.clear(); _hasExistingMarks = false; _editingExisting = false; _approvedEditRequests = {}; _overallEditRequest = null; _markAuditByRoll.clear(); _error = null; _message = null; });
   }
 
   Future<void> _loadStudents() async {
@@ -207,22 +310,28 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       }
       for (final student in _students) { student.dispose(); }
       final approved = <String, Map<String, dynamic>>{};
+      Map<String, dynamic>? overallEditRequest;
       if (!_isAdmin && marksByRoll.isNotEmpty) {
         try {
-          final approvedResponse = await _api.get('/record-edit-requests/approved', queryParameters: {'facultyId': widget.facultyId});
-          final rows = approvedResponse.data is List ? (approvedResponse.data as List).whereType<Map>() : const <Map>[];
+          final requestsResponse = await _api.get('/record-edit-requests/mine', queryParameters: {'facultyId': widget.facultyId});
+          final rows = requestsResponse.data is List ? (requestsResponse.data as List).whereType<Map>() : const <Map>[];
           for (final row in rows) {
-            if ((row['record_type'] ?? '').toString() == 'marks' && (row['status'] ?? '').toString() == 'Approved' &&
-                (row['test_code'] ?? '').toString().trim().toUpperCase() == code &&
-                (row['roll_no'] ?? '').toString().trim() != '*') {
-              approved[(row['roll_no'] ?? '').toString().trim().toUpperCase()] = Map<String, dynamic>.from(row);
+            if ((row['record_type'] ?? '').toString() != 'marks' ||
+                !['Pending', 'Approved'].contains((row['status'] ?? '').toString()) ||
+                (row['test_code'] ?? '').toString().trim().toUpperCase() != code) continue;
+            final roll = (row['roll_no'] ?? '').toString().trim().toUpperCase();
+            if (roll == '*') {
+              overallEditRequest = Map<String, dynamic>.from(row);
+            } else if (row['status'] == 'Approved') {
+              approved[roll] = Map<String, dynamic>.from(row);
             }
           }
         } catch (_) {}
       }
       setState(() {
         _students = loaded; _test = test; _hasExistingMarks = marksByRoll.isNotEmpty;
-        _editingExisting = marksByRoll.isEmpty; _approvedEditRequests = approved; _testCode.text = code;
+        _editingExisting = marksByRoll.isEmpty; _approvedEditRequests = approved;
+        _overallEditRequest = overallEditRequest; _testCode.text = code;
       });
     } catch (error) {
       if (mounted) setState(() => _error = _friendlyError(error));
@@ -284,6 +393,10 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
 
   Future<void> _saveMarks() async {
     if (_students.isEmpty || _test == null || _saving) return;
+    if (_hasExistingMarks && !_isAdmin && _overallEditRequest?['status'] == 'Approved') {
+      await _saveOverallApprovedMarks();
+      return;
+    }
     final chapterValue = _chapter.text.trim();
     final isAdminMarksCorrection = _hasExistingMarks && _isAdmin && _editingExisting;
     // Existing test metadata is retained for marks-only corrections.
@@ -429,6 +542,28 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
                 ),
               ),
             ),
+            if (_hasExistingMarks && !_isAdmin) ...[
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    const Text('Overall test edit access', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary)),
+                    const SizedBox(height: 8),
+                    if (_overallEditRequest?['status'] == 'Pending')
+                      const Text('Overall edit request is pending admin approval.')
+                    else if (_overallEditRequest?['status'] == 'Approved')
+                      const Text('Overall edit access approved. You can edit marks for all students below.')
+                    else
+                      OutlinedButton.icon(
+                        onPressed: _saving ? null : _requestOverallMarkEdit,
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Request Edit Access for Entire Test'),
+                      ),
+                  ]),
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             TextField(
               controller: _chapter,
@@ -471,7 +606,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
                     Text(student.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                     Text(student.rollNo, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                   ])),
-                  if (_hasExistingMarks && !_isAdmin)
+                  if (_hasExistingMarks && !_isAdmin && !['Pending', 'Approved'].contains((_overallEditRequest?['status'] ?? '').toString()))
                     Column(mainAxisSize: MainAxisSize.min, children: [
                       TextButton(onPressed: _saving ? null : () => _requestMarkEdit(student), child: const Text('Request Edit')),
                       if (_approvedEditRequests.containsKey(student.rollNo.trim().toUpperCase()))
@@ -481,7 +616,7 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
                     width: 120,
                     child: TextField(
                       controller: student.marks,
-                      readOnly: _hasExistingMarks && (!_isAdmin || !_editingExisting) && !_approvedEditRequests.containsKey(student.rollNo.trim().toUpperCase()),
+                      readOnly: _hasExistingMarks && (!_isAdmin || !_editingExisting) && !_approvedEditRequests.containsKey(student.rollNo.trim().toUpperCase()) && _overallEditRequest?['status'] != 'Approved',
                       keyboardType: TextInputType.text,
                       textCapitalization: TextCapitalization.characters,
                       inputFormatters: [MarksEntryInputFormatter()],
@@ -508,10 +643,10 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
               ),
             )),
             const SizedBox(height: 8),
-            if (!_hasExistingMarks || (_isAdmin && _editingExisting))
+            if (!_hasExistingMarks || (_isAdmin && _editingExisting) || (_hasExistingMarks && !_isAdmin && _overallEditRequest?['status'] == 'Approved'))
               ElevatedButton(onPressed: _saving ? null : _saveMarks,
                 child: _saving ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text(_hasExistingMarks ? 'Save Changes' : 'Save Marks')),
+                  : Text(_hasExistingMarks && !_isAdmin ? 'Save All Approved Edits' : (_hasExistingMarks ? 'Save Changes' : 'Save Marks'))),
           ],
         ],
       ),

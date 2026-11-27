@@ -104,8 +104,13 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
       ),
     );
     if (confirmed != true) return;
+    final rollKey = student.rollNo.trim().toUpperCase();
+    if (mounted) setState(() {
+      _pendingEditRequests[rollKey] = {'status': 'Pending'};
+      _error = null;
+      _message = 'Edit request submitted. Marks are locked while waiting for admin approval.';
+    });
     try {
-      final rollKey = student.rollNo.trim().toUpperCase();
       await _api.post('/record-edit-requests', data: {
         'facultyId': widget.facultyId,
         'recordType': 'marks',
@@ -114,13 +119,14 @@ class _FacultyEnterMarksScreenState extends State<FacultyEnterMarksScreen> {
         'requested_value': 'EDIT_PERMISSION',
       });
       if (mounted) setState(() {
-        _pendingEditRequests[rollKey] = {'status': 'Pending'};
         _error = null;
         _message = 'Edit permission request sent to the admin. Marks remain locked until approval.';
       });
-      await _loadStudents();
     } catch (error) {
-      if (mounted) setState(() => _error = _friendlyError(error, saving: true));
+      if (mounted) setState(() {
+        _pendingEditRequests.remove(rollKey);
+        _error = _friendlyError(error, saving: true);
+      });
     }
   }
 

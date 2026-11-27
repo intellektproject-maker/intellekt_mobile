@@ -999,6 +999,10 @@ class _AttendanceTabState extends State<_AttendanceTab> {
   }
 
   Future<void> _save() async {
+    if (_overallAttendanceRequest?['status'] == 'Approved') {
+      await _applyOverallAttendanceEdit();
+      return;
+    }
     if (_visibleStudents.isEmpty) { setState(() => _error = 'No registered Test Batch students found for this writing date and academic year.'); return; }
     setState(() { _saving = true; _error = null; _message = null; });
     try {
@@ -1117,7 +1121,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
         ),
       );
     }),
-    if (_students.isNotEmpty) FilledButton.icon(onPressed: _saving ? null : _save, icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined), label: Text(_saving ? 'Saving...' : 'Save attendance')),
+    if (_students.isNotEmpty) FilledButton.icon(onPressed: _saving ? null : _save, icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined), label: Text(_saving ? 'Saving...' : (_overallAttendanceRequest?['status'] == 'Approved' ? 'Save Overall Attendance' : 'Save attendance'))),
   ]);
 }
 

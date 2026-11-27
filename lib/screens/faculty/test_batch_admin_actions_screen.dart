@@ -356,21 +356,30 @@ class _EnterMarksTabState extends State<_EnterMarksTab> {
   }
 
   Future<void> _requestMarkEdit(_TestBatchMarkStudent student) async {
-    final controller = TextEditingController(text: student.marks.text);
+    // Let the dialog's TextFormField own its controller. Disposing an external
+    // controller immediately after showDialog returns can happen while the
+    // dialog route is still completing its reverse animation, causing a
+    // Flutter inherited-element/dependent assertion on some devices.
+    var requestedText = student.marks.text;
     final requested = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text('Request marks edit - ${student.rollNo}'),
-        content: TextField(controller: controller, autofocus: true, textCapitalization: TextCapitalization.characters,
+        content: TextFormField(
+          initialValue: student.marks.text,
+          autofocus: true,
+          textCapitalization: TextCapitalization.characters,
+          keyboardType: const TextInputType.numberWithOptions(),
           inputFormatters: [MarksEntryInputFormatter()],
-          decoration: const InputDecoration(labelText: 'Requested marks (number or A)')),
+          onChanged: (value) => requestedText = value,
+          decoration: const InputDecoration(labelText: 'Requested marks (number or A)'),
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim().toUpperCase()), child: const Text('Request edit')),
+          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, requestedText.trim().toUpperCase()), child: const Text('Request edit')),
         ],
       ),
     );
-    controller.dispose();
     if (requested == null || requested.isEmpty || _testCode == null) return;
     final maxMarks = int.tryParse((_test?['total_marks'] ?? '').toString()) ?? 100000;
     final number = int.tryParse(requested);

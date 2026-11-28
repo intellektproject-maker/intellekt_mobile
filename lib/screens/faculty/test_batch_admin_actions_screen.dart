@@ -859,7 +859,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
         _approvedAttendanceEdits
           ..clear()
           ..addEntries(rows.where((row) => row['record_type'] == 'attendance' && row['roll_no'] != '*' && _attendanceRequestMatchesSelectedDate(row))
-              .map((row) => MapEntry(row['roll_no'].toString().trim().toUpperCase(), row)));
+              .map((row) => MapEntry(row['roll_no'].toString().trim().toUpperCase() + '|' + (row['test_code'] ?? '').toString().trim().toUpperCase(), row)));
         _pendingAttendanceEdits
           ..clear()
           ..addEntries(mineRows.where((row) => row['record_type'] == 'attendance' &&
@@ -895,7 +895,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     return const {'Present', 'Absent'}.contains(value) ? value : null;
   }
 
-  Future<void> _requestAttendanceEdit(String roll, String current) async {
+  Future<void> _requestAttendanceEdit(String roll, String testCode, String current) async {
     final value = await showDialog<String>(context: context, builder: (dialogContext) => AlertDialog(
       title: Text('Request attendance edit - $roll / $testCode'),
       content: Column(mainAxisSize: MainAxisSize.min, children: [

@@ -994,8 +994,15 @@ class _AttendanceTabState extends State<_AttendanceTab> {
               const {'Present', 'Absent'}.contains(savedStatus) ? savedStatus : null;
         }
       });
-    } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
-    finally { if (mounted) setState(() => _loading = false); }
+    } catch (e) {
+      // Show the backend's validation message for this attendance load request
+      // instead of Dio's generic HTTP 400 text, so the cause is visible in-app.
+      final detail = e is DioException ? e.response?.data : null;
+      final message = detail is Map
+          ? (detail['error'] ?? detail['message'] ?? detail['details'] ?? detail.toString()).toString()
+          : detail?.toString() ?? _messageOfError(e);
+      if (mounted) setState(() => _error = message);
+    } finally { if (mounted) setState(() => _loading = false); }
   }
 
   Future<void> _save() async {

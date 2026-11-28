@@ -1012,31 +1012,57 @@ class _AttendanceTabState extends State<_AttendanceTab> {
       await _applyOverallAttendanceEdit();
       return;
     }
-    if (_visibleStudents.isEmpty) { setState(() => _error = 'No registered Test Batch students found for this writing date and academic year.'); return; }
+    if (_visibleStudents.isEmpty) {
+      setState(() => _error = 'No registered Test Batch students found for this writing date and academic year.');
+      return;
+    }
+    final unmarked = _visibleStudents.where((s) => _status[_attendanceKey(s)] == null).toList();
+    if (unmarked.isNotEmpty) {
+      setState(() => _error = 'Select Present or Absent for every test registration before saving attendance.');
+      return;
+    }
+    final changed = _visibleStudents.where((s) {
+      final saved = _savedAttendanceStatus(s);
+      final key = _attendanceKey(s);
+      if (!_isFaculty) return true;
+      if (saved == null) return true;
+      return _approvedAttendanceEdits.containsKey(key) && _status[key] != saved;
+    }).toList();
+    if (changed.isEmpty) {
+      setState(() => _message = 'No new attendance entries or approved test-wise edits to save.');
+      return;
+    }
     setState(() { _saving = true; _error = null; _message = null; });
     try {
-      final unmarked = _visibleStudents.where((s) =>
-          _status[_attendanceKey(s)] == null).toList();
-      if (unmarked.isNotEmpty) {
-        setState(() => _error =
-            'Select Present or Absent for every student before saving attendance.');
-        return;
-      }
-      final records = _visibleStudents.where((s) {
-        final saved = s['status']?.toString();
-        final roll = (s['roll_no'] ?? '').toString();
-        return !_isFaculty || _savedAttendanceStatus(s) == null || _status[_attendanceKey(s)] == _savedAttendanceStatus(s);
-      }).map((s) => {
+      final newRecords = changed.where((s) => _savedAttendanceStatus(s) == null).map((s) => {
         'roll_no': s['roll_no'],
         'test_code': s['test_code'],
         'status': _status[_attendanceKey(s)],
       }).toList();
-      if (records.isEmpty) { setState(() => _message = 'No new attendance entries to save. Use Request Edit for saved records.'); return; }
-      await widget.api.post('/test-batch/attendance', data: {'adminId': widget.adminId, 'attendanceDate': _dateString, 'records': records});
-      if (mounted) setState(() => _message = 'Attendance saved for ${records.length} student(s).');
+      if (newRecords.isNotEmpty) {
+        await widget.api.post('/test-batch/attendance', data: {
+          'adminId': widget.adminId,
+          'attendanceDate': _dateString,
+          'records': newRecords,
+        });
+      }
+      final approvedChanges = changed.where((s) => _savedAttendanceStatus(s) != null && _approvedAttendanceEdits.containsKey(_attendanceKey(s))).toList();
+      for (final student in approvedChanges) {
+        final key = _attendanceKey(student);
+        final request = _approvedAttendanceEdits[key];
+        await widget.api.post('/test-batch/record-edit-requests/${request?['id']}/apply', data: {
+          'facultyId': widget.adminId,
+          'newValue': _status[key],
+        });
+        _approvedAttendanceEdits.remove(key);
+      }
+      if (mounted) setState(() => _message = 'Attendance saved for ${changed.length} test registration(s).');
       await _load();
-    } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
-    finally { if (mounted) setState(() => _saving = false); }
+    } catch (e) {
+      if (mounted) setState(() => _error = _messageOfError(e));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   Future<void> _pickDate() async {

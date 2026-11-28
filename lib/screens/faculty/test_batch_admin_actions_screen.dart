@@ -864,7 +864,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
           ..clear()
           ..addEntries(mineRows.where((row) => row['record_type'] == 'attendance' &&
               row['roll_no'] != '*' && row['status'] == 'Pending' && _attendanceRequestMatchesSelectedDate(row))
-              .map((row) => MapEntry(row['roll_no'].toString().trim().toUpperCase(), row)));
+              .map((row) => MapEntry(row['roll_no'].toString().trim().toUpperCase() + '|' + (row['test_code'] ?? '').toString().trim().toUpperCase(), row)));
         Map<String, dynamic>? overallRequest;
         for (final row in rows) {
           if (row['record_type'] == 'attendance' && row['roll_no'] == '*' &&

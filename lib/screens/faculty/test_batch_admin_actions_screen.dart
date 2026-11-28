@@ -896,26 +896,25 @@ class _AttendanceTabState extends State<_AttendanceTab> {
   }
 
   Future<void> _requestAttendanceEdit(String roll, String testCode, String current) async {
-    final value = await showDialog<String>(context: context, builder: (dialogContext) => AlertDialog(
-      title: Text('Request attendance edit - $roll / $testCode'),
-      content: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text('Current status: $current'),
-        ListTile(title: const Text('Present'), onTap: () => Navigator.pop(dialogContext, 'Present')),
-        ListTile(title: const Text('Absent'), onTap: () => Navigator.pop(dialogContext, 'Absent')),
-      ]),
-      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel'))],
-    ));
-    if (value == null) return;
     try {
-      final response = await widget.api.post('/test-batch/record-edit-requests', data: {'facultyId': widget.adminId, 'recordType': 'attendance', 'roll_no': roll, 'test_code': testCode, 'attendance_date': _dateString, 'requested_value': value});
-      final request = response.data is Map && response.data['request'] is Map
-          ? Map<String, dynamic>.from(response.data['request'] as Map)
-          : <String, dynamic>{'status': 'Pending'};
-      if (mounted) setState(() {
-        _pendingAttendanceEdits[roll.trim().toUpperCase() + '|' + testCode.trim().toUpperCase()] = request;
-        _message = 'Attendance edit request sent. This record is locked until admin review.';
+      await widget.api.post('/test-batch/record-edit-requests', data: {
+        'facultyId': widget.adminId,
+        'recordType': 'attendance',
+        'roll_no': roll,
+        'test_code': testCode,
+        'attendance_date': _dateString,
+        'requested_value': 'EDIT_PERMISSION',
       });
-    } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
+      if (mounted) setState(() {
+        _pendingAttendanceEdits[roll.trim().toUpperCase() + '|' + testCode.trim().toUpperCase()] = {
+          'status': 'Pending',
+          'test_code': testCode,
+        };
+        _message = 'Edit permission requested for $testCode. Attendance remains locked until admin approval.';
+      });
+    } catch (e) {
+      if (mounted) setState(() => _error = _messageOfError(e));
+    }
   }
 
   Future<void> _requestOverallAttendanceEdit() async {
@@ -1078,7 +1077,8 @@ class _AttendanceTabState extends State<_AttendanceTab> {
       final key = _attendanceKey(s);
       final hasPendingRequest = _pendingAttendanceEdits.containsKey(key);
       final overallApproved = _overallAttendanceRequest?['status'] == 'Approved';
-      final canMark = !hasPendingRequest && (!(_isFaculty && savedStatus != null) || overallApproved);
+      final hasApprovedEdit = _approvedAttendanceEdits.containsKey(key);
+      final canMark = !hasPendingRequest && (!(_isFaculty && savedStatus != null) || overallApproved || hasApprovedEdit);
       return Card(
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -1095,13 +1095,12 @@ class _AttendanceTabState extends State<_AttendanceTab> {
                         tooltip: 'Edit attendance',
                         onSelected: (action) {
                           if (action == 'request') _requestAttendanceEdit(roll, (s['test_code'] ?? '').toString(), savedStatus);
-                          if (action == 'apply') _applyApprovedAttendanceEdit(roll.trim().toUpperCase() + '|' + (s['test_code'] ?? '').toString().trim().toUpperCase());
                         },
                         itemBuilder: (_) => [
                           if (hasPendingRequest)
                             const PopupMenuItem(enabled: false, child: Text('Request Pending'))
                           else if (_approvedAttendanceEdits.containsKey(key))
-                            const PopupMenuItem(value: 'apply', child: Text('Apply Approved Edit'))
+                            const PopupMenuItem(enabled: false, child: Text('Approved - edit unlocked'))
                           else
                             const PopupMenuItem(value: 'request', child: Text('Request Edit')),
                         ],

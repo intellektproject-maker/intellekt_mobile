@@ -968,14 +968,6 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     }
   }
 
-  Future<void> _applyApprovedAttendanceEdit(String key) async {
-    final request = _approvedAttendanceEdits[key];
-    if (request == null) return;
-    try {
-      await widget.api.post('/test-batch/record-edit-requests/${request['id']}/apply', data: {'facultyId': widget.adminId});
-      if (mounted) { setState(() { _approvedAttendanceEdits.remove(key); _pendingAttendanceEdits.remove(key); _message = 'Approved attendance edit applied.'; }); await _load(); }
-    } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
-  }
   String? _error, _message;
 
   String get _dateString => '${_date.year.toString().padLeft(4, '0')}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}';

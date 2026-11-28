@@ -912,7 +912,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
           ? Map<String, dynamic>.from(response.data['request'] as Map)
           : <String, dynamic>{'status': 'Pending'};
       if (mounted) setState(() {
-        _pendingAttendanceEdits[roll.trim().toUpperCase()] = request;
+        _pendingAttendanceEdits[roll.trim().toUpperCase() + '|' + testCode.trim().toUpperCase()] = request;
         _message = 'Attendance edit request sent. This record is locked until admin review.';
       });
     } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
@@ -945,7 +945,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     if (!_isFaculty || request == null || request['status'] != 'Approved' || _saving) return;
     final records = _students.where((s) => _savedAttendanceStatus(s) != null).map((s) {
       final roll = (s['roll_no'] ?? '').toString();
-      return {'roll_no': roll, 'status': _status[roll]};
+      return {'roll_no': roll, 'test_code': s['test_code'], 'status': _status[_attendanceKey(s)]};
     }).toList();
     if (records.isEmpty || records.any((row) => !const {'Present', 'Absent'}.contains(row['status']))) {
       setState(() => _error = 'Please select Present or Absent for every saved student before saving overall attendance.');
@@ -1026,7 +1026,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
       final records = _visibleStudents.where((s) {
         final saved = s['status']?.toString();
         final roll = (s['roll_no'] ?? '').toString();
-        return !_isFaculty || _savedAttendanceStatus(s) == null || _status[roll] == _savedAttendanceStatus(s);
+        return !_isFaculty || _savedAttendanceStatus(s) == null || _status[_attendanceKey(s)] == _savedAttendanceStatus(s);
       }).map((s) => {
         'roll_no': s['roll_no'],
         'test_code': s['test_code'],
@@ -1075,7 +1075,8 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     ..._visibleStudents.map((s) {
       final roll = (s['roll_no'] ?? '').toString();
       final savedStatus = _savedAttendanceStatus(s);
-      final hasPendingRequest = _pendingAttendanceEdits.containsKey(roll.trim().toUpperCase());
+      final key = _attendanceKey(s);
+      final hasPendingRequest = _pendingAttendanceEdits.containsKey(key);
       final overallApproved = _overallAttendanceRequest?['status'] == 'Approved';
       final canMark = !hasPendingRequest && (!(_isFaculty && savedStatus != null) || overallApproved);
       return Card(
@@ -1099,7 +1100,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
                         itemBuilder: (_) => [
                           if (hasPendingRequest)
                             const PopupMenuItem(enabled: false, child: Text('Request Pending'))
-                          else if (_approvedAttendanceEdits.containsKey(roll.trim().toUpperCase()))
+                          else if (_approvedAttendanceEdits.containsKey(key))
                             const PopupMenuItem(value: 'apply', child: Text('Apply Approved Edit'))
                           else
                             const PopupMenuItem(value: 'request', child: Text('Request Edit')),
@@ -1115,8 +1116,8 @@ class _AttendanceTabState extends State<_AttendanceTab> {
                     spacing: 12,
                     runSpacing: 4,
                     children: [
-                      _attendanceRadioOption(roll, 'Present', canMark),
-                      _attendanceRadioOption(roll, 'Absent', canMark),
+                      _attendanceRadioOption(key, 'Present', canMark),
+                      _attendanceRadioOption(key, 'Absent', canMark),
                     ],
                   ),
                 ),

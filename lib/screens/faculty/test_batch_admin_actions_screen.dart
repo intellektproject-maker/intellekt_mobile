@@ -820,20 +820,20 @@ class _AttendanceTabState extends State<_AttendanceTab> {
   bool _loading = false, _saving = false;
   bool get _isFaculty => !const {'IG001', 'IG002'}.contains(widget.adminId.trim().toUpperCase());
 
-  Widget _attendanceRadioOption(String roll, String status, bool enabled) {
+  Widget _attendanceRadioOption(String key, String status, bool enabled) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Radio<String>(
           value: status,
-          groupValue: const {'Present', 'Absent'}.contains(_status[roll])
-              ? _status[roll]
+          groupValue: const {'Present', 'Absent'}.contains(_status[key])
+              ? _status[key]
               : null,
           visualDensity: VisualDensity.compact,
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           onChanged: enabled
               ? (value) {
-                  if (value != null) setState(() => _status[roll] = value);
+                  if (value != null) setState(() => _status[key] = value);
                 }
               : null,
         ),
@@ -887,6 +887,9 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     } catch (_) {}
   }
 
+  String _attendanceKey(Map<String, dynamic> student) =>
+      '${(student['roll_no'] ?? '').toString().trim().toUpperCase()}|${(student['test_code'] ?? '').toString().trim().toUpperCase()}';
+
   String? _savedAttendanceStatus(Map<String, dynamic> student) {
     final value = (student['status'] ?? student['attendance_status'])?.toString();
     return const {'Present', 'Absent'}.contains(value) ? value : null;
@@ -894,7 +897,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
 
   Future<void> _requestAttendanceEdit(String roll, String current) async {
     final value = await showDialog<String>(context: context, builder: (dialogContext) => AlertDialog(
-      title: Text('Request attendance edit - $roll'),
+      title: Text('Request attendance edit - $roll / $testCode'),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
         Text('Current status: $current'),
         ListTile(title: const Text('Present'), onTap: () => Navigator.pop(dialogContext, 'Present')),
@@ -904,7 +907,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     ));
     if (value == null) return;
     try {
-      final response = await widget.api.post('/test-batch/record-edit-requests', data: {'facultyId': widget.adminId, 'recordType': 'attendance', 'roll_no': roll, 'attendance_date': _dateString, 'requested_value': value});
+      final response = await widget.api.post('/test-batch/record-edit-requests', data: {'facultyId': widget.adminId, 'recordType': 'attendance', 'roll_no': roll, 'test_code': testCode, 'attendance_date': _dateString, 'requested_value': value});
       final request = response.data is Map && response.data['request'] is Map
           ? Map<String, dynamic>.from(response.data['request'] as Map)
           : <String, dynamic>{'status': 'Pending'};
@@ -966,12 +969,12 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     }
   }
 
-  Future<void> _applyApprovedAttendanceEdit(String roll) async {
-    final request = _approvedAttendanceEdits[roll];
+  Future<void> _applyApprovedAttendanceEdit(String key) async {
+    final request = _approvedAttendanceEdits[key];
     if (request == null) return;
     try {
       await widget.api.post('/test-batch/record-edit-requests/${request['id']}/apply', data: {'facultyId': widget.adminId});
-      if (mounted) { setState(() { _approvedAttendanceEdits.remove(roll); _pendingAttendanceEdits.remove(roll); _message = 'Approved attendance edit applied for $roll.'; }); await _load(); }
+      if (mounted) { setState(() { _approvedAttendanceEdits.remove(key); _pendingAttendanceEdits.remove(key); _message = 'Approved attendance edit applied.'; }); await _load(); }
     } catch (e) { if (mounted) setState(() => _error = _messageOfError(e)); }
   }
   String? _error, _message;
@@ -990,7 +993,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
         _status.clear();
         for (final s in rows) {
           final savedStatus = _savedAttendanceStatus(s);
-          _status[(s['roll_no'] ?? '').toString()] =
+          _status[_attendanceKey(s)] =
               const {'Present', 'Absent'}.contains(savedStatus) ? savedStatus : null;
         }
       });
@@ -1014,7 +1017,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     setState(() { _saving = true; _error = null; _message = null; });
     try {
       final unmarked = _visibleStudents.where((s) =>
-          _status[(s['roll_no'] ?? '').toString()] == null).toList();
+          _status[_attendanceKey(s)] == null).toList();
       if (unmarked.isNotEmpty) {
         setState(() => _error =
             'Select Present or Absent for every student before saving attendance.');
@@ -1026,7 +1029,8 @@ class _AttendanceTabState extends State<_AttendanceTab> {
         return !_isFaculty || _savedAttendanceStatus(s) == null || _status[roll] == _savedAttendanceStatus(s);
       }).map((s) => {
         'roll_no': s['roll_no'],
-        'status': _status[(s['roll_no'] ?? '').toString()],
+        'test_code': s['test_code'],
+        'status': _status[_attendanceKey(s)],
       }).toList();
       if (records.isEmpty) { setState(() => _message = 'No new attendance entries to save. Use Request Edit for saved records.'); return; }
       await widget.api.post('/test-batch/attendance', data: {'adminId': widget.adminId, 'attendanceDate': _dateString, 'records': records});
@@ -1083,14 +1087,14 @@ class _AttendanceTabState extends State<_AttendanceTab> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text((s['name'] ?? 'Student').toString()),
-                subtitle: Text('Roll: $roll\nTests: ${s['test_codes'] ?? '-'}'),
+                subtitle: Text('Roll: $roll\nTest: ${s['test_code'] ?? '-'}'),
                 isThreeLine: true,
                 trailing: (_isFaculty && savedStatus != null)
                     ? PopupMenuButton<String>(
                         tooltip: 'Edit attendance',
                         onSelected: (action) {
-                          if (action == 'request') _requestAttendanceEdit(roll, savedStatus);
-                          if (action == 'apply') _applyApprovedAttendanceEdit(roll);
+                          if (action == 'request') _requestAttendanceEdit(roll, (s['test_code'] ?? '').toString(), savedStatus);
+                          if (action == 'apply') _applyApprovedAttendanceEdit(roll.trim().toUpperCase() + '|' + (s['test_code'] ?? '').toString().trim().toUpperCase());
                         },
                         itemBuilder: (_) => [
                           if (hasPendingRequest)
